@@ -1,5 +1,5 @@
 #define LTHRESH -5
-#define EPOCHS 20
+#define EPOCHS 3
 #define MAX16 32767
 
 //external libraries

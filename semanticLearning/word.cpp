@@ -1,5 +1,5 @@
-#define LTHRESH -4
-#define EPOCHS 50
+#define LTHRESH -5
+#define EPOCHS 70
 #define MAX16 32767
 
 //external libraries
@@ -26,12 +26,12 @@ using namespace std;
 int main(int argc, char **argv) {
 
 	//model parameters
-	int r = 3; //hidden model dimensionality
-	int b = 10; //size of HMM bank
+	int r = 5; //hidden model dimensionality
+	int b = 15; //size of HMM bank
 	real prior = 0.005; //minimum value of Aij
 	int lpcPoles = 4;
-	int d = lpcPoles-1; //observation dimensionality
-	int framesize = 512;
+	int d = lpcPoles; //observation dimensionality
+	int framesize = 256;
 
 	//classifiers
 	Allocator * allocator = new Allocator;
@@ -86,6 +86,7 @@ int main(int argc, char **argv) {
 	int lMaxIdx = b+1;
 	real lMax = -1.7e+300;
 
+
 	//while there are still files left to go,
 	for (int ftg = 0; ftg < soundFiles.size(); ftg++) {
 		printf("%s\n",soundFiles.at(ftg).c_str());
@@ -102,22 +103,27 @@ int main(int argc, char **argv) {
 		for (int k = 0; k < sninfo->frames; k++) {
 			frame[k] *= MAX16;
 		}
+		sounds = fopen("larouts.dat","w");
 
 		//create the feature vectors
 		int z = (int)(sninfo->frames/framesize);
+		double baseEng = 0;
 		samples = new real*[z];
 		for (int i = 0; i < z; i++) {
 
 			samples[i] = new real[d];
 			extract_synthfeature(ssfg, ssf, frame+i*framesize);
-			ssf->energy = log2(calc_energy(frame+i*framesize, framesize, NULL));
-			//samples[i][0] = (float)z/100;
-			//samples[i][1] = ssf->vconf;
-			for (int j = 0; j < d; j++) {
-				samples[i][j] = 2*ssf->lar[j+1];
+			if (i == 0) {
+				baseEng = log2(calc_energy(frame+i*framesize, framesize, NULL));
 			}
-
+			ssf->energy = log2(calc_energy(frame+i*framesize, framesize, NULL));
+			//fprintf(sounds,"%f\n",ssf->energy);
+			samples[i][0] = 5*(ssf->energy-baseEng);
+			for (int j = 1; j < d; j++) {
+				samples[i][j] = 5*ssf->lar[j];
+			}
 		}
+		fclose(sounds);
 
 		//present the samples to the HMMs
 
@@ -163,7 +169,10 @@ int main(int argc, char **argv) {
 						initData(j,l) = samples[j][l];
 					}
 				}
+				obs_dist[nInitialized]->reset();
 				obs_dist[nInitialized]->KMeansInit(&initData,true,1000);
+				p[nInitialized]->reset();
+				p[nInitialized]->init(obs_dist[nInitialized], NULL, false, prior, 1, false, false);
 
 				//reset the initial internal probabilities and train
 				for (int l = 0; l < r; l++) {
