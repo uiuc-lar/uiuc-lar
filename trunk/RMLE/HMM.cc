@@ -79,7 +79,9 @@
 
 #include <torch/general.h>
 
-
+#include "../imatlib/IMat.hh"
+#include "../imatlib/IVec.hh"
+#include "../imatlib/IMatVecOps.hh"
 
 #include "HMM.hh"
 #include "StochasticClassifier.hh"
@@ -395,6 +397,9 @@ void HMM::reset()
    w->zero();
    w_next->zero();
    R2->zero();
+
+   //LAN 9-08-10
+   R1->zero();
    
    for (i = 1; i < viterbi_hist; i++)
    {
@@ -435,6 +440,7 @@ int HMM::Classify(real *y)
 
    // HMM probabilities = f.*u (normalized) = P(X(t)|Y(1)...Y(t))
 
+
    scale = VecDot(f,u);               // inner product
 
 //   if (scale < REAL_EPSILON)
@@ -447,7 +453,8 @@ int HMM::Classify(real *y)
       }
       //reset();
       //return -2;
-      scale = REAL_EPSILON;
+      //scale = REAL_EPSILON;
+      scale = 1/REAL_EPSILON;
    }
    else
       scale = 1/scale;

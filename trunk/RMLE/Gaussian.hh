@@ -76,11 +76,10 @@ static char *Gaussian_HH_Id = "$Id: Gaussian.hh,v 1.1 2005/05/09 20:52:57 mrmccl
 #include <torch/general.h>
 
 #include "StochasticClassifier.hh"
-
-
-#include "../imatlib/IMat.hh"
-#include "../imatlib/IVec.hh"
-#include "../imatlib/IVecInt.hh"
+#include <gsl/gsl_eigen.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_vector.h>
+//#include <gsl/gsl_blas.h>
 
 
 using namespace Torch;
@@ -217,6 +216,8 @@ public:
 
    virtual int RMLEUpdate();
 
+   int covReg(real lambda_, real xi_);
+
    virtual int KMeansInit(IMat *x,
                           bool rand_init = false,
                           int max_iter = 20);
@@ -251,6 +252,7 @@ public:
    virtual void loadXFile(XFile *file);  ///< load the Gaussian from a file
 
 private:
+
    int init(IMat *MU_ = NULL,
             IMat *U_ = NULL,
             real u_min_ = 0.1, 
