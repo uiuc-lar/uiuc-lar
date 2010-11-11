@@ -76,10 +76,8 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <torch/general.h>
-
 #include "../imatlib/IMat.hh"
 #include "../imatlib/IVec.hh"
-#include "../imatlib/IMatVecOps.hh"
 
 #include "StochasticClassifier.hh"
 

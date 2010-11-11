@@ -144,10 +144,11 @@ void StochasticClassifier::addOptions()
 {
    // Allow setting of various options
 
-   addIOption("history",       &history,   1,     "averaging history");
+	//printf("WHAT UP\n");
+   addIOption("history",       &history,   5,     "averaging history");
 
-   addBOption("average S",     &avg_obs,   false, "average observations");
-   addBOption("average parms", &avg_iters, false, "average iterages");
+   addBOption("average S",     &avg_obs,   true, "average observations");
+   addBOption("average parms", &avg_iters, true, "average iterages");
    
    addROption("eps0",          &eps0,      0.001, "initial learning rate");
    addROption("eps_exp",       &eps_exp,   0.000, "learning rate decay");
@@ -283,14 +284,15 @@ int StochasticClassifier::ProbProject(IMat *Q_m,
 
             for (i = 0; i < rows; i++)
                col_sum += Q[i][j];
-         
+
             col_add = (1.0-col_sum)/(rows-min_count);
          
             for (i = 0; i < rows; i++)
             {
                if (!min_pos(i))
                {
-                  Q[i][j] += col_add;
+                  //Q[i][j] /= col_sum;
+            	  Q[i][j] += col_add;
                   if (Q[i][j] < prior)
                   {
                      Q[i][j] = prior;
@@ -301,10 +303,10 @@ int StochasticClassifier::ProbProject(IMat *Q_m,
                }
             }
             
+
             rep_count++;  // idiot checking
 
          } while (repeat && rep_count <= cols);
-
       }
    }
    else

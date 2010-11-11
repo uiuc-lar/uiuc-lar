@@ -131,6 +131,7 @@ IndepPMF::IndepPMF(int r_,
          b_[i]->rand(prior_, 1.0);
          
          ProbProject(b_[i], prior_, 1);
+         //b_[i]->normalize();
       }
       //else not initialized!!!
    }
