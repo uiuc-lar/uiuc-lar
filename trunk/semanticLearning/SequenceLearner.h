@@ -36,7 +36,8 @@ class SequenceLearner
 public:
 
 	//constructor/destructor
-	SequenceLearner(int, int, int, int, double, double, double);
+	SequenceLearner(int, int, int, int, double, double, double); //with covreg
+	SequenceLearner(int, int, int, int, double);				//w/o covreg
 	virtual ~SequenceLearner();
 	void init();
 
@@ -67,7 +68,6 @@ private:
 	Allocator * allocator;
 	HMM ** p;
 	Gaussian ** obs_dist;
-	real * likelihood;
 	IMat initData;
 	IVec ** pi; //initial probs
 
@@ -78,8 +78,7 @@ private:
 	double prior;		//gobbledygook
 	double alpha; 		//controls covariance matrix regularization
 	double xi;			//upper bound of covariance
-
-
+	bool stent;
 
 };
 

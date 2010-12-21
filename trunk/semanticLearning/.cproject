@@ -74,7 +74,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry excluding="newactiontest.cpp|wordmfcc.cpp|phonetic-old.cpp|rmleexample.cpp|word2.cpp|word.cpp|learnactions.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="phonetic.cpp|wordmfcc.cpp|phonetic-old.cpp|rmleexample.cpp|word2.cpp|word.cpp|learnactions.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>
@@ -547,7 +547,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry excluding="newactiontest.cpp|wordmfcc.cpp|phonetic-old.cpp|rmleexample.cpp|word2.cpp|word.cpp|learnactions.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="phonetic.cpp|wordmfcc.cpp|phonetic-old.cpp|rmleexample.cpp|word2.cpp|word.cpp|learnactions.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 </sourceEntries>
 </configuration>
 </storageModule>

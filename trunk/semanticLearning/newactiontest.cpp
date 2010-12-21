@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 	int framesize = 512;
 
 	//classifiers
-	SequenceLearner * S = new SequenceLearner(r,d,b,5,-5.0,0.025,0.2);
+	SequenceLearner * S = new SequenceLearner(r,d,b,5,-2.0,0.025,0.2);
 
 	//data
 	IMat initData(1,d);
@@ -106,8 +106,10 @@ int main(int argc, char **argv) {
 			S->nInitialized++;
 		}
 		else {
-			S->train(samples,z);
-			//S->classify(samples,z);
+			int blerm = S->train(samples,z);
+			//int blerm = S->classify(samples,z);
+			//double mble = S->evaluate(samples,z,blerm);
+			printf("%d\n",blerm);
 		}
 
 
