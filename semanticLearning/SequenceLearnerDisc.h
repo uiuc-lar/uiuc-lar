@@ -1,12 +1,12 @@
 /*
- * SequenceLearner.h
+ * SequenceLearnerDisc.h
  *
- *  Created on: Sep 8, 2010
+ *  Created on: Nov 29, 2010 (from SequenceLearner.h)
  *      Author: logan
  */
 
-#ifndef SEQUENCELEARNER_H_
-#define SEQUENCELEARNER_H_
+#ifndef SEQUENCELEARNERDISC_H_
+#define SEQUENCELEARNERDISC_H_
 
 //external libraries
 #include <torch/general.h>
@@ -15,43 +15,43 @@
 #include <math.h>
 #include <time.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sndfile.h>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 //internal libraries
 #include "../RMLE/HMM.hh"
 #include "../RMLE/StochasticClassifier.hh"
-#include "../RMLE/Gaussian.hh"
+#include "../RMLE/IndepPMF.hh"
 #include "../imatlib/IMat.hh"
 #include "../imatlib/IVec.hh"
-#include "../imatlib/IVecInt.hh"
 #include "../imatlib/IMatVecOps.hh"
 
 using namespace std;
 
-class SequenceLearner
+class SequenceLearnerDisc
 {
 
 public:
 
 	//constructor/destructor
-	SequenceLearner(int, int, int, int, double, double, double);
-	virtual ~SequenceLearner();
+	SequenceLearnerDisc(int, int*, int, int, int, double, bool);
+	virtual ~SequenceLearnerDisc();
 	void init();
 
 	//training (with classification)
-	int train(real **, int);
-	int initialize(real **, int, int);
+	int train(int **, int);
+	int initialize(int **, int, int);
 
 	//clasification
-	int classify(real **, int);
-	double evaluate(real **, int, int);
+	int classify(int **, int);
+	double evaluate(int **, int, int);
 
 	//auxiliary
 	void printAll();
 	void printToFile(string);
-
 	int nInitialized;
 
 
@@ -60,13 +60,15 @@ private:
 	//model parameters
 	int r;		//model size
 	int b;		//bank size
-	int d;		//observation size
+	int * d;	//dictionary sizes (can handle multiple B matrices)
+	int nOuts;  //number of output distributions
 
 
 	//classifier data structures
 	Allocator * allocator;
 	HMM ** p;
-	Gaussian ** obs_dist;
+	//Gaussian ** obs_dist;
+	IndepPMF ** obs_dist;
 	real * likelihood;
 	IMat initData;
 	IVec ** pi; //initial probs
@@ -76,10 +78,13 @@ private:
 	double lThresh;		//learning parameter
 	int epochs;			//controls movement distance
 	double prior;		//gobbledygook
-	double alpha; 		//controls covariance matrix regularization
-	double xi;			//upper bound of covariance
+	double myeps;
+	bool makeLR;		//make this a left to right model
+	//double alpha; 		//controls covariance matrix regularization
+	//double xi;			//upper bound of covariance
 
-
+	void makeALR(int);
+	int ProbProject(IMat *, int);
 
 };
 

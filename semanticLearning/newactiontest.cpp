@@ -25,15 +25,15 @@ using namespace std;
 int main(int argc, char **argv) {
 
 	//model parameters
-	int r = 4; //hidden model dimensionality
+	int r = 5; //hidden model dimensionality
 	int b = 10; //size of HMM bank
 	real prior = 0.001; //minimum value of Aij
-	int lpcPoles = 4;
+	int lpcPoles = 3;
 	int d = lpcPoles; //observation dimensionality
 	int framesize = 512;
 
 	//classifiers
-	SequenceLearner * S = new SequenceLearner(r,d,b,10,-7.0,0.1,10.0);
+	SequenceLearner * S = new SequenceLearner(r,d,b,5,-5.0,0.025,0.2);
 
 	//data
 	IMat initData(1,d);
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
 	vector<string> soundFiles;
 
 	//get the list of all files to open
-	sounds = fopen("actionlist.ini","r");
+	sounds = fopen("actionlist2.ini","r");
 	while (bytesRead == 1)  {
 
 		char fname[100];
@@ -100,10 +100,10 @@ int main(int argc, char **argv) {
 
 		//present the samples to the HMMs
 		if (initCount < 4) {
-			//S->initialize(samples,z,initCount);
-			S->train(samples,z);
+			S->initialize(samples,z,initCount);
+			//S->train(samples,z);
 			initCount++;
-			//S->nInitialized++;
+			S->nInitialized++;
 		}
 		else {
 			S->train(samples,z);
@@ -119,6 +119,10 @@ int main(int argc, char **argv) {
 	}
 
 	S->printAll();
+
+	//dump this all to files for quick access
+	string bName("/home/logan/workspace/scripts/robotdata/simple/paramresults/act-param");
+	S->printToFile(bName);
 
 	return 0;
 }

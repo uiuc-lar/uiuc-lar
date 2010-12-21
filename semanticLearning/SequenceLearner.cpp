@@ -46,7 +46,8 @@ void SequenceLearner::init() {
 }
 
 int SequenceLearner::train(real ** samples, int length) {
-
+	FILE *fp;
+	fp = fopen("probtrace.dat","w");
 	int z = length;
 	int lMaxIdx = classify(samples, z);
 
@@ -66,8 +67,9 @@ int SequenceLearner::train(real ** samples, int length) {
 				//printf("\n");
 			}
 			obs_dist[nInitialized]->reset();
-			obs_dist[nInitialized]->KMeansInit(&initData,true,1000);
+			obs_dist[nInitialized]->KMeansInit(&initData,true,50);
 			obs_dist[nInitialized]->covReg(alpha,xi);
+			obs_dist[nInitialized]->print(5000,10);
 			p[nInitialized]->reset();
 			p[nInitialized]->init(obs_dist[nInitialized], NULL, false, prior, 1, false, false);
 
@@ -81,10 +83,16 @@ int SequenceLearner::train(real ** samples, int length) {
 			for (int i = 0; i < epochs; i++) {
 				for (int j = 0; j < z; j++) {
 					p[nInitialized]->Classify(samples[j]);
+					for (int k = 0; k < r; k++) {
+						fprintf(fp,"%f,",p[nInitialized]->f->ptr[k]);
+					}
+					fprintf(fp,"\n");
 					p[nInitialized]->RMLEUpdate();
 					obs_dist[nInitialized]->covReg(alpha,xi);
 				}
 			}
+
+			fclose(fp);
 			//set the pi vector accord to the first state's class
 			int initClass = obs_dist[nInitialized]->Classify(samples[0]);
 			for (int i = 0; i < r; i++) {
@@ -265,18 +273,18 @@ int SequenceLearner::initialize(real ** samples, int length, int n) {
 		//obs_dist[n]->print(100,10);
 
 		//set the pi vector accord to the first state's class
-		int initClass = obs_dist[nInitialized]->Classify(samples[0]);
+		int initClass = obs_dist[n]->Classify(samples[0]);
 		for (int i = 0; i < r; i++) {
 			if (initClass == i) {
-				pi[nInitialized]->ptr[i] = 1-prior*r;
+				pi[n]->ptr[i] = 1-prior*r;
 			} else {
-				pi[nInitialized]->ptr[i] = prior;
+				pi[n]->ptr[i] = prior;
 			}
 		}
 
 		//reset again
 		for (int l = 0; l < r; l++) {
-			p[nInitialized]->prob->ptr[l] = pi[nInitialized]->ptr[l];
+			p[n]->prob->ptr[l] = pi[n]->ptr[l];
 		}
 
 		//make an ML classification
@@ -288,5 +296,71 @@ int SequenceLearner::initialize(real ** samples, int length, int n) {
 	}
 
 	return 1;
+
+}
+
+void SequenceLearner::printToFile(string baseName) {
+
+	FILE * params;
+
+	for (int i = 0; i < nInitialized; i++) {
+
+		char tnum[10];
+		string aFile(baseName);
+		string muFile(baseName);
+		string uFile(baseName);
+
+		sprintf(tnum,"%d",i+1);
+
+		//A
+		aFile += tnum;
+		aFile += ".A";
+		params = fopen(aFile.c_str(),"w");
+		for (int j = 0; j < p[i]->A->m; j++) {
+			for (int k = 0; k < p[i]->A->n; k++) {
+				fprintf(params,"%f,",p[i]->A->ptr[j][k]);
+			}
+			fprintf(params,"\n");
+		}
+		fclose(params);
+
+		//mu
+		muFile += tnum;
+		muFile += ".MU";
+		params = fopen(muFile.c_str(),"w");
+		for (int j = 0; j < obs_dist[i]->MU->m; j++) {
+			for (int k = 0; k < obs_dist[i]->MU->n; k++) {
+				fprintf(params,"%f,",obs_dist[i]->MU->ptr[j][k]);
+			}
+			fprintf(params,"\n");
+		}
+		fclose(params);
+
+		//U
+		IMat U(r,d*d);
+
+		IMat Rtmp;
+		IMat Utmp;
+
+		for (int l = 0; l < r; l++)
+		{
+			obs_dist[i]->R->getRow(l, 0, d, d, &Rtmp);
+			U.getRow(l, 0, d, d, &Utmp);
+			MatMatMult(&Rtmp, CblasTrans, &Rtmp, CblasNoTrans, &Utmp);
+		}
+
+		uFile += tnum;
+		uFile += ".U";
+		params = fopen(uFile.c_str(),"w");
+		for (int j = 0; j < U.m; j++) {
+			for (int k = 0; k < U.n; k++) {
+				fprintf(params,"%f,",U.ptr[j][k]);
+			}
+			fprintf(params,"\n");
+		}
+		fclose(params);
+
+
+	}
 
 }
