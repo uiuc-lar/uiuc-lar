@@ -67,9 +67,7 @@ private:
 	//classifier data structures
 	Allocator * allocator;
 	HMM ** p;
-	//Gaussian ** obs_dist;
 	IndepPMF ** obs_dist;
-	real * likelihood;
 	IMat initData;
 	IVec ** pi; //initial probs
 
@@ -78,11 +76,11 @@ private:
 	double lThresh;		//learning parameter
 	int epochs;			//controls movement distance
 	double prior;		//gobbledygook
-	double myeps;
+	double myeps;		//change the epsilon for learning
 	bool makeLR;		//make this a left to right model
-	//double alpha; 		//controls covariance matrix regularization
-	//double xi;			//upper bound of covariance
 
+
+	//internal auxiliary functions
 	void makeALR(int);
 	int ProbProject(IMat *, int);
 

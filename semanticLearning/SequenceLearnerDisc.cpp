@@ -8,11 +8,10 @@ SequenceLearnerDisc::SequenceLearnerDisc(int r_, int * d_, int n_, int b_, int e
 	p = new HMM * [b];
 	//obs_dist = new Gaussian * [b];
 	obs_dist = new IndepPMF * [b];
-	likelihood = new real[b];
+	//likelihood = new real[b];
 	nInitialized = 0;
 	initData.resize(1,1);
 	pi = new IVec * [b];
-
 
 	//hyperparameter defaults
 	prior = 0.00002;
@@ -51,97 +50,18 @@ int SequenceLearnerDisc::train(int ** samples, int length) {
 
 	int z = length;
 	int lMaxIdx = classify(samples, z);
+	double bestScore = evaluate(samples,z,lMaxIdx);
 
 	//if no winners (thresholded) present, re-initialize a new HMM to that sequence
-	if (lMaxIdx > b && nInitialized < b) {
+	if (bestScore <= lThresh && nInitialized < b) {
 
-		double thisLikelihood = -1.7e+308;
-		while (isnan(thisLikelihood) || thisLikelihood <= lThresh) {
-
-			//reinitialize until it doesnt return NAN again (hackish?)
-			obs_dist[nInitialized]->reset();
-			p[nInitialized]->reset();
-			p[nInitialized]->init(obs_dist[nInitialized], NULL, false, prior, 1, false, false);
-
-			//do some special things if this should be treated as a LtR model
-			if (makeLR) {
-				//start the parameter values in a friendly spot to make L-R model converge properly
-				for (int i = 0; i < r; i++) {
-
-					//use a sliding window histogram method for B matrix
-					int * symbs = new int[d[0]];
-					for (int j = 0; j < d[0]; j++) {
-						symbs[j] = 0;
-					}
-					int dl = i*(length/r);
-					int dh = min((i+1)*(length/r),length);
-
-					for (int j = dl; j < dh; j++) {
-						symbs[samples[j][0]] = symbs[samples[j][0]] + 1;
-					}
-					for (int j = 0; j < d[0]; j++) {
-						//update probs properly
-						obs_dist[nInitialized]->b[0]->ptr[j][i] = ((double)symbs[j])/((double)(dh-dl));
-					}
-					//enforce conditions for A matrix
-					for (int j = 0; j < r; j++) {
-						if (j != i && j != (i+1)) {
-							p[nInitialized]->A->ptr[i][j] = 0;
-						}
-					}
-					delete symbs;
-				}
-				//enforce condition on pi
-				pi[nInitialized]->ptr[0] = 1-(r-1)*prior;
-				for (int i = 1; i < r; i++) {
-					pi[nInitialized]->ptr[i] = prior;
-				}
-				//fix matrices back up (enforce constraints, fix priors)
-				ProbProject(p[nInitialized]->A, 2);
-				ProbProject(obs_dist[nInitialized]->b[0],1);
-			}
-
-			for (int i = 0; i < epochs; i++) {
-				//after each epoch, reinit the pi vector
-				VecCopy(pi[nInitialized],p[nInitialized]->prob);
-				for (int j = 0; j < z; j++) {
-					p[nInitialized]->Classify(samples[j]);
-					p[nInitialized]->RMLEUpdate();
-					if (makeLR) {
-						makeALR(nInitialized);
-					}
-				}
-			}
-
-			//reset again
-			VecCopy(pi[nInitialized],p[nInitialized]->prob);
-
-			//make an ML classification
-			thisLikelihood = 0;
-			for (int j = 0; j < z; j++) {
-				p[nInitialized]->Classify(samples[j]);
-				thisLikelihood +=log10(1.0/p[nInitialized]->scale)*(double)(1.0/(z+1));
-			}
-
-		}
+		initialize(samples, z, nInitialized);
 
 		lMaxIdx = nInitialized;
 		nInitialized++;
 
-		VecCopy(pi[lMaxIdx],p[lMaxIdx]->prob);
-		for (int i = 0; i < epochs; i++) {
-			VecCopy(pi[lMaxIdx],p[lMaxIdx]->prob);
-			for (int j = 0; j < z; j++) {
-				p[lMaxIdx]->Classify(samples[j]);
-				p[lMaxIdx]->RMLEUpdate();
-				if (makeLR) {
-					makeALR(lMaxIdx);
-				}
-			}
-		}
+	} else {
 
-	}
-	else {
 		//if a winner is present, it trains on the sequence
 		for (int i = 0; i < epochs; i++) {
 			VecCopy(pi[lMaxIdx],p[lMaxIdx]->prob);
@@ -153,6 +73,7 @@ int SequenceLearnerDisc::train(int ** samples, int length) {
 				}
 			}
 		}
+
 	}
 
 	return lMaxIdx;
@@ -162,33 +83,17 @@ int SequenceLearnerDisc::train(int ** samples, int length) {
 
 int SequenceLearnerDisc::classify(int ** samples, int length) {
 
-	int lMaxIdx = b+1;
-	double lMax = -1.7e+300;
-	int z = length;
-
-	//reset the initial internal probabilities
-	for (int k = 0; k < nInitialized; k++) {
-		likelihood[k] = 0;
-		VecCopy(pi[k],p[k]->prob);
-	}
+	int lMaxIdx;
+	IVec L;
+	L.resize(nInitialized);
 
 	//make an ML classification
-	for (int j = 0; j < z; j++) {
-		//over all HMMs in the bank
-		for (int k = 0; k < nInitialized; k++) {
-			p[k]->Classify(samples[j]);
-			likelihood[k] +=log10(1.0/p[k]->scale)*(double)(1.0/(z+1));
-		}
+	for (int i = 0; i < nInitialized; i++) {
+		L[i] = evaluate(samples, length, i);
 	}
 
-	for (int k = 0; k < nInitialized; k++) {
-		printf("%f ",likelihood[k]);
-		if (likelihood[k] > lMax && likelihood[k] > lThresh) {
-			lMax = likelihood[k];
-			lMaxIdx = k;
-		}
-	}
-	printf("%d \n", lMaxIdx);
+	//find the max likelihood
+	L.vmax(&lMaxIdx);
 
 	return lMaxIdx;
 
@@ -197,35 +102,20 @@ int SequenceLearnerDisc::classify(int ** samples, int length) {
 
 double SequenceLearnerDisc::evaluate(int ** samples, int length, int n) {
 
-	int lMaxIdx = b+1;
-	double lMax = -1.7e+300;
 	int z = length;
+	double likelihood;
 
 	//reset the initial internal probabilities
-	for (int k = 0; k < nInitialized; k++) {
-		likelihood[k] = 0;
-		VecCopy(pi[k],p[k]->prob);
-	}
+	likelihood = 0;
+	VecCopy(pi[n],p[n]->prob);
 
 	//make an ML classification
 	for (int j = 0; j < z; j++) {
-		//over all HMMs in the bank
-		for (int k = 0; k < nInitialized; k++) {
-			p[k]->Classify(samples[j]);
-			likelihood[k] +=log10(1.0/p[k]->scale)*(double)(1.0/(z+1));
-		}
+		p[n]->Classify(samples[j]);
+		likelihood +=log10(1.0/p[n]->scale)*(double)(1.0/(z+1));
 	}
 
-	for (int k = 0; k < nInitialized; k++) {
-		printf("%f ",likelihood[k]);
-		if (likelihood[k] > lMax && likelihood[k] > lThresh) {
-			lMax = likelihood[k];
-			lMaxIdx = k;
-		}
-	}
-	printf("%d \n", lMaxIdx);
-
-	return lMax;
+	return likelihood;
 
 }
 
@@ -304,11 +194,8 @@ int SequenceLearnerDisc::initialize(int ** samples, int length, int n) {
 		VecCopy(pi[n],p[n]->prob);
 
 		//make an ML classification
-		thisLikelihood = 0;
-		for (int j = 0; j < z; j++) {
-			p[n]->Classify(samples[j]);
-			thisLikelihood +=log10(1.0/p[n]->scale)*(double)(1.0/(z+1));
-		}
+		thisLikelihood = evaluate(samples, z, n);
+
 	}
 
 	return 1;
@@ -447,8 +334,6 @@ int SequenceLearnerDisc::ProbProject(IMat *Q_m,
 
       }
    }
-
-//   allocator->free(min_pos);
 
    return 0;
 }

@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
 
 	M = new MFCCProcessor(d, w, framesize+2*overlap, overlap, samplerate, 0, samplerate/2, false);
 
-	///*      CLIPPPPPPPPPPP HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+	/*      CLIPPPPPPPPPPP HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
 	//first read in the 'init' file and put it into the phonetic classifier
 	//open the given sample
 	sninfo->format = 0;
@@ -153,9 +153,9 @@ int main(int argc, char **argv) {
 
 	p->print(2500,10);
 
-	//FINISH CLIIIIIIIIIIIIIIIIIIIIIIIPPPPPPPPPPPPPINGGGGGGGGG HEREEEEEEEEEEEEEEEE*/
+	FINISH CLIIIIIIIIIIIIIIIIIIIIIIIPPPPPPPPPPPPPINGGGGGGGGG HEREEEEEEEEEEEEEEEE*/
 
-	/* CLIP **************************************************************************
+	///* CLIP **************************************************************************
 	//load in phonetic classifier parameters from a file (if desired)
 	string aFile("/home/logan/workspace/scripts/phonetictest/goodparams3.A");
 	string muFile("/home/logan/workspace/scripts/phonetictest/goodparams3.MU");
@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
 	p->init(obs_dist, &fA, false, prior, 1, true, false);
 
 	obs_dist->print(500,10);
-	CLIP *************************************************************** */
+	//CLIP *************************************************************** */
 
 	//load in the novel data samples files
 	sounds = fopen("soundlist4.ini","r");
@@ -272,8 +272,9 @@ int main(int argc, char **argv) {
 			ninit++;
 			S->nInitialized++;
 		} else {
-			S->classify(sequence,z);
+			int gromb = S->classify(sequence,z);
 			//S->train(sequence,z);
+			printf("%d\n",gromb);
 		}
 
 		//delete vsequence;
