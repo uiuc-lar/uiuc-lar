@@ -197,8 +197,10 @@ IndepPMF::IndepPMF(IVecInt *s_,
                    bool retain):
       StochasticClassifier(b_[0]->n, s_->n, prior_)
 {
-   for (int i = 0; i < d; i++)
+
+   for (int i = 0; i < d; i++){
       ProbProject(b_[i], prior_, 1);
+   }
 
    init(s_, b_, do_copy, retain);
 
@@ -244,8 +246,9 @@ void IndepPMF::init(IVecInt *s_,
 
    if (do_copy)
    {
-      s = new(allocator) IVecInt(*s);
-      
+
+      s = new(allocator) IVecInt(*s_);
+
       b = (IMat **)allocator->alloc(sizeof(IMat **) * d);
       for (i = 0; i < d; i++)
          b[i] = new(allocator) IMat(*b_[i]);

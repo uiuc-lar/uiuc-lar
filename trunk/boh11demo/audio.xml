@@ -1,0 +1,61 @@
+<application>
+<name>Audio processing system</name>
+<dependencies>
+      <port>/root</port>
+</dependencies>
+<module>
+      <name>yarpdev</name>
+      <parameters>--device portaudio --id 1 --channels 1 --read --rate 48000 --samples 4096 --name /microphone</parameters>
+	  <node>nebula</node>
+	<tag>microphones</tag>
+   </module>
+   <module>
+      <name>vaDetect</name>
+      <parameters>--threshold 3</parameters>
+	  <node>nebula</node>
+	<stdio>nebula</stdio>
+	<tag>vad</tag>
+   </module>
+   <module>
+      <name>phoneticClassifier</name>
+      <parameters>--from /home/logan/uiuc-lar/voiceStream/phoneclassparams2.ini</parameters>
+      <node>nebula</node>
+	<tag>phoneclassifier</tag>
+	<stdio>nebula</stdio>
+   </module>
+   <module>
+      <name>lexiconLearner</name>
+      <parameters>--from /home/logan/uiuc-lar/voiceStream/speechclass.ini</parameters>
+      <node>nebula</node>
+	<tag>wordlearner</tag>
+	<stdio>nebula</stdio>
+   </module>
+   <module>
+	<name>associativeMemory</name>
+	<parameters> --from /home/logan/uiuc-lar/voiceStream/memparams.ini</parameters>
+	<node>nebula</node>
+	<tag>chmm</tag>
+	<stdio>nebula</stdio>
+   </module>
+<connection>
+  <output>/microphone</output>
+  <input>/vadIn</input>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <output>/vadOut</output>
+  <input>/phoneIn</input>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <output>/phoneOut</output>
+  <input>/wordsIn</input>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <output>/wordsOut</output>
+  <input>/assocMem/in:a</input>
+  <protocol>tcp</protocol>
+</connection>
+</application>
+
