@@ -937,6 +937,7 @@ int Gaussian::KMeansInit(IMat *x,
 
 		//hackish (fix)
 		//finished = true;
+		/*
 		for (int idx = 0; idx < counts.n; idx++) {
 			if (counts[idx] == 1) {
 				finished = false;
@@ -944,6 +945,7 @@ int Gaussian::KMeansInit(IMat *x,
 		}
 		if (finished)
 			break;
+			*/
 
 		MatSub(MU, &MU_old);
 		MU_old.abs();

@@ -123,11 +123,13 @@ void extract_synthfeature(synthfeature_generator *ssfg, synthfeature *ssf,
    double *wwintempptr = ssfg->wwintemp;
 
    add_frame(ssfg->sframeholder, audio);
+   /*
    estimate_pitch(ssfg->spd, frameptr);
    ssfg->pitchper[ssfg->index] = ssfg->spd->pitchper;
    ssfg->vconf[ssfg->index]    = ssfg->spd->vconf;
    pp0 = ssfg->pitchper[0]; pp1 = ssfg->pitchper[1]; pp2 = ssfg->pitchper[2];
    vc0 = ssfg->vconf[0];    vc1 = ssfg->vconf[1];    vc2 = ssfg->vconf[2];
+   */
 
    for(i=0; i<totallen; ++i)
    {
@@ -442,8 +444,8 @@ synthfeature_generator* create_sfgenerator(double samplingrate,
 
    ssfg->sframeholder   = create_frameholder(framelength, numberofframes);
    ssfg->slpc           = create_lpc(lpcorder);
-   ssfg->spd            = create_pitchdetector(totallen, lolag, hilag,
-                                               pitchlpcorder, pitchspeccutoff);
+   //ssfg->spd            = create_pitchdetector(totallen, lolag, hilag,
+   //                                            pitchlpcorder, pitchspeccutoff);
 
    if( warpedcoeffs )
    {
@@ -485,7 +487,7 @@ void destroy_sfgenerator(synthfeature_generator *ssfg)
       free(ssfg->wwintemp);
       destroy_frameholder(ssfg->sframeholder);
       destroy_lpc(ssfg->slpc);
-      destroy_pitchdetector(ssfg->spd);
+      //destroy_pitchdetector(ssfg->spd);
       free(ssfg);
    }
 }

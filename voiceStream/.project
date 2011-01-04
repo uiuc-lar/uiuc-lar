@@ -3,6 +3,8 @@
 	<name>voiceStream</name>
 	<comment></comment>
 	<projects>
+		<project>RMLE</project>
+		<project>lexicon</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

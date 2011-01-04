@@ -317,6 +317,7 @@ public:
                                              ///< dimension dim (1 =
                                              ///< columns, 2 = rows)
 
+
    int scatter(IVec *mu,
                IMat *scat,
                int dim = 1,

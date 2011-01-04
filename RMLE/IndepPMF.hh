@@ -65,7 +65,7 @@ static char *IndepPMF_HH_Id = "$Id: IndepPMF.hh,v 1.1 2005/05/09 20:52:57 mrmccl
 #endif /* HAVE_CONFIG_H */
 
 #include <torch/general.h>
-#include <imatlib/IVecInt.hh>
+#include "../imatlib/IVecInt.hh"
 
 #include "StochasticClassifier.hh"
 

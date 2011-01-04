@@ -1456,7 +1456,7 @@ int IMat::cov(IVec *mu, IMat *Sigma, int dim, IVecInt *ind)
 
    Sigma->reshape(mu->n, mu->n);
    Sigma->zero();
-   //Sigma->eye();
+   Sigma->eye();
    
    if (dim == 1)
    {
@@ -1487,9 +1487,12 @@ int IMat::cov(IVec *mu, IMat *Sigma, int dim, IVecInt *ind)
          }
       }
       
+      //SymMatRankKUpdate(scale,
+       //                 &tmp, CblasTrans,
+      //                  0.0, Sigma);
       SymMatRankKUpdate(scale,
                         &tmp, CblasTrans,
-                        0.0, Sigma);
+                        0.001, Sigma);
 
       //COMPLETE HACK FIX THIS
 
@@ -1522,10 +1525,10 @@ int IMat::cov(IVec *mu, IMat *Sigma, int dim, IVecInt *ind)
             VecSub(mu, &vec);
          }
       }
-
       SymMatRankKUpdate(scale,
                         &tmp, CblasNoTrans,
                         0.0, Sigma);
+
    }
    
    return 0;

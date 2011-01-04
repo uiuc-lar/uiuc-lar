@@ -10,6 +10,7 @@
 #define ALPHA 0.1 //exp filter coeff
 #define INT_MAX 32767
 #define MFRAMES 400
+#define SENDTHRESH 10000
 
 #include <stdio.h>
 #include <sndfile.h>
@@ -21,6 +22,7 @@
 #include <yarp/os/Network.h>
 #include <yarp/os/BufferedPort.h>
 #include <yarp/sig/Sound.h>
+#include <yarp/sig/Vector.h>
 
 using namespace yarp::os;
 using namespace yarp::sig;
@@ -77,8 +79,12 @@ int main() {
     // Open the network
     Network yarp;
     BufferedPort<Sound> myPort;
+    //BufferedPort<Vector> outPort;
+    Port outPort;
+    outPort.open("/samples");
     myPort.open("/receiver");
     Network::connect("/grabber", "/receiver");
+    Network::connect("/samples", "/classifier");
 
     //read the first few in to get us started (decimate by 2)
     Sound *s;
@@ -100,6 +106,11 @@ int main() {
 
 	fp = fopen("energyout.dat","w");
 	oldenergy = 0.0;
+
+	//prime the pump
+	//Vector & data = outPort.prepare();
+	Vector data;
+
 	while (1) {
 
 		//slide down and read a new buffer of data in
@@ -108,12 +119,28 @@ int main() {
 		currentbuffer = newbuffer;
 		newbuffer = new double[frameSize/2];
 		s = myPort.read(true);
+
+		//DECIMATION BY 2 OCCURS HERE WATCH OUT
 		for (int i = 0; i < s->getSamples()/2; i++) {
 			newbuffer[i] = ((double)s->getSafe(i*2,0)/(double)INT_MAX);
+			//fprintf(fp,"%f\n",newbuffer[i]);
+		}
+		/*//fprintf(fp,"%d\n",s->getSamples());
+
+		while (newbuffer[0] = 0.00) {
+			s = myPort.read(true);
+			for (int i = 0; i < s->getSamples()/2; i++) {
+				newbuffer[i] = ((double)s->getSafe(i*2,0)/(double)INT_MAX);
+			}
 		}
 
+		for (int i = 0; i < frameSize/2; i++) {
+			fprintf(fp,"%f\n",newbuffer[i]);
+		}
+		fprintf(fp,"\n");*/
+
 		//apply window
-		for (int j = 0; j < frameSize; j++) {
+		/*for (int j = 0; j < frameSize; j++) {
 			if (j < frameSize/4) {
 				thisFrame[j] = oldbuffer[3*frameSize/4+j];
 			}
@@ -123,9 +150,26 @@ int main() {
 			else {
 				thisFrame[j] = newbuffer[j-3*frameSize/4];
 			}
-
+			fprintf(fp,"%f,",thisFrame[j]);
 			thisFrame[j] *= window[j];
 		}
+		fprintf(fp,"\n");*/
+
+
+		for (int i = 0; i < frameSize/4; i++) {
+			thisFrame[i] = oldbuffer[i+frameSize/4];
+		}
+		for (int i = 0; i < frameSize/2; i++) {
+			thisFrame[i+frameSize/4] = currentbuffer[i];
+		}
+		for (int i = 0; i < frameSize/4; i++) {
+			thisFrame[i+3*frameSize/4] = newbuffer[i];
+		}
+		for (int i = 0; i < frameSize; i++) {
+			fprintf(fp,"%f,",thisFrame[i]);
+			thisFrame[i] *= window[i];
+		}
+		fprintf(fp,"\n");
 
 		//take the fft
 		fftw_execute(p);
@@ -137,8 +181,10 @@ int main() {
 			if (tmp < DMIN) {
 				tmp = DMIN;
 			}
+			//fprintf(fp,"%f,",tmp);
 			energy += tmp;
 		}
+		//fprintf(fp,"\n");
 		energy = log(energy);
 
 
@@ -160,15 +206,35 @@ int main() {
 				//thresh = maxBaseline+0.05;
 				thresh = 0.1;
 				oldenergy = ALPHA*(energy-initenergy) + (1-ALPHA)*oldenergy;
+
 				if (oldenergy > thresh) {
 					for (int i = 0; i < frameSize/2; i++) {
-						fprintf(fp,"%f\n",currentbuffer[i]);
+
+						//some audio has been detected
+						//add the buffer to the larger buffer of speech data
+						data.push_back(currentbuffer[i]);
 					}
 
 				}
 				else {
 					for (int i = 0; i < frameSize/2; i++) {
-						fprintf(fp,"%f\n",0.0);
+
+						//no audio has been detected
+						//check to see if the buffer has data ready to be sent
+						if (data.length() != 0) {
+
+							printf("BUFFER TRANSMITTING. LENGTH = %d\n",data.length());
+							//flush buffer
+
+							if (data.length() > SENDTHRESH) {
+								outPort.write(data);
+							}
+							data.clear();
+
+							//request a new output buffer (dont fill yet)
+							//data = outPort.prepare();
+
+						}
 					}
 				}
 			}
