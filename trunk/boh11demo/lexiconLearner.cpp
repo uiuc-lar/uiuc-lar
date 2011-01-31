@@ -32,19 +32,22 @@
 	lr	--  left-to-right model flag (O)
 
 	[module parameters]
-	input	-- input port name (O, D /lexIn)
-	output	-- output port name (O, D /lexOut)
+	input	-- input port name (O, D /lex:i)
+	output	-- output port name (O, D /lex:o)
+	rpc		-- rpc port name (O, D /lex/rpc)
 
  *
  * PORTS:
  *	Inputs: /pc/words   	(Bottle of bottles/ints. Corresponding to continuous or discrete sequences)
  *	Outputs: /lex/class		(Bottle of with one int, corresponding to classification of the sequence)
+ *	RPC: /lex/rpc			(RPC communication port to interact with the running module)
  */
 
 //yarp network
 #include <yarp/os/Network.h>
 #include <yarp/os/RFModule.h>
 #include <yarp/os/RateThread.h>
+#include <yarp/os/RpcServer.h>
 #include <yarp/os/Time.h>
 #include <yarp/os/Stamp.h>
 #include <yarp/os/Semaphore.h>
@@ -58,7 +61,6 @@
 #include "../lexicon/SequenceLearnerCont.h"
 #include "../lexicon/SequenceLearnerDisc.h"
 
-
 //misc
 #include <string>
 #include <math.h>
@@ -71,7 +73,6 @@ using namespace yarp::os;
 using namespace yarp::sig;
 using namespace yarp::math;
 
-
 //wrapper thread for the learning algorithm
 class LexiconThread : public Thread {
 
@@ -81,9 +82,9 @@ protected:
 	SequenceLearner * S;
 	BufferedPort<Bottle> * inPort;
 	Port *outPort;
-
 	string recvPort;
 	string sendPort;
+
 
 public:
 
@@ -99,8 +100,12 @@ public:
 
 	virtual bool threadInit() {
 
+		//inport (track when a connection arrives)
 		inPort->open(recvPort.c_str());
+
+		//outport
 		outPort->open(sendPort.c_str());
+
 		return true;
 
 	}
@@ -109,7 +114,6 @@ public:
 
 		inPort->close();
 		outPort->close();
-
 		S->printAll();
 
 	}
@@ -118,18 +122,18 @@ public:
 
 		while (isStopping() != true) {
 
-
 			int lex;
 			double val;
+
 			//read a bottle off the port
 			Bottle * b;
-
 			b = inPort->read(false);	//dont block
 
 			if (b != NULL) {
 
 				printf("sequence received,... ");
 
+				//continuous
 				if (S->getType()) {
 
 					//unpack
@@ -151,7 +155,10 @@ public:
 						val = -1.0e+300;
 					lex = S->train(samplesC, b->size());
 
-				} else {
+				}
+
+				//discrete
+				else {
 
 					//unpack
 					int ** samplesD;
@@ -172,8 +179,13 @@ public:
 
 				}
 
-
-				printf("classified as %d\t log likelihood: %f\n",lex,val);
+				//report result to console (but don't gum it up)
+				printf("classified as %d\t log likelihood: ",lex);
+				if (val < -1e+100) {
+					printf("-inf\n");
+				} else {
+					printf("%f\n",val);
+				}
 
 				//bottle up the result, pass along timestamps, and publish
 				Bottle result;
@@ -227,7 +239,9 @@ protected:
 	SequenceLearner * S;
 	string recvPort;
 	string sendPort;
+	string rpcName;
 	LexiconThread * L;
+	Port rpcPort;
 
 
 public:
@@ -235,8 +249,9 @@ public:
 	bool loadParams(ResourceFinder &rf) {
 
 		//get port names
-		recvPort = rf.check("input",Value("/lexIn"),"input port name").asString();
-		sendPort = rf.check("output",Value("/lexOut"),"output port name").asString();
+		recvPort = rf.check("input",Value("/lex:i"),"input port name").asString();
+		sendPort = rf.check("output",Value("/lex:o"),"output port name").asString();
+		rpcName = rf.check("rpc",Value("/lex/rpc"),"rpc port name").asString();
 
 		//get required params
 		Value dV= rf.find("d");
@@ -286,10 +301,97 @@ public:
 			lr = rf.check("lefttoright");
 		}
 
+		//general optional parameters
 		epochs = rf.check("epochs",Value(20),"number of training epochs").asInt();
 		prior = rf.check("prior",Value(0.0001),"min values for parameters").asDouble();
 		eps = rf.check("eps",Value(0.001),"learning rate").asDouble();
 		decay = rf.check("decay",Value(1.0),"learning rate decay value (0.0-1.0)").asDouble();
+
+		return true;
+
+	}
+
+	bool respond(const Bottle& command, Bottle& reply) {
+
+		//handle information requests
+		string msg(command.get(0).asString().c_str());
+
+		//parameter gets
+		if (msg == "get") {
+			if (command.size() < 2) {
+				reply.add(-1);
+			}
+			else {
+
+				string arg(command.get(1).asString().c_str());
+				if (arg == "n") {
+					reply.add(S->nInitialized);
+				}
+				else if (arg == "r") {
+					reply.add(r);
+				}
+				else if (arg == "d") {
+					reply.add(d);
+				}
+				else if (arg == "a") {
+					if (command.size() < 3) {
+						reply.add(-1);
+					} else {
+						S->packA(reply,command.get(2).asInt());
+					}
+				}
+				else if (arg == "b" || arg == "mu" || arg == "u") {
+					if (command.size() < 3) {
+						reply.add(-1);
+					} else {
+						S->packObs(reply,command.get(2).asInt());
+					}
+				}
+				else {
+					reply.add(-1);
+				}
+			}
+
+		}
+		//allow certain running parameters to be set here
+		else if (msg == "set") {
+
+			if (command.size() < 3) {
+				reply.add(-1);
+			}
+			else {
+				string arg(command.get(1).asString().c_str());
+				if (arg == "epochs") {
+					S->setEpochs(command.get(2).asInt());
+				}
+				else if (arg == "prior") {
+					S->setPrior(command.get(2).asDouble());
+				}
+				else if (arg == "eps") {
+					S->setEps(command.get(2).asDouble());
+				}
+				else if (arg == "decay") {
+					S->setEps_decay(command.get(2).asDouble());
+				}
+				else if (arg == "thresh") {
+					S->setThresh(command.get(2).asDouble());
+				}
+				else {
+					reply.add(-1);
+				}
+			}
+		}
+		else if (msg == "list") {
+			reply.add("epochs");
+			reply.add("prior");
+			reply.add("eps");
+			reply.add("decay");
+			reply.add("thresh");
+		}
+		else {
+			reply.add(-1);
+		}
+
 
 		return true;
 
@@ -318,6 +420,9 @@ public:
 			S->eps_decay = decay;
 		}
 
+		//set up the rpc/observer port
+		rpcPort.open(rpcName.c_str());
+		attach(rpcPort);
 
 		//pass everything off to the execution thread
 		L = new LexiconThread(S, recvPort, sendPort);

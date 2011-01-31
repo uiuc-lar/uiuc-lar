@@ -30,31 +30,19 @@
 	<tag>wordlearner</tag>
 	<stdio>nebula</stdio>
    </module>
-   <module>
-	<name>associativeMemory</name>
-	<parameters> --from /home/logan/uiuc-lar/voiceStream/memparams.ini</parameters>
-	<node>nebula</node>
-	<tag>chmm</tag>
-	<stdio>nebula</stdio>
-   </module>
 <connection>
   <output>/microphone</output>
-  <input>/vadIn</input>
+  <input>/vad:i</input>
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <output>/vadOut</output>
-  <input>/phoneIn</input>
+  <output>/vad:o</output>
+  <input>/phone:i</input>
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <output>/phoneOut</output>
-  <input>/wordsIn</input>
-  <protocol>tcp</protocol>
-</connection>
-<connection>
-  <output>/wordsOut</output>
-  <input>/assocMem/in:a</input>
+  <output>/phone:o</output>
+  <input>/words:i</input>
   <protocol>tcp</protocol>
 </connection>
 </application>

@@ -112,6 +112,9 @@ CMAKE_OBJCOPY:FILEPATH=/usr/bin/objcopy
 //Path to a program.
 CMAKE_OBJDUMP:FILEPATH=/usr/bin/objdump
 
+//Value Computed by CMake
+CMAKE_PROJECT_NAME:STATIC=VOICESTREAM
+
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=/usr/bin/ranlib
 
@@ -225,21 +228,23 @@ static_grabber_INCLUDE_DIRS:STRING=/home/logan/iCub/main/src/libraries/learningM
 # INTERNAL cache entries
 ########################
 
-//Advanced flag for variable: CMAKE_AR
+//ADVANCED property for variable: CMAKE_AR
 CMAKE_AR-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_BUILD_TOOL
+//ADVANCED property for variable: CMAKE_BUILD_TOOL
 CMAKE_BUILD_TOOL-ADVANCED:INTERNAL=1
 //What is the target build tool cmake is generating for.
 CMAKE_BUILD_TOOL:INTERNAL=/usr/bin/make
-//This is the directory where this CMakeCahe.txt was created
+//This is the directory where this CMakeCache.txt was created
 CMAKE_CACHEFILE_DIR:INTERNAL=/home/logan/uiuc-lar/boh11demo
 //Major version of cmake used to create the current loaded cache
 CMAKE_CACHE_MAJOR_VERSION:INTERNAL=2
 //Minor version of cmake used to create the current loaded cache
-CMAKE_CACHE_MINOR_VERSION:INTERNAL=6
+CMAKE_CACHE_MINOR_VERSION:INTERNAL=8
+//Patch version of cmake used to create the current loaded cache
+CMAKE_CACHE_PATCH_VERSION:INTERNAL=0
 //Major version of cmake used to create the current loaded cache
 CMAKE_CACHE_RELEASE_VERSION:INTERNAL=patch 4
-//Advanced flag for variable: CMAKE_COLOR_MAKEFILE
+//ADVANCED property for variable: CMAKE_COLOR_MAKEFILE
 CMAKE_COLOR_MAKEFILE-ADVANCED:INTERNAL=1
 //Path to CMake executable.
 CMAKE_COMMAND:INTERNAL=/usr/bin/cmake
@@ -247,31 +252,31 @@ CMAKE_COMMAND:INTERNAL=/usr/bin/cmake
 CMAKE_CPACK_COMMAND:INTERNAL=/usr/bin/cpack
 //Path to ctest program executable.
 CMAKE_CTEST_COMMAND:INTERNAL=/usr/bin/ctest
-//Advanced flag for variable: CMAKE_CXX_COMPILER
+//ADVANCED property for variable: CMAKE_CXX_COMPILER
 CMAKE_CXX_COMPILER-ADVANCED:INTERNAL=1
 CMAKE_CXX_COMPILER_WORKS:INTERNAL=1
-//Advanced flag for variable: CMAKE_CXX_FLAGS
+//ADVANCED property for variable: CMAKE_CXX_FLAGS
 CMAKE_CXX_FLAGS-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_CXX_FLAGS_DEBUG
+//ADVANCED property for variable: CMAKE_CXX_FLAGS_DEBUG
 CMAKE_CXX_FLAGS_DEBUG-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_CXX_FLAGS_MINSIZEREL
+//ADVANCED property for variable: CMAKE_CXX_FLAGS_MINSIZEREL
 CMAKE_CXX_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_CXX_FLAGS_RELEASE
+//ADVANCED property for variable: CMAKE_CXX_FLAGS_RELEASE
 CMAKE_CXX_FLAGS_RELEASE-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_CXX_FLAGS_RELWITHDEBINFO
+//ADVANCED property for variable: CMAKE_CXX_FLAGS_RELWITHDEBINFO
 CMAKE_CXX_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_C_COMPILER
+//ADVANCED property for variable: CMAKE_C_COMPILER
 CMAKE_C_COMPILER-ADVANCED:INTERNAL=1
 CMAKE_C_COMPILER_WORKS:INTERNAL=1
-//Advanced flag for variable: CMAKE_C_FLAGS
+//ADVANCED property for variable: CMAKE_C_FLAGS
 CMAKE_C_FLAGS-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_C_FLAGS_DEBUG
+//ADVANCED property for variable: CMAKE_C_FLAGS_DEBUG
 CMAKE_C_FLAGS_DEBUG-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_C_FLAGS_MINSIZEREL
+//ADVANCED property for variable: CMAKE_C_FLAGS_MINSIZEREL
 CMAKE_C_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_C_FLAGS_RELEASE
+//ADVANCED property for variable: CMAKE_C_FLAGS_RELEASE
 CMAKE_C_FLAGS_RELEASE-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_C_FLAGS_RELWITHDEBINFO
+//ADVANCED property for variable: CMAKE_C_FLAGS_RELWITHDEBINFO
 CMAKE_C_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //Result of TRY_COMPILE
 CMAKE_DETERMINE_CXX_ABI_COMPILED:INTERNAL=TRUE
@@ -281,15 +286,15 @@ CMAKE_DETERMINE_C_ABI_COMPILED:INTERNAL=TRUE
 CMAKE_EDIT_COMMAND:INTERNAL=/usr/bin/ccmake
 //Executable file format
 CMAKE_EXECUTABLE_FORMAT:INTERNAL=ELF
-//Advanced flag for variable: CMAKE_EXE_LINKER_FLAGS
+//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS
 CMAKE_EXE_LINKER_FLAGS-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_EXE_LINKER_FLAGS_DEBUG
+//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_DEBUG
 CMAKE_EXE_LINKER_FLAGS_DEBUG-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_EXE_LINKER_FLAGS_MINSIZEREL
+//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_MINSIZEREL
 CMAKE_EXE_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_EXE_LINKER_FLAGS_RELEASE
+//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_RELEASE
 CMAKE_EXE_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO
+//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO
 CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //Name of generator.
 CMAKE_GENERATOR:INTERNAL=Unix Makefiles
@@ -298,51 +303,51 @@ CMAKE_GENERATOR:INTERNAL=Unix Makefiles
 CMAKE_HOME_DIRECTORY:INTERNAL=/home/logan/uiuc-lar/boh11demo
 //Install .so files without execute permission.
 CMAKE_INSTALL_SO_NO_EXE:INTERNAL=1
-//Advanced flag for variable: CMAKE_LINKER
+//ADVANCED property for variable: CMAKE_LINKER
 CMAKE_LINKER-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_MAKE_PROGRAM
+//ADVANCED property for variable: CMAKE_MAKE_PROGRAM
 CMAKE_MAKE_PROGRAM-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_MODULE_LINKER_FLAGS
+//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS
 CMAKE_MODULE_LINKER_FLAGS-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_MODULE_LINKER_FLAGS_DEBUG
+//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_DEBUG
 CMAKE_MODULE_LINKER_FLAGS_DEBUG-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL
+//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL
 CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_MODULE_LINKER_FLAGS_RELEASE
+//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_RELEASE
 CMAKE_MODULE_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO
+//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO
 CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_NM
+//ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
 CMAKE_NUMBER_OF_LOCAL_GENERATORS:INTERNAL=1
-//Advanced flag for variable: CMAKE_OBJCOPY
+//ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_OBJDUMP
+//ADVANCED property for variable: CMAKE_OBJDUMP
 CMAKE_OBJDUMP-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_RANLIB
+//ADVANCED property for variable: CMAKE_RANLIB
 CMAKE_RANLIB-ADVANCED:INTERNAL=1
 //Path to CMake installation.
-CMAKE_ROOT:INTERNAL=/usr/share/cmake-2.6
-//Advanced flag for variable: CMAKE_SHARED_LINKER_FLAGS
+CMAKE_ROOT:INTERNAL=/usr/share/cmake-2.8
+//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS
 CMAKE_SHARED_LINKER_FLAGS-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_SHARED_LINKER_FLAGS_DEBUG
+//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_DEBUG
 CMAKE_SHARED_LINKER_FLAGS_DEBUG-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL
+//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL
 CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_SHARED_LINKER_FLAGS_RELEASE
+//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_RELEASE
 CMAKE_SHARED_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO
+//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO
 CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_SKIP_RPATH
+//ADVANCED property for variable: CMAKE_SKIP_RPATH
 CMAKE_SKIP_RPATH-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_STRIP
+//ADVANCED property for variable: CMAKE_STRIP
 CMAKE_STRIP-ADVANCED:INTERNAL=1
 //uname command
 CMAKE_UNAME:INTERNAL=/bin/uname
-//Advanced flag for variable: CMAKE_USE_RELATIVE_PATHS
+//ADVANCED property for variable: CMAKE_USE_RELATIVE_PATHS
 CMAKE_USE_RELATIVE_PATHS-ADVANCED:INTERNAL=1
-//Advanced flag for variable: CMAKE_VERBOSE_MAKEFILE
+//ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //List of iCub libraries
 ICUB_LIBRARIES:INTERNAL=iCubVis;iCubDev;logpolar;ctrlLib;iKin;iDyn;actionPrimitives;learningMachine;cartesiancontrollerserver;cartesiancontrollerclient;gazecontrollerclient;logpolarclient;logpolargrabber;static_grabber;skinprototype;icubmod;lib0;lib1;sharksWithLasers

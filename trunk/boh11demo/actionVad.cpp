@@ -42,6 +42,7 @@
 //defines
 #define PI 3.14159
 #define FSIZE 20 		//decimation filter order
+#define TIMEOUT 5.0 	//timeout window on writes
 
 //namespaces
 using namespace iCub::iKin;
@@ -91,17 +92,21 @@ public:
 	StatusChecker(int * active_) : active(active_) {}
 
 	virtual bool read(ConnectionReader& connection) {
+
 		Bottle in, out;
 		bool ok = in.read(connection);
-		if (!ok)
+		if (!ok) {
 			return false;
+		}
 		out.add(*active);
 		ConnectionWriter *returnToSender = connection.getWriter();
 		if (returnToSender!=NULL) {
 			out.write(*returnToSender);
 		}
 		return true;
+
 	}
+
 };
 
 class DataBuffer : public deque<Bottle> {
@@ -244,8 +249,8 @@ public:
 
 	virtual void handleArgs(ResourceFinder &rf) {
 
-		recvPort = rf.check("input",Value("/madIn"),"input port").asString();
-		sendPort = rf.check("output",Value("/madOut"),"output port").asString();
+		recvPort = rf.check("input",Value("/mad:i"),"input port").asString();
+		sendPort = rf.check("output",Value("/mad:o"),"output port").asString();
 		filtOrder = rf.check("order",Value(20),"ad filter order").asInt();
 		filtCutoff = rf.check("cutoff",Value(0.1),"ad filter cutoff").asDouble();
 		adThreshold = rf.check("threshold",Value(0.0001),"activity threshold").asDouble();
@@ -263,6 +268,7 @@ public:
 		inPort = new ADPort(buf, decimate);
 		outPort = new Port;
 		outPort->open(sendPort.c_str());
+		outPort->setTimeout(TIMEOUT);
 
 		//set callback
 		inPort->useCallback();
@@ -296,7 +302,9 @@ public:
 	}
 
 	virtual double getPeriod()    {
+
 		return 0.0;
+
 	}
 
 	virtual bool   updateModule() {

@@ -14,7 +14,6 @@
       <name>vaDetect</name>
       <parameters>--threshold 3</parameters>
 	  <node>nebula</node>
-	<stdio>nebula</stdio>
 	<tag>vad</tag>
    </module>
    <module>
@@ -22,7 +21,6 @@
       <parameters>--from /home/logan/uiuc-lar/boh11demo/phoneclassparams2.ini</parameters>
       <node>nebula</node>
 	<tag>phoneclassifier</tag>
-	<stdio>nebula</stdio>
    </module>
    <module>
       <name>lexiconLearner</name>
@@ -35,13 +33,11 @@
       <name>armFwdKin</name>
       <node>nebula</node>
 	<tag>fwdkinematics</tag>
-	<stdio>nebula</stdio>
    </module>
    <module>
       <name>maDetect</name>
       <parameters>--threshold 0.0001 --decimate 3</parameters>
 	  <node>nebula</node>
-	<stdio>nebula</stdio>
 	<tag>mad</tag>
    </module>
    <module>
@@ -99,13 +95,13 @@
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <from>/vadOut/status</from>
-  <to>/assocMem/act:a</to>
+  <from>/assocMem/act:a</from>
+  <to>/vadOut/status</to>
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <from>/madOut/status</from>
-  <to>/assocMem/act:b</to>
+  <from>/assocMem/act:b</from>
+  <to>/madOut/status</to>
   <protocol>tcp</protocol>
 </connection>
 </application>
