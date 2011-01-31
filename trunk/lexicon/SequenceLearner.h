@@ -28,64 +28,70 @@
 #include "../imatlib/IVecInt.hh"
 #include "../imatlib/IMatVecOps.hh"
 
+//yarp libs
+#include <yarp/os/Bottle.h>
+
 using namespace std;
+using namespace yarp;
+using namespace yarp::os;
 
 class SequenceLearner
 {
 
 public:
+    SequenceLearner(int r_, int b_, int epochs_, double thresh_, double prior_, double eps_)
+    :r(r_), b(b_), epochs(epochs_), lThresh(thresh_), prior(prior_), eps(eps_)
+    {
+        eps_decay = 1.0;
+    }
 
-	//constructor/destructor
-	SequenceLearner(int r_, int b_, int epochs_, double thresh_, double prior_, double eps_)
-	: r(r_), b(b_), epochs(epochs_), lThresh(thresh_), prior(prior_), eps(eps_) {
+    //initialization
+    virtual ~SequenceLearner();
+    virtual void init();
 
-		eps_decay = 1.0;
+    //training
+    virtual int train(int**, int) { return -1; }
+    virtual int train(float**, int) { return -1; }
+    virtual int initialize(float**, int, int) { return -1; }
+    virtual int classify(float**, int) { return -1; }
+    virtual double evaluate(float**, int, int) { return -1.0; }
+    virtual int initialize(int**, int, int) { return -1; }
+    virtual int classify(int**, int) { return -1; }
+    virtual double evaluate(int**, int, int) { return -1.0; }
 
-	}
+    //auxiliary
+    virtual bool getType() { return true; }
+    virtual void printAll();
+    virtual void printToFile();
+    virtual void packA(Bottle& , int);
+    virtual void packObs(Bottle& , int);
 
-	virtual ~SequenceLearner();
+    //getters/setters
+    int getEpochs() const { return epochs; }
+    double getEps() const { return eps; }
+    double getEps_decay() const { return eps_decay; }
+    double getPrior() const  { return prior; }
+    double getThresh() const { return lThresh; }
+    void setEpochs(int epochs) { this->epochs = epochs; }
+    void setEps(double eps) { this->eps = eps; }
+    void setEps_decay(double eps_decay) { this->eps_decay = eps_decay; }
+    void setPrior(double prior) { this->prior = prior; }
+    void setThresh(double lThresh) { this->lThresh = lThresh; }
 
-	virtual void init();
-
-	//training (with classification)
-	virtual int train(int **, int) { return -1; }
-	virtual int train(real **, int) { return -1; }
-
-	//clasification
-	virtual int initialize(real **, int, int) { return -1; }
-	virtual int classify(real **, int) { return -1; }
-	virtual double evaluate(real **, int, int) { return -1.0; }
-	virtual int initialize(int **, int, int) { return -1; }
-	virtual int classify(int **, int) { return -1; }
-	virtual double evaluate(int **, int, int) { return -1.0; }
-
-	//auxiliary
-	virtual bool getType() { return true; }
-	virtual void printAll();
-	virtual void printToFile();
-
-	//public members (so they can be set from outside)
-	int nInitialized;
-	double eps_decay;
-
+    int nInitialized;
+    double eps_decay;
+    int r;
+    int b;
 
 protected:
 
-	//model parameters
-	int r;		//model size
-	int b;		//bank size
-
-	//classifier data structures
-	Allocator * allocator;
-	HMM ** p;
-	IVec ** pi; //initial probs
-
-	//options
-	double lThresh;		//learning parameter
-	int epochs;			//controls movement distance
-	double prior;		//thing
-	double eps;			//learning rate
-
+    Allocator *allocator;
+    HMM **p;
+    IVec **pi;
+    double lThresh;
+    int epochs;
+    double prior;
+    double eps;
 };
 
 #endif

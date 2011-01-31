@@ -54,8 +54,10 @@ public:
 	bool getType() { return true; }	//identifies as continuous
 	void printAll();
 	void printToFile(string);
+	//void packA(Bottle &, int);
+	void packObs(Bottle &, int);
 
-	int nInitialized;
+	//int nInitialized;
 
 
 private:

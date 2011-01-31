@@ -217,9 +217,9 @@ public:
 
    virtual int UpdateGradient();
 
-   virtual int UpdateParms();
+   virtual int UpdateParms(bool obs_update);
 
-   virtual int RMLEUpdate();
+   virtual int RMLEUpdate(bool obs_update = true);
 
    int InitTransProb(IMat *A_,
                      real prior = 0.0, 

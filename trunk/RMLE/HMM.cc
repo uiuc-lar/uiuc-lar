@@ -889,7 +889,7 @@ int HMM::UpdateGradient()
    return 0;
 }
    
-int HMM::UpdateParms()
+int HMM::UpdateParms(bool obs_update)
 {
 // Parameter update of the observation density functions is
 // independent of whatever happens here.
@@ -931,12 +931,14 @@ int HMM::UpdateParms()
       ProbProject(A, prior, 2);
    }
 
-   b->UpdateParms();
+   if (obs_update) {
+	   b->UpdateParms();
+   }
 
    return 0;
 }
    
-int HMM::RMLEUpdate()
+int HMM::RMLEUpdate(bool obs_update)
 {
    if (debug)
    {
@@ -981,7 +983,7 @@ int HMM::RMLEUpdate()
       printf("*******************\n\n");
    }
 
-   UpdateParms();
+   UpdateParms(obs_update);
 
    return 0;
 }
