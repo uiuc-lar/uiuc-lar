@@ -269,8 +269,36 @@ void SequenceLearnerCont::printToFile(string baseName) {
 			fprintf(params,"\n");
 		}
 		fclose(params);
+	}
+}
 
+void SequenceLearnerCont::packObs(Bottle &dst, int n) {
 
+	//pack MU
+	Bottle &mu = dst.addList();
+	for (int j = 0; j < obs_dist[n]->MU->m; j++) {
+		Bottle &tmp = mu.addList();
+		for (int k = 0; k < obs_dist[n]->MU->n; k++) {
+			tmp.add(obs_dist[n]->MU->ptr[j][k]);
+		}
+	}
+
+	//pack U
+	IMat U(r,d*d);
+	IMat Rtmp;
+	IMat Utmp;
+	Bottle &u = dst.addList();
+	for (int l = 0; l < r; l++)
+	{
+		obs_dist[n]->R->getRow(l, 0, d, d, &Rtmp);
+		U.getRow(l, 0, d, d, &Utmp);
+		MatMatMult(&Rtmp, CblasTrans, &Rtmp, CblasNoTrans, &Utmp);
+	}
+	for (int j = 0; j < U.m; j++) {
+		Bottle &tmp = u.addList();
+		for (int k = 0; k < U.n; k++) {
+			tmp.add(U.ptr[j][k]);
+		}
 	}
 
 }

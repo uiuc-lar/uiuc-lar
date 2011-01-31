@@ -1492,7 +1492,7 @@ int IMat::cov(IVec *mu, IMat *Sigma, int dim, IVecInt *ind)
       //                  0.0, Sigma);
       SymMatRankKUpdate(scale,
                         &tmp, CblasTrans,
-                        0.001, Sigma);
+                        0.00001, Sigma);
 
       //COMPLETE HACK FIX THIS
 

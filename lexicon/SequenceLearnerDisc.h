@@ -54,7 +54,10 @@ public:
 	bool getType() { return false; }	//identifies as discrete
 	void printAll();
 	void printToFile(string);
-	int nInitialized;
+	//void packA(Bottle &, int);
+	void packObs(Bottle &, int);
+
+	//int nInitialized;
 
 
 private:

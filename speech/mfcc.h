@@ -21,7 +21,7 @@ class MFCCProcessor  {
 public:
 
 	//constructor/destructor
-	MFCCProcessor(int, int, int, int, double, double, double, bool);
+	MFCCProcessor(int c_, int m_, int n_, int overlap_, double fs_, double fl_, double fh_, bool getZeroth);
 	virtual ~MFCCProcessor();
 
 	//logistics

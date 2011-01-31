@@ -379,7 +379,17 @@ void SequenceLearnerDisc::printToFile(string baseName) {
 			fprintf(params,"\n");
 		}
 		fclose(params);
+	}
+}
 
+void SequenceLearnerDisc::packObs(Bottle &dst, int n) {
+
+	//pack B
+	for (int j = 0; j < obs_dist[n]->b[0]->m; j++) {
+		Bottle &tmp = dst.addList();
+		for (int k = 0; k < obs_dist[n]->b[0]->n; k++) {
+			tmp.add(obs_dist[n]->b[0]->ptr[j][k]);
+		}
 	}
 
 }
