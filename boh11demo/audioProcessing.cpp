@@ -53,6 +53,7 @@
 #define INT_MAX 32767
 #define PFRAMES	10
 #define FECMAX 7
+#define TIMEOUT 5.0 	//timeout window on writes
 
 //namespaces
 using namespace std;
@@ -60,6 +61,7 @@ using namespace yarp;
 using namespace yarp::os;
 using namespace yarp::sig;
 using namespace yarp::math;
+
 
 class StatusChecker : public PortReader {
 
@@ -72,19 +74,22 @@ public:
 	StatusChecker(int * active_) : active(active_) {}
 
 	virtual bool read(ConnectionReader& connection) {
+
 		Bottle in, out;
 		bool ok = in.read(connection);
-		if (!ok)
+		if (!ok) {
 			return false;
+		}
 		out.add(*active);
 		ConnectionWriter *returnToSender = connection.getWriter();
 		if (returnToSender!=NULL) {
 			out.write(*returnToSender);
 		}
 		return true;
-	}
-};
 
+	}
+
+};
 
 class DataBuffer : public deque<double> {
 
@@ -124,13 +129,6 @@ public:
 
 		int blockSize = s.getSamples();
 		Stamp tStamp;
-
-		//apply filter
-
-		/*
-		 * 	for the voice signal, going to assume a reasonable amount of decimation
-		 * 	and that aliasing will not be an issue (has not been on samples so far)
-		 */
 
 		//lock the data buffer for the whole transfer
 		buffer.lock();
@@ -181,6 +179,9 @@ protected:
 	double baseline;			//noise/silence baseline value
 	int	bCounter;				//counts the number of frames for getting the baseline
 
+	//files/logging
+	bool logdata;
+	string logFile;
 	FILE *fp;
 
 public:
@@ -188,8 +189,8 @@ public:
 	virtual void handleArgs(ResourceFinder &rf) {
 
 		//activity detection args
-		recvPort = rf.check("input",Value("/vadIn"),"input port").asString();
-		sendPort = rf.check("output",Value("/vadOut"),"output port").asString();
+		recvPort = rf.check("input",Value("/vad:i"),"input port").asString();
+		sendPort = rf.check("output",Value("/vad:o"),"output port").asString();
 		alpha = rf.check("alpha",Value(0.1),"exp filter coeff").asDouble();
 		adThreshold = rf.check("threshold",Value(0.0001),"activity threshold").asDouble();
 		adJump = rf.check("jump",Value(30),"activity hysteresis").asInt();
@@ -203,6 +204,10 @@ public:
 		sampleRate = rf.check("samplerate",Value(48000),"original sample rate").asDouble();
 		sampleRate = sampleRate/decimate;
 
+		//logging args
+		logdata = rf.check("log");
+		logFile = rf.check("log",Value("soundlog.dat"),"feature logging file").asString();
+
 	}
 
 	virtual bool configure(ResourceFinder &rf)
@@ -214,6 +219,7 @@ public:
 		inPort = new VADPort(buf, decimate);
 		outPort = new Port;
 		outPort->open(sendPort.c_str());
+		outPort->setTimeout(TIMEOUT);
 
 		//set callback
 		inPort->useCallback();
@@ -226,7 +232,6 @@ public:
 		statPort->open(statName.c_str());
 		statPort->setReader(*checker);
 
-
 		//set up mfcc processor
 		M = new MFCCProcessor(d+1, w, frameSize, overlap, sampleRate, 0.0, (double)(sampleRate/2.0), true);
 
@@ -236,7 +241,10 @@ public:
 		bCounter = PFRAMES; 	//use PFRAMES frames to get noise/silence baseline
 		status = 0;
 
-		fp = fopen("/home/logan/workspace/scripts/phonetictest/livefeatures.dat","w");
+		//logging
+		if (logdata) {
+			fp = fopen(logFile.c_str(),"w");
+		}
 
 		return true;
 
@@ -244,7 +252,9 @@ public:
 
 	virtual bool close() {
 
-		fclose(fp);
+		if (logdata) {
+			fclose(fp);
+		}
 
 		inPort->close();
 		outPort->close();
@@ -254,7 +264,9 @@ public:
 	}
 
 	virtual double getPeriod()    {
+
 		return 0.0;
+
 	}
 
 	virtual bool   updateModule() {
@@ -323,10 +335,12 @@ public:
 						Bottle & sample = sequence.addList();
 						sample = activeSig.front();
 						activeSig.pop_front();
-						for (int i = 0; i < sample.size(); i++) {
-							fprintf(fp,"%f,",sample.get(i).asDouble());
+						if (logdata) {
+							for (int i = 0; i < sample.size()-1; i++) {
+								fprintf(fp,"%f,",sample.get(i).asDouble());
+							}
+							fprintf(fp,"%f\n",sample.get(sample.size()).asDouble());
 						}
-						fprintf(fp,"\n");
 					}
 					activeSig.clear();
 					status = 0;
@@ -351,9 +365,13 @@ public:
 
 				}
 			}
+
 			delete mTemp;
+
 		}
+
 		return true;
+
 	}
 
 };

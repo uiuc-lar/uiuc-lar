@@ -23,6 +23,7 @@
  *  outputS		-- state output port name (D, /assocMem/out:s)
  *  outputA		-- generated A output port (D, /assocMem/out:a)
  *  outputB		-- generated B output port (D, /assocMem/out:b)
+ *  rpc			-- rpc port name (O, D /assocMem/rpc)
  *  afile		-- CSV containing A matrix	(O)
  *  bfileA		-- CSV containing modality A observation matrix (O)
  *  bfileB		-- CSV containing modality B observation matrix	(O)
@@ -43,6 +44,7 @@
  *								  These should be timestamped for synch detection. If not,
  *								  behavior is to wait some fixed amount of time for the other modality)
  *	Outputs: /assocMem/out:XXX	(Bottles w/ single int, corresponding to MAP estimates, generated symbols)
+ *	RPCs: 	/assocMem/rpc		(RPC communication port for run-time interaction)
  */
 
 //yarp network
@@ -77,39 +79,8 @@ using namespace yarp::os;
 using namespace yarp::sig;
 using namespace yarp::math;
 
-void dumbCSVReader(const char * fileName, IMat &tM, int length, int width) {
-
-	//load the csv file into the target matrix
-	FILE *fp;
-	int z = length;
-	char line[4096];
-	char * coeff;
-
-	fp = fopen(fileName, "r");
-
-	if (z == 0) { //set length = 0 to find the file size
-		while (!feof(fp)) {
-			fscanf(fp,"%s",line);
-			z++;
-		}
-		rewind(fp);
-		z--;
-	}
-
-	tM.resize(z,width);
-	for (int i = 0; i < z; i++) {
-		fscanf(fp,"%s",line);
-		coeff = strtok(line,",");
-		tM.ptr[i][0] = atof(coeff);
-		for (int j = 1; j < width; j++) {
-			coeff = strtok(NULL,",");
-			tM.ptr[i][j] = atof(coeff);
-		}
-	}
-
-	fclose(fp);
-
-}
+void packMat(Bottle &, IMat *);
+void dumbCSVReader(const char *, IMat &, int, int);
 
 class DataBuffer : public deque<int *> {
 
@@ -201,6 +172,7 @@ protected:
 	string sendPortS;
 	string sendPortA;
 	string sendPortB;
+	string rpcName;
 
 	//ports
 	MemoryPort *aPort;
@@ -210,6 +182,7 @@ protected:
 	Port * outPortS;
 	Port * outPortA;
 	Port * outPortB;
+	Port rpcPort;
 
 	//files
 	string afile;
@@ -261,6 +234,7 @@ public:
 		sendPortS = rf.check("outputS",Value("/assocMem/out:s"),"internal state output port").asString();
 		sendPortA = rf.check("outputA",Value("/assocMem/out:a"),"modality A output port").asString();
 		sendPortB = rf.check("outputB",Value("/assocMem/out:b"),"modality B output port").asString();
+		rpcName = rf.check("rpc",Value("/assocMem/rpc"),"rpc port name").asString();
 
 		//check for saved parameters to be loaded
 		A = NULL;
@@ -271,12 +245,18 @@ public:
 		if (rf.check("afile")) {
 			A = new IMat(r,r);
 			dumbCSVReader(rf.find("afile").asString().c_str(), *A, r, r);
+			printf("A Matrix provided, loading params... \n");
+			A->print(500,10);
 		}
 		if (rf.check("bfileA")) {
 			dumbCSVReader(rf.find("bfileA").asString().c_str(), *BA, d[0], r);
+			printf("B_a Matrix provided, loading params... \n");
+			BA->print(500,10);
 		}
 		if (rf.check("bfileB")) {
 			dumbCSVReader(rf.find("bfileB").asString().c_str(), *BB, d[1], r);
+			printf("B_b Matrix provided, loading params... \n");
+			BB->print(500,10);
 		}
 
 		//get optional parameters
@@ -329,7 +309,91 @@ public:
 		bPort->useCallback();
 		bPort->open(recvPortB.c_str());
 
+		rpcPort.open(rpcName.c_str());
+		attach(rpcPort);
+
 		return true;
+	}
+
+	bool respond(const Bottle& command, Bottle& reply) {
+
+		//handle information requests
+		string msg(command.get(0).asString().c_str());
+
+		//parameter gets
+		if (msg == "get") {
+			if (command.size() < 2) {
+				reply.add(-1);
+			}
+			else {
+
+				string arg(command.get(1).asString().c_str());
+				if (arg == "r") {
+					reply.add(r);
+				}
+				else if (arg == "d") {
+					if (command.size() < 3) {
+						reply.add(-1);
+					} else {
+						reply.add(d[command.get(2).asInt()]);
+					}
+				}
+				else if (arg == "a") {
+					if (command.size() < 3) {
+						reply.add(-1);
+					} else {
+						packMat(reply,p->A);
+					}
+				}
+				else if (arg == "b") {
+					if (command.size() < 3) {
+						reply.add(-1);
+					} else {
+						packMat(reply,obs_dist->b[command.get(2).asInt()]);
+					}
+				}
+				else {
+					reply.add(-1);
+				}
+			}
+		}
+		//allow certain running parameters to be set here
+		else if (msg == "set") {
+
+			if (command.size() < 3) {
+				reply.add(-1);
+			}
+			else {
+				string arg(command.get(1).asString().c_str());
+				if (arg == "epochs") {
+					epochs = command.get(2).asInt();
+				}
+				else if (arg == "prior") {
+					prior = command.get(2).asDouble();
+				}
+				else if (arg == "eps") {
+					eps = command.get(2).asDouble();
+				}
+				else if (arg == "decay") {
+					decay = command.get(2).asDouble();
+				}
+				else {
+					reply.add(-1);
+				}
+			}
+		}
+		else if (msg == "list") {
+			reply.add("epochs");
+			reply.add("prior");
+			reply.add("eps");
+			reply.add("decay");
+		}
+		else {
+			reply.add(-1);
+		}
+
+		return true;
+
 	}
 
 	virtual bool close() {
@@ -356,7 +420,10 @@ public:
 
 		//check if buffer is waiting on either input, or is empty
 		if (obs.needsPair[0] || obs.needsPair[1] || obs.empty()) {
+
+			//if it is, just keep waiting
 			return true;
+
 		} else {
 
 			//if there is a sample for processing, process it
@@ -364,6 +431,8 @@ public:
 			IVecInt V;
 			Bottle c, g;
 			int concept;
+
+			//check if modality B came in alone
 			if (pair[0] == -1) {
 				printf("B_n presented alone...\n");
 				//if modality B is 'alone'
@@ -372,6 +441,8 @@ public:
 				g.add(V(concept));
 				outPortA->write(g);
 			}
+
+			//check if modality A came in alone
 			else if (pair[1] == -1) {
 				printf("A_n presented alone...\n");
 				//if modality A is alone
@@ -380,6 +451,8 @@ public:
 				g.add(V(concept));
 				outPortB->write(g);
 			}
+
+			//check for simultaneous presentation
 			else {
 				printf("Both A and B presented together...\n");
 				//if presented as a pair, do an RMLE step
@@ -388,14 +461,17 @@ public:
 				if (!markov) {
 					p->A->fill((real)1.0/r);
 				}
+
 			}
+
+			//write out the conceptual classification, cleanup
 			c.add(concept);
 			outPortS->write(c);
 			obs.lock();
 			obs.pop_front();
 			obs.unlock();
-		}
 
+		}
 
 		return true;
 
@@ -420,4 +496,47 @@ int main(int argc, char *argv[])
 	return mod.runModule(rf);
 }
 
+void packMat(Bottle &b, IMat * M) {
 
+	for (int i = 0; i < M->m; i++) {
+		Bottle &tmp = b.addList();
+		for (int j = 0; j < M->n; j++) {
+			tmp.add(M->ptr[i][j]);
+		}
+	}
+
+}
+
+void dumbCSVReader(const char * fileName, IMat &tM, int length, int width) {
+
+	//load the csv file into the target matrix
+	FILE *fp;
+	int z = length;
+	char line[4096];
+	char * coeff;
+
+	fp = fopen(fileName, "r");
+
+	if (z == 0) { //set length = 0 to find the file size
+		while (!feof(fp)) {
+			fscanf(fp,"%s",line);
+			z++;
+		}
+		rewind(fp);
+		z--;
+	}
+
+	tM.resize(z,width);
+	for (int i = 0; i < z; i++) {
+		fscanf(fp,"%s",line);
+		coeff = strtok(line,",");
+		tM.ptr[i][0] = atof(coeff);
+		for (int j = 1; j < width; j++) {
+			coeff = strtok(NULL,",");
+			tM.ptr[i][j] = atof(coeff);
+		}
+	}
+
+	fclose(fp);
+
+}
