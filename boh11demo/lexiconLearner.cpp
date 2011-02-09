@@ -27,6 +27,7 @@
 	alpha	--  cov eigenvalue minimum (O)
 	xi		--  cov eigenvalue maximum (O)
 	constrain	--  flag if neither of these get set
+	dt		--  sampling rate, used for scaling derivs in generation (D 0.01)
 
 	[parameters for discrete dists]
 	lr	--  left-to-right model flag (O)
@@ -40,6 +41,7 @@
  * PORTS:
  *	Inputs: /pc/words   	(Bottle of bottles/ints. Corresponding to continuous or discrete sequences)
  *	Outputs: /lex/class		(Bottle of with one int, corresponding to classification of the sequence)
+ *	Outputs: /lex/gen		(Bottle of either ints or more bottles. generated sample from HMM encoding)
  *	RPC: /lex/rpc			(RPC communication port to interact with the running module)
  */
 
@@ -82,19 +84,22 @@ protected:
 	SequenceLearner * S;
 	BufferedPort<Bottle> * inPort;
 	Port *outPort;
+	Port * generated;
 	string recvPort;
 	string sendPort;
+	string genPort;
 
 
 public:
 
 
-	LexiconThread(SequenceLearner *& S_, string recvPort_, string sendPort_)
-	: S(S_), recvPort(recvPort_), sendPort(sendPort_) {
+	LexiconThread(SequenceLearner *& S_, string recvPort_, string sendPort_, string genPort_)
+	: S(S_), recvPort(recvPort_), sendPort(sendPort_), genPort(genPort_) {
 
 		//and the ports
 		inPort = new BufferedPort<Bottle>;
 		outPort = new Port;
+		generated = new Port;
 
 	}
 
@@ -106,6 +111,10 @@ public:
 		//outport
 		outPort->open(sendPort.c_str());
 
+		//set up generator port
+		generated->open(genPort.c_str());
+		generated->setTimeout(5.0);
+
 		return true;
 
 	}
@@ -115,6 +124,38 @@ public:
 		inPort->close();
 		outPort->close();
 		S->printAll();
+
+	}
+
+	Bottle generateOutput(int n, double scale) {
+
+		Bottle gendSequence;
+		Bottle replySeq;
+
+		if (S->getType()) {
+
+			//continuous
+			IMat data;
+			S->generateSequence(data, n, scale);
+			for (int i = 0; i < data.m; i++) {
+				Bottle & samp = gendSequence.addList();
+				for (int j = 0; j < data.n; j++) {
+					samp.add(data(i,j));
+				}
+			}
+			replySeq.copy(gendSequence);
+			generated->write(gendSequence);
+
+		} else {
+
+			//discrete
+			printf("discrete generation not yet implemented\n");
+			replySeq.copy(gendSequence);
+			gendSequence.add(-1);
+
+		}
+
+		return replySeq;
 
 	}
 
@@ -143,7 +184,7 @@ public:
 						Bottle * c = b->get(i).asList();
 						samplesC[i] = new real[c->size()];
 						for (int j = 0; j < c->size(); j++) {
-							samplesC[i][j] = 20*c->get(j).asDouble();
+							samplesC[i][j] = c->get(j).asDouble();
 						}
 					}
 
@@ -231,15 +272,21 @@ protected:
 	double alpha;	//cov eigenvalue minimum (O)
 	double xi;		//cov eigenvalue maximum (O)
 	bool constrain;	//flag if neither of these get set
+	double dt;		//sampling rate, used for scaling derivs
 
-	//parameters for discrete dists
+	//parameters to use a LR model (different behavior for disc. and cont.)
 	bool lr;		//left-to-right model flag (O)
+
+	//logging
+	bool save;
+	string logname;
 
 	/* actual data: ports, objects, etc... */
 	SequenceLearner * S;
 	string recvPort;
 	string sendPort;
 	string rpcName;
+	string genPort;
 	LexiconThread * L;
 	Port rpcPort;
 
@@ -251,6 +298,7 @@ public:
 		//get port names
 		recvPort = rf.check("input",Value("/lex:i"),"input port name").asString();
 		sendPort = rf.check("output",Value("/lex:o"),"output port name").asString();
+		genPort = rf.check("gen",Value("/lex:g"),"generated example port name").asString();
 		rpcName = rf.check("rpc",Value("/lex/rpc"),"rpc port name").asString();
 
 		//get required params
@@ -286,7 +334,8 @@ public:
 
 		//gather some params based on mode
 		if (mode) {
-			//continuous
+			//continuous specific params
+			dt = rf.check("dt",Value(0.01),"dt for calc of derivs").asDouble();
 			Value alphaV = rf.find("alpha");
 			Value xiV = rf.find("xi");
 			if (alphaV.isNull() && xiV.isNull()) {
@@ -297,11 +346,16 @@ public:
 				xi = rf.check("xi",Value(1.0e+300),"cov. upper bound").asDouble();
 			}
 		} else {
-			//discrete
-			lr = rf.check("lefttoright");
+			//discrete specific params
+
 		}
 
 		//general optional parameters
+		lr = rf.check("lefttoright");
+		save = rf.check("save");
+		if (save) {
+			logname = rf.find("save").asString().c_str();
+		}
 		epochs = rf.check("epochs",Value(20),"number of training epochs").asInt();
 		prior = rf.check("prior",Value(0.0001),"min values for parameters").asDouble();
 		eps = rf.check("eps",Value(0.001),"learning rate").asDouble();
@@ -388,6 +442,15 @@ public:
 			reply.add("decay");
 			reply.add("thresh");
 		}
+		else if (msg == "gen") {
+			if (command.size() < 2) {
+				reply.add(-1);
+			} else {
+				int n = command.get(1).asInt();
+				Bottle b = L->generateOutput(n, dt);
+				reply.append(b);
+			}
+		}
 		else {
 			reply.add(-1);
 		}
@@ -408,15 +471,15 @@ public:
 		if (mode) {
 			//continuous
 			if (constrain) {
-				S = new SequenceLearnerCont(r, d, b, epochs, thresh, alpha, xi, prior, eps);
+				S = new SequenceLearnerCont(r, d, b, epochs, thresh, prior, eps, alpha, xi, lr);
 				S->eps_decay = decay;
 			} else {
-				S = new SequenceLearnerCont(r, d, b, epochs, thresh, prior, eps);
+				S = new SequenceLearnerCont(r, d, b, epochs, thresh, prior, eps, lr);
 				S->eps_decay = decay;
 			}
 		} else {
 			//discrete (fixed at one output obs for disc at this time
-			S = new SequenceLearnerDisc(r, &d, 1, b, epochs, thresh, lr, prior, eps);
+			S = new SequenceLearnerDisc(r, &d, 1, b, epochs, thresh, prior, eps, lr);
 			S->eps_decay = decay;
 		}
 
@@ -425,7 +488,7 @@ public:
 		attach(rpcPort);
 
 		//pass everything off to the execution thread
-		L = new LexiconThread(S, recvPort, sendPort);
+		L = new LexiconThread(S, recvPort, sendPort, genPort);
 
 		return L->start();
 
@@ -433,6 +496,9 @@ public:
 
 	virtual bool close() {
 
+		if (save) {
+			S->printToFile(logname);
+		}
 		L->stop();
 		delete L;
 		delete S;

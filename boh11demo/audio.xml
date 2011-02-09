@@ -18,14 +18,14 @@
    </module>
    <module>
       <name>phoneticClassifier</name>
-      <parameters>--from /home/logan/uiuc-lar/voiceStream/phoneclassparams2.ini</parameters>
+      <parameters>--from /home/logan/uiuc-lar/boh11demo/conf/phoneclassparams2.ini</parameters>
       <node>nebula</node>
 	<tag>phoneclassifier</tag>
 	<stdio>nebula</stdio>
    </module>
    <module>
       <name>lexiconLearner</name>
-      <parameters>--from /home/logan/uiuc-lar/voiceStream/speechclass.ini</parameters>
+      <parameters>--from /home/logan/uiuc-lar/boh11demo/conf/speechclass.ini</parameters>
       <node>nebula</node>
 	<tag>wordlearner</tag>
 	<stdio>nebula</stdio>

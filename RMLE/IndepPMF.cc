@@ -62,9 +62,6 @@ static char *IndepPMF_CC_Id = "$Id: IndepPMF.cc,v 1.1 2005/05/09 20:52:57 mrmccl
 #include <torch/general.h>
 #include <torch/Object.h>
 
-#include <imatlib/IMat.hh>
-#include <imatlib/IVec.hh>
-
 #include "IndepPMF.hh"
 #include "N.hh"
 #include "gen_defines.h"

@@ -15,7 +15,6 @@
 #include <math.h>
 #include <time.h>
 #include <stdio.h>
-#include <sndfile.h>
 #include <vector>
 #include <string>
 
@@ -39,6 +38,7 @@ class SequenceLearner
 {
 
 public:
+
     SequenceLearner(int r_, int b_, int epochs_, double thresh_, double prior_, double eps_)
     :r(r_), b(b_), epochs(epochs_), lThresh(thresh_), prior(prior_), eps(eps_)
     {
@@ -62,9 +62,11 @@ public:
     //auxiliary
     virtual bool getType() { return true; }
     virtual void printAll();
-    virtual void printToFile();
+    virtual void printToFile(string);
     virtual void packA(Bottle& , int);
     virtual void packObs(Bottle& , int);
+    virtual bool generateSequence(IMat &data, int n, double dscale = 1.0);
+    virtual bool generateSequence(IVecInt &data, int initPos, int length, int n);
 
     //getters/setters
     int getEpochs() const { return epochs; }

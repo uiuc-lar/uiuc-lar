@@ -39,10 +39,10 @@ RM = /usr/bin/cmake -E remove -f
 CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/logan/uiuc-lar/boh11demo
+CMAKE_SOURCE_DIR = /home/logan/uiuc-lar
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/logan/uiuc-lar/boh11demo
+CMAKE_BINARY_DIR = /home/logan/uiuc-lar
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -57,6 +57,47 @@ edit_cache:
 edit_cache/fast: edit_cache
 .PHONY : edit_cache/fast
 
+# Special rule for the target install
+install: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
+	/usr/bin/cmake -P cmake_install.cmake
+.PHONY : install
+
+# Special rule for the target install
+install/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
+	/usr/bin/cmake -P cmake_install.cmake
+.PHONY : install/fast
+
+# Special rule for the target install/local
+install/local: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local
+
+# Special rule for the target install/local
+install/local/fast: install/local
+.PHONY : install/local/fast
+
+# Special rule for the target install/strip
+install/strip: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip
+
+# Special rule for the target install/strip
+install/strip/fast: install/strip
+.PHONY : install/strip/fast
+
+# Special rule for the target list_install_components
+list_install_components:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Available install components are: \"Unspecified\""
+.PHONY : list_install_components
+
+# Special rule for the target list_install_components
+list_install_components/fast: list_install_components
+.PHONY : list_install_components/fast
+
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
@@ -69,14 +110,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/logan/uiuc-lar/boh11demo/CMakeFiles /home/logan/uiuc-lar/boh11demo/CMakeFiles/progress.marks
-	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/logan/uiuc-lar/boh11demo/CMakeFiles 0
+	cd /home/logan/uiuc-lar && $(CMAKE_COMMAND) -E cmake_progress_start /home/logan/uiuc-lar/CMakeFiles /home/logan/uiuc-lar/boh11demo/CMakeFiles/progress.marks
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/logan/uiuc-lar/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	$(MAKE) -f CMakeFiles/Makefile2 clean
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/clean
 .PHONY : clean
 
 # The main clean target
@@ -85,134 +126,143 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	$(MAKE) -f CMakeFiles/Makefile2 preinstall
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	$(MAKE) -f CMakeFiles/Makefile2 preinstall
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	$(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/logan/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
-#=============================================================================
-# Target rules for targets named activityChecker
+# Convenience name for target.
+boh11demo/CMakeFiles/activityChecker.dir/rule:
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/CMakeFiles/activityChecker.dir/rule
+.PHONY : boh11demo/CMakeFiles/activityChecker.dir/rule
 
-# Build rule for target.
-activityChecker: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 activityChecker
+# Convenience name for target.
+activityChecker: boh11demo/CMakeFiles/activityChecker.dir/rule
 .PHONY : activityChecker
 
 # fast build rule for target.
 activityChecker/fast:
-	$(MAKE) -f CMakeFiles/activityChecker.dir/build.make CMakeFiles/activityChecker.dir/build
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/activityChecker.dir/build.make boh11demo/CMakeFiles/activityChecker.dir/build
 .PHONY : activityChecker/fast
 
-#=============================================================================
-# Target rules for targets named armFwdKin
+# Convenience name for target.
+boh11demo/CMakeFiles/armFwdKin.dir/rule:
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/CMakeFiles/armFwdKin.dir/rule
+.PHONY : boh11demo/CMakeFiles/armFwdKin.dir/rule
 
-# Build rule for target.
-armFwdKin: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 armFwdKin
+# Convenience name for target.
+armFwdKin: boh11demo/CMakeFiles/armFwdKin.dir/rule
 .PHONY : armFwdKin
 
 # fast build rule for target.
 armFwdKin/fast:
-	$(MAKE) -f CMakeFiles/armFwdKin.dir/build.make CMakeFiles/armFwdKin.dir/build
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/armFwdKin.dir/build.make boh11demo/CMakeFiles/armFwdKin.dir/build
 .PHONY : armFwdKin/fast
 
-#=============================================================================
-# Target rules for targets named associativeMemory
+# Convenience name for target.
+boh11demo/CMakeFiles/associativeMemory.dir/rule:
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/CMakeFiles/associativeMemory.dir/rule
+.PHONY : boh11demo/CMakeFiles/associativeMemory.dir/rule
 
-# Build rule for target.
-associativeMemory: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 associativeMemory
+# Convenience name for target.
+associativeMemory: boh11demo/CMakeFiles/associativeMemory.dir/rule
 .PHONY : associativeMemory
 
 # fast build rule for target.
 associativeMemory/fast:
-	$(MAKE) -f CMakeFiles/associativeMemory.dir/build.make CMakeFiles/associativeMemory.dir/build
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/associativeMemory.dir/build.make boh11demo/CMakeFiles/associativeMemory.dir/build
 .PHONY : associativeMemory/fast
 
-#=============================================================================
-# Target rules for targets named hmmgenerator
+# Convenience name for target.
+boh11demo/CMakeFiles/hmmgenerator.dir/rule:
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/CMakeFiles/hmmgenerator.dir/rule
+.PHONY : boh11demo/CMakeFiles/hmmgenerator.dir/rule
 
-# Build rule for target.
-hmmgenerator: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 hmmgenerator
+# Convenience name for target.
+hmmgenerator: boh11demo/CMakeFiles/hmmgenerator.dir/rule
 .PHONY : hmmgenerator
 
 # fast build rule for target.
 hmmgenerator/fast:
-	$(MAKE) -f CMakeFiles/hmmgenerator.dir/build.make CMakeFiles/hmmgenerator.dir/build
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/hmmgenerator.dir/build.make boh11demo/CMakeFiles/hmmgenerator.dir/build
 .PHONY : hmmgenerator/fast
 
-#=============================================================================
-# Target rules for targets named lexiconLearner
+# Convenience name for target.
+boh11demo/CMakeFiles/lexiconLearner.dir/rule:
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/CMakeFiles/lexiconLearner.dir/rule
+.PHONY : boh11demo/CMakeFiles/lexiconLearner.dir/rule
 
-# Build rule for target.
-lexiconLearner: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 lexiconLearner
+# Convenience name for target.
+lexiconLearner: boh11demo/CMakeFiles/lexiconLearner.dir/rule
 .PHONY : lexiconLearner
 
 # fast build rule for target.
 lexiconLearner/fast:
-	$(MAKE) -f CMakeFiles/lexiconLearner.dir/build.make CMakeFiles/lexiconLearner.dir/build
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/lexiconLearner.dir/build.make boh11demo/CMakeFiles/lexiconLearner.dir/build
 .PHONY : lexiconLearner/fast
 
-#=============================================================================
-# Target rules for targets named maDetect
+# Convenience name for target.
+boh11demo/CMakeFiles/maDetect.dir/rule:
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/CMakeFiles/maDetect.dir/rule
+.PHONY : boh11demo/CMakeFiles/maDetect.dir/rule
 
-# Build rule for target.
-maDetect: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 maDetect
+# Convenience name for target.
+maDetect: boh11demo/CMakeFiles/maDetect.dir/rule
 .PHONY : maDetect
 
 # fast build rule for target.
 maDetect/fast:
-	$(MAKE) -f CMakeFiles/maDetect.dir/build.make CMakeFiles/maDetect.dir/build
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/maDetect.dir/build.make boh11demo/CMakeFiles/maDetect.dir/build
 .PHONY : maDetect/fast
 
-#=============================================================================
-# Target rules for targets named phoneticClassifier
+# Convenience name for target.
+boh11demo/CMakeFiles/phoneticClassifier.dir/rule:
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/CMakeFiles/phoneticClassifier.dir/rule
+.PHONY : boh11demo/CMakeFiles/phoneticClassifier.dir/rule
 
-# Build rule for target.
-phoneticClassifier: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 phoneticClassifier
+# Convenience name for target.
+phoneticClassifier: boh11demo/CMakeFiles/phoneticClassifier.dir/rule
 .PHONY : phoneticClassifier
 
 # fast build rule for target.
 phoneticClassifier/fast:
-	$(MAKE) -f CMakeFiles/phoneticClassifier.dir/build.make CMakeFiles/phoneticClassifier.dir/build
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/phoneticClassifier.dir/build.make boh11demo/CMakeFiles/phoneticClassifier.dir/build
 .PHONY : phoneticClassifier/fast
 
-#=============================================================================
-# Target rules for targets named robotMicFix
+# Convenience name for target.
+boh11demo/CMakeFiles/robotMicFix.dir/rule:
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/CMakeFiles/robotMicFix.dir/rule
+.PHONY : boh11demo/CMakeFiles/robotMicFix.dir/rule
 
-# Build rule for target.
-robotMicFix: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 robotMicFix
+# Convenience name for target.
+robotMicFix: boh11demo/CMakeFiles/robotMicFix.dir/rule
 .PHONY : robotMicFix
 
 # fast build rule for target.
 robotMicFix/fast:
-	$(MAKE) -f CMakeFiles/robotMicFix.dir/build.make CMakeFiles/robotMicFix.dir/build
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/robotMicFix.dir/build.make boh11demo/CMakeFiles/robotMicFix.dir/build
 .PHONY : robotMicFix/fast
 
-#=============================================================================
-# Target rules for targets named vaDetect
+# Convenience name for target.
+boh11demo/CMakeFiles/vaDetect.dir/rule:
+	cd /home/logan/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 boh11demo/CMakeFiles/vaDetect.dir/rule
+.PHONY : boh11demo/CMakeFiles/vaDetect.dir/rule
 
-# Build rule for target.
-vaDetect: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 vaDetect
+# Convenience name for target.
+vaDetect: boh11demo/CMakeFiles/vaDetect.dir/rule
 .PHONY : vaDetect
 
 # fast build rule for target.
 vaDetect/fast:
-	$(MAKE) -f CMakeFiles/vaDetect.dir/build.make CMakeFiles/vaDetect.dir/build
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/vaDetect.dir/build.make boh11demo/CMakeFiles/vaDetect.dir/build
 .PHONY : vaDetect/fast
 
 actchecker.o: actchecker.cpp.o
@@ -220,7 +270,7 @@ actchecker.o: actchecker.cpp.o
 
 # target to build an object file
 actchecker.cpp.o:
-	$(MAKE) -f CMakeFiles/activityChecker.dir/build.make CMakeFiles/activityChecker.dir/actchecker.cpp.o
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/activityChecker.dir/build.make boh11demo/CMakeFiles/activityChecker.dir/actchecker.cpp.o
 .PHONY : actchecker.cpp.o
 
 actchecker.i: actchecker.cpp.i
@@ -228,7 +278,7 @@ actchecker.i: actchecker.cpp.i
 
 # target to preprocess a source file
 actchecker.cpp.i:
-	$(MAKE) -f CMakeFiles/activityChecker.dir/build.make CMakeFiles/activityChecker.dir/actchecker.cpp.i
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/activityChecker.dir/build.make boh11demo/CMakeFiles/activityChecker.dir/actchecker.cpp.i
 .PHONY : actchecker.cpp.i
 
 actchecker.s: actchecker.cpp.s
@@ -236,7 +286,7 @@ actchecker.s: actchecker.cpp.s
 
 # target to generate assembly for a file
 actchecker.cpp.s:
-	$(MAKE) -f CMakeFiles/activityChecker.dir/build.make CMakeFiles/activityChecker.dir/actchecker.cpp.s
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/activityChecker.dir/build.make boh11demo/CMakeFiles/activityChecker.dir/actchecker.cpp.s
 .PHONY : actchecker.cpp.s
 
 actionVad.o: actionVad.cpp.o
@@ -244,7 +294,7 @@ actionVad.o: actionVad.cpp.o
 
 # target to build an object file
 actionVad.cpp.o:
-	$(MAKE) -f CMakeFiles/maDetect.dir/build.make CMakeFiles/maDetect.dir/actionVad.cpp.o
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/maDetect.dir/build.make boh11demo/CMakeFiles/maDetect.dir/actionVad.cpp.o
 .PHONY : actionVad.cpp.o
 
 actionVad.i: actionVad.cpp.i
@@ -252,7 +302,7 @@ actionVad.i: actionVad.cpp.i
 
 # target to preprocess a source file
 actionVad.cpp.i:
-	$(MAKE) -f CMakeFiles/maDetect.dir/build.make CMakeFiles/maDetect.dir/actionVad.cpp.i
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/maDetect.dir/build.make boh11demo/CMakeFiles/maDetect.dir/actionVad.cpp.i
 .PHONY : actionVad.cpp.i
 
 actionVad.s: actionVad.cpp.s
@@ -260,7 +310,7 @@ actionVad.s: actionVad.cpp.s
 
 # target to generate assembly for a file
 actionVad.cpp.s:
-	$(MAKE) -f CMakeFiles/maDetect.dir/build.make CMakeFiles/maDetect.dir/actionVad.cpp.s
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/maDetect.dir/build.make boh11demo/CMakeFiles/maDetect.dir/actionVad.cpp.s
 .PHONY : actionVad.cpp.s
 
 associativeMemory.o: associativeMemory.cpp.o
@@ -268,7 +318,7 @@ associativeMemory.o: associativeMemory.cpp.o
 
 # target to build an object file
 associativeMemory.cpp.o:
-	$(MAKE) -f CMakeFiles/associativeMemory.dir/build.make CMakeFiles/associativeMemory.dir/associativeMemory.cpp.o
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/associativeMemory.dir/build.make boh11demo/CMakeFiles/associativeMemory.dir/associativeMemory.cpp.o
 .PHONY : associativeMemory.cpp.o
 
 associativeMemory.i: associativeMemory.cpp.i
@@ -276,7 +326,7 @@ associativeMemory.i: associativeMemory.cpp.i
 
 # target to preprocess a source file
 associativeMemory.cpp.i:
-	$(MAKE) -f CMakeFiles/associativeMemory.dir/build.make CMakeFiles/associativeMemory.dir/associativeMemory.cpp.i
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/associativeMemory.dir/build.make boh11demo/CMakeFiles/associativeMemory.dir/associativeMemory.cpp.i
 .PHONY : associativeMemory.cpp.i
 
 associativeMemory.s: associativeMemory.cpp.s
@@ -284,7 +334,7 @@ associativeMemory.s: associativeMemory.cpp.s
 
 # target to generate assembly for a file
 associativeMemory.cpp.s:
-	$(MAKE) -f CMakeFiles/associativeMemory.dir/build.make CMakeFiles/associativeMemory.dir/associativeMemory.cpp.s
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/associativeMemory.dir/build.make boh11demo/CMakeFiles/associativeMemory.dir/associativeMemory.cpp.s
 .PHONY : associativeMemory.cpp.s
 
 audioProcessing.o: audioProcessing.cpp.o
@@ -292,7 +342,7 @@ audioProcessing.o: audioProcessing.cpp.o
 
 # target to build an object file
 audioProcessing.cpp.o:
-	$(MAKE) -f CMakeFiles/vaDetect.dir/build.make CMakeFiles/vaDetect.dir/audioProcessing.cpp.o
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/vaDetect.dir/build.make boh11demo/CMakeFiles/vaDetect.dir/audioProcessing.cpp.o
 .PHONY : audioProcessing.cpp.o
 
 audioProcessing.i: audioProcessing.cpp.i
@@ -300,7 +350,7 @@ audioProcessing.i: audioProcessing.cpp.i
 
 # target to preprocess a source file
 audioProcessing.cpp.i:
-	$(MAKE) -f CMakeFiles/vaDetect.dir/build.make CMakeFiles/vaDetect.dir/audioProcessing.cpp.i
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/vaDetect.dir/build.make boh11demo/CMakeFiles/vaDetect.dir/audioProcessing.cpp.i
 .PHONY : audioProcessing.cpp.i
 
 audioProcessing.s: audioProcessing.cpp.s
@@ -308,7 +358,7 @@ audioProcessing.s: audioProcessing.cpp.s
 
 # target to generate assembly for a file
 audioProcessing.cpp.s:
-	$(MAKE) -f CMakeFiles/vaDetect.dir/build.make CMakeFiles/vaDetect.dir/audioProcessing.cpp.s
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/vaDetect.dir/build.make boh11demo/CMakeFiles/vaDetect.dir/audioProcessing.cpp.s
 .PHONY : audioProcessing.cpp.s
 
 fwdConverter.o: fwdConverter.cpp.o
@@ -316,7 +366,7 @@ fwdConverter.o: fwdConverter.cpp.o
 
 # target to build an object file
 fwdConverter.cpp.o:
-	$(MAKE) -f CMakeFiles/armFwdKin.dir/build.make CMakeFiles/armFwdKin.dir/fwdConverter.cpp.o
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/armFwdKin.dir/build.make boh11demo/CMakeFiles/armFwdKin.dir/fwdConverter.cpp.o
 .PHONY : fwdConverter.cpp.o
 
 fwdConverter.i: fwdConverter.cpp.i
@@ -324,7 +374,7 @@ fwdConverter.i: fwdConverter.cpp.i
 
 # target to preprocess a source file
 fwdConverter.cpp.i:
-	$(MAKE) -f CMakeFiles/armFwdKin.dir/build.make CMakeFiles/armFwdKin.dir/fwdConverter.cpp.i
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/armFwdKin.dir/build.make boh11demo/CMakeFiles/armFwdKin.dir/fwdConverter.cpp.i
 .PHONY : fwdConverter.cpp.i
 
 fwdConverter.s: fwdConverter.cpp.s
@@ -332,7 +382,7 @@ fwdConverter.s: fwdConverter.cpp.s
 
 # target to generate assembly for a file
 fwdConverter.cpp.s:
-	$(MAKE) -f CMakeFiles/armFwdKin.dir/build.make CMakeFiles/armFwdKin.dir/fwdConverter.cpp.s
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/armFwdKin.dir/build.make boh11demo/CMakeFiles/armFwdKin.dir/fwdConverter.cpp.s
 .PHONY : fwdConverter.cpp.s
 
 hmmgenerator.o: hmmgenerator.cpp.o
@@ -340,7 +390,7 @@ hmmgenerator.o: hmmgenerator.cpp.o
 
 # target to build an object file
 hmmgenerator.cpp.o:
-	$(MAKE) -f CMakeFiles/hmmgenerator.dir/build.make CMakeFiles/hmmgenerator.dir/hmmgenerator.cpp.o
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/hmmgenerator.dir/build.make boh11demo/CMakeFiles/hmmgenerator.dir/hmmgenerator.cpp.o
 .PHONY : hmmgenerator.cpp.o
 
 hmmgenerator.i: hmmgenerator.cpp.i
@@ -348,7 +398,7 @@ hmmgenerator.i: hmmgenerator.cpp.i
 
 # target to preprocess a source file
 hmmgenerator.cpp.i:
-	$(MAKE) -f CMakeFiles/hmmgenerator.dir/build.make CMakeFiles/hmmgenerator.dir/hmmgenerator.cpp.i
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/hmmgenerator.dir/build.make boh11demo/CMakeFiles/hmmgenerator.dir/hmmgenerator.cpp.i
 .PHONY : hmmgenerator.cpp.i
 
 hmmgenerator.s: hmmgenerator.cpp.s
@@ -356,7 +406,7 @@ hmmgenerator.s: hmmgenerator.cpp.s
 
 # target to generate assembly for a file
 hmmgenerator.cpp.s:
-	$(MAKE) -f CMakeFiles/hmmgenerator.dir/build.make CMakeFiles/hmmgenerator.dir/hmmgenerator.cpp.s
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/hmmgenerator.dir/build.make boh11demo/CMakeFiles/hmmgenerator.dir/hmmgenerator.cpp.s
 .PHONY : hmmgenerator.cpp.s
 
 lexiconLearner.o: lexiconLearner.cpp.o
@@ -364,7 +414,7 @@ lexiconLearner.o: lexiconLearner.cpp.o
 
 # target to build an object file
 lexiconLearner.cpp.o:
-	$(MAKE) -f CMakeFiles/lexiconLearner.dir/build.make CMakeFiles/lexiconLearner.dir/lexiconLearner.cpp.o
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/lexiconLearner.dir/build.make boh11demo/CMakeFiles/lexiconLearner.dir/lexiconLearner.cpp.o
 .PHONY : lexiconLearner.cpp.o
 
 lexiconLearner.i: lexiconLearner.cpp.i
@@ -372,7 +422,7 @@ lexiconLearner.i: lexiconLearner.cpp.i
 
 # target to preprocess a source file
 lexiconLearner.cpp.i:
-	$(MAKE) -f CMakeFiles/lexiconLearner.dir/build.make CMakeFiles/lexiconLearner.dir/lexiconLearner.cpp.i
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/lexiconLearner.dir/build.make boh11demo/CMakeFiles/lexiconLearner.dir/lexiconLearner.cpp.i
 .PHONY : lexiconLearner.cpp.i
 
 lexiconLearner.s: lexiconLearner.cpp.s
@@ -380,7 +430,7 @@ lexiconLearner.s: lexiconLearner.cpp.s
 
 # target to generate assembly for a file
 lexiconLearner.cpp.s:
-	$(MAKE) -f CMakeFiles/lexiconLearner.dir/build.make CMakeFiles/lexiconLearner.dir/lexiconLearner.cpp.s
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/lexiconLearner.dir/build.make boh11demo/CMakeFiles/lexiconLearner.dir/lexiconLearner.cpp.s
 .PHONY : lexiconLearner.cpp.s
 
 phoneClassifier.o: phoneClassifier.cpp.o
@@ -388,7 +438,7 @@ phoneClassifier.o: phoneClassifier.cpp.o
 
 # target to build an object file
 phoneClassifier.cpp.o:
-	$(MAKE) -f CMakeFiles/phoneticClassifier.dir/build.make CMakeFiles/phoneticClassifier.dir/phoneClassifier.cpp.o
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/phoneticClassifier.dir/build.make boh11demo/CMakeFiles/phoneticClassifier.dir/phoneClassifier.cpp.o
 .PHONY : phoneClassifier.cpp.o
 
 phoneClassifier.i: phoneClassifier.cpp.i
@@ -396,7 +446,7 @@ phoneClassifier.i: phoneClassifier.cpp.i
 
 # target to preprocess a source file
 phoneClassifier.cpp.i:
-	$(MAKE) -f CMakeFiles/phoneticClassifier.dir/build.make CMakeFiles/phoneticClassifier.dir/phoneClassifier.cpp.i
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/phoneticClassifier.dir/build.make boh11demo/CMakeFiles/phoneticClassifier.dir/phoneClassifier.cpp.i
 .PHONY : phoneClassifier.cpp.i
 
 phoneClassifier.s: phoneClassifier.cpp.s
@@ -404,7 +454,7 @@ phoneClassifier.s: phoneClassifier.cpp.s
 
 # target to generate assembly for a file
 phoneClassifier.cpp.s:
-	$(MAKE) -f CMakeFiles/phoneticClassifier.dir/build.make CMakeFiles/phoneticClassifier.dir/phoneClassifier.cpp.s
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/phoneticClassifier.dir/build.make boh11demo/CMakeFiles/phoneticClassifier.dir/phoneClassifier.cpp.s
 .PHONY : phoneClassifier.cpp.s
 
 robotMicConditioning.o: robotMicConditioning.cpp.o
@@ -412,7 +462,7 @@ robotMicConditioning.o: robotMicConditioning.cpp.o
 
 # target to build an object file
 robotMicConditioning.cpp.o:
-	$(MAKE) -f CMakeFiles/robotMicFix.dir/build.make CMakeFiles/robotMicFix.dir/robotMicConditioning.cpp.o
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/robotMicFix.dir/build.make boh11demo/CMakeFiles/robotMicFix.dir/robotMicConditioning.cpp.o
 .PHONY : robotMicConditioning.cpp.o
 
 robotMicConditioning.i: robotMicConditioning.cpp.i
@@ -420,7 +470,7 @@ robotMicConditioning.i: robotMicConditioning.cpp.i
 
 # target to preprocess a source file
 robotMicConditioning.cpp.i:
-	$(MAKE) -f CMakeFiles/robotMicFix.dir/build.make CMakeFiles/robotMicFix.dir/robotMicConditioning.cpp.i
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/robotMicFix.dir/build.make boh11demo/CMakeFiles/robotMicFix.dir/robotMicConditioning.cpp.i
 .PHONY : robotMicConditioning.cpp.i
 
 robotMicConditioning.s: robotMicConditioning.cpp.s
@@ -428,7 +478,7 @@ robotMicConditioning.s: robotMicConditioning.cpp.s
 
 # target to generate assembly for a file
 robotMicConditioning.cpp.s:
-	$(MAKE) -f CMakeFiles/robotMicFix.dir/build.make CMakeFiles/robotMicFix.dir/robotMicConditioning.cpp.s
+	cd /home/logan/uiuc-lar && $(MAKE) -f boh11demo/CMakeFiles/robotMicFix.dir/build.make boh11demo/CMakeFiles/robotMicFix.dir/robotMicConditioning.cpp.s
 .PHONY : robotMicConditioning.cpp.s
 
 # Help Target
@@ -442,7 +492,11 @@ help:
 	@echo "... associativeMemory"
 	@echo "... edit_cache"
 	@echo "... hmmgenerator"
+	@echo "... install"
+	@echo "... install/local"
+	@echo "... install/strip"
 	@echo "... lexiconLearner"
+	@echo "... list_install_components"
 	@echo "... maDetect"
 	@echo "... phoneticClassifier"
 	@echo "... rebuild_cache"
@@ -486,6 +540,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	$(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/logan/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

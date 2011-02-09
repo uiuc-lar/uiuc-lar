@@ -1,0 +1,43 @@
+<application>
+<name>Action (only) learning system</name>
+<dependencies>
+      <port>/root</port>
+      <port>/icubSim/right_arm/state:o</port>
+</dependencies>
+   <module>
+      <name>armFwdKin</name>
+      <node>nebula</node>
+	<tag>fwdkinematics</tag>
+	<stdio>nebula</stdio>
+   </module>
+   <module>
+      <name>maDetect</name>
+      <parameters>--threshold 0.0001 --decimate 3</parameters>
+	  <node>nebula</node>
+	<stdio>nebula</stdio>
+	<tag>mad</tag>
+   </module>
+   <module>
+      <name>lexiconLearner</name>
+      <parameters>--from /home/logan/uiuc-lar/boh11demo/conf/actionclass.ini</parameters>
+      <node>nebula</node>
+	<tag>actionlearner</tag>
+	<stdio>nebula</stdio>
+   </module>
+<connection>
+  <from>/icubSim/right_arm/state:o</from>
+  <to>/jointsIn</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/cartesianOut</from>
+  <to>/mad:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/mad:o</from>
+  <to>/actions:i</to>
+  <protocol>tcp</protocol>
+</connection>
+</application>
+
