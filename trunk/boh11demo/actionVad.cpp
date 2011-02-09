@@ -13,11 +13,12 @@
  *	order		-- order of vad signal filter
  *	cutoff		-- cutoff frequency of the vad filter (given as [0,1] of nyquist)
  *  threshold	-- activity threshold
- *
+ *	dt 			-- sample period for data, before decimation. real fs is 1/(decimate*dt) (default 0.01s)
  *
  * PORTS:
  *	Inputs: /kin/cartesian   	(Bottle of x,y,z and euler angles XYZ)
- *	Outputs: /vad/actions		(Bottle containing sequence of bottles, each w/ t,x,y,z. timestamp included)
+ *	Outputs: /vad/actions		(Bottle containing sequence of bottles, each w/ x,y,z, euler angles, and
+ *									derivatives of x,y,z. derivatives are differences scaled by 1/(decimate*dt))
  *
  */
 
@@ -161,7 +162,6 @@ public:
 
 		Vector sums(b.size());
 		Bottle item;
-		Stamp tStamp;
 		int m = rSamp->size();
 
 		if (counter == N) {
@@ -174,10 +174,6 @@ public:
 				}
 				item.add(sums[j]);
 			}
-
-			//add the timestamp
-			BufferedPort<Bottle>::getEnvelope(tStamp);
-			item.add(tStamp.getTime());
 
 			//push this onto the shared deque
 			buffer.lock();
@@ -232,6 +228,7 @@ protected:
 	double adThreshold;
 	int adJump;
 	int decimate;
+	double dt;
 
 	//data
 	DataBuffer buf;			//main data buffer
@@ -256,6 +253,7 @@ public:
 		adThreshold = rf.check("threshold",Value(0.0001),"activity threshold").asDouble();
 		adJump = rf.check("jump",Value(50),"activity hysteresis").asInt();
 		decimate = rf.check("decimate",Value(2),"signal decimation").asInt();
+		dt = rf.check("dt",Value(0.01),"expected joint data sample rate").asDouble();
 
 	}
 
@@ -358,23 +356,38 @@ public:
 						}
 
 						//put the good ones in a bottle
+						printf("sequence of size %d detected:\n",activeSig.size());
 						Bottle sequence;
-						double initTime = activeSig.front().get(6).asDouble();
-						double endTime = activeSig.back().get(6).asDouble();
 						while (activeSig.size() > 0) {
+
 							Bottle & sample = sequence.addList();
 							sample = activeSig.front();
-							double t = sample.pop().asDouble()-initTime;
-							sample.add(t);
+
+							sample.add(sample.get(3));
+							sample.add(sample.get(4));
+							sample.add(sample.get(5));
+
+							//calculate derivatives with dx[n] = (x[n]-x[n-1])/dt
+							Bottle * previous;
+							for (int i = 0; i < 3; i++) {
+								Value & element = sample.get(i+3);
+								if (sequence.size() > 1) {
+									previous = sequence.get(sequence.size()-2).asList();
+									element = (sample.get(i).asDouble()-previous->get(i).asDouble())/(dt*decimate);
+								} else {
+									//use zero derivative for first sample
+									element = Value(0.0);
+								}
+							}
+
+							printf("%s\n",sample.toString().c_str());
 							activeSig.pop_front();
+
 						}
 
-						//put a front/back timestamps on it for synchrony detection
-						Bottle tStamp;
-						tStamp.addDouble(initTime);
-						tStamp.addDouble(endTime);
-						outPort->setEnvelope(tStamp);
+						//send
 						outPort->write(sequence);
+
 					}
 					status = 0;
 				}

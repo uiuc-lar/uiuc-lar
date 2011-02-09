@@ -16,7 +16,6 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sndfile.h>
 #include <vector>
 #include <string>
 #include <algorithm>
@@ -38,7 +37,7 @@ class SequenceLearnerDisc : public SequenceLearner
 public:
 
 	//constructor/destructor
-	SequenceLearnerDisc(int, int*, int, int, int, double, bool,double,double);
+	SequenceLearnerDisc(int r_, int * d_, int n_, int b_, int epochs_, double thresh_, double prior_, double eps_, bool makeLR_ = false);
 	virtual ~SequenceLearnerDisc();
 	void init();
 

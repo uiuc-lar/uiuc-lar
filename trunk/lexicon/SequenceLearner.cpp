@@ -34,7 +34,19 @@ void SequenceLearner::printAll() {
 	}
 }
 
-void SequenceLearner::printToFile() {
+void SequenceLearner::printToFile(string baseName) {
 
+
+}
+
+bool SequenceLearner::generateSequence(IMat &data, int n, double dscale) {
+
+	return false;
+
+}
+
+bool SequenceLearner::generateSequence(IVecInt &data, int initPos, int length, int n) {
+
+	return false;
 
 }

@@ -18,13 +18,13 @@
    </module>
    <module>
       <name>phoneticClassifier</name>
-      <parameters>--from /home/logan/uiuc-lar/boh11demo/phoneclassparams2.ini</parameters>
+      <parameters>--from /home/logan/uiuc-lar/boh11demo/conf/phoneclassparams2.ini</parameters>
       <node>nebula</node>
 	<tag>phoneclassifier</tag>
    </module>
    <module>
       <name>lexiconLearner</name>
-      <parameters>--from /home/logan/uiuc-lar/boh11demo/speechclass.ini</parameters>
+      <parameters>--from /home/logan/uiuc-lar/boh11demo/conf/speechclass.ini</parameters>
       <node>nebula</node>
 	<tag>wordlearner</tag>
 	<stdio>nebula</stdio>
@@ -42,14 +42,14 @@
    </module>
    <module>
       <name>lexiconLearner</name>
-      <parameters>--from /home/logan/uiuc-lar/boh11demo/actionclass.ini</parameters>
+      <parameters>--from /home/logan/uiuc-lar/boh11demo/conf/actionclass.ini</parameters>
       <node>nebula</node>
 	<tag>actionlearner</tag>
 	<stdio>nebula</stdio>
    </module>
    <module>
 	<name>associativeMemory</name>
-	<parameters> --from /home/logan/uiuc-lar/boh11demo/memparams.ini</parameters>
+	<parameters> --from /home/logan/uiuc-lar/boh11demo/conf/memparams.ini</parameters>
 	<node>nebula</node>
 	<tag>chmm</tag>
 	<stdio>nebula</stdio>

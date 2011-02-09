@@ -45,6 +45,7 @@
 #include <fftw3.h>
 #include <algorithm>
 #include <stdio.h>
+#include <sndfile.h>
 
 //defines
 #define PI 3.14159
@@ -146,7 +147,8 @@ private:
     fftw_plan p;		//fft
     fftw_plan q;		//ifft
 
-    //FILE *fp;
+    //SNDFILE * sf;
+    //SF_INFO * sfinfo;
 
 public:
 
@@ -186,10 +188,15 @@ public:
 		//set callback
 		inPort->useCallback();
 		inPort->open(recvPort.c_str());
-
-
-		//fp = fopen("/home/logan/workspace/scripts/cleanout.dat","w");
-
+/*
+		//soundfile
+		sfinfo = new SF_INFO;
+		sfinfo->channels = 1;
+		sfinfo->samplerate = 24000;
+		sfinfo->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
+		sf = sf_open("/home/logan/workspace/scripts/grunk.wav",SFM_WRITE,sfinfo);
+		printf("sf opened with code %d\n", sf_error(sf));
+*/
 
 		return true;
 
@@ -329,7 +336,8 @@ public:
 				Sound processed;
 				processed.resize(inPort->getSize());
 				for (int i = 0; i < inPort->getSize(); i++) {
-					//fprintf(fp,"%f\n",outgoing.front());
+					//temp = outgoing.front()/(1e+3);  //
+					//sf_write_double(sf, &temp, 1);
 					processed.set((int)(outgoing.front()*INT_MAX),i);	//rescale
 					outgoing.pop_front();
 				}
@@ -355,7 +363,8 @@ public:
 	{
 
 		//close down and cleanup
-		//fclose(fp);
+		//sf_write_sync(sf);
+		//sf_close(sf);
 		fftw_destroy_plan(p);
 		fftw_destroy_plan(q);
 		fftw_free(iFrame);

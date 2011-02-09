@@ -73,7 +73,7 @@ static char *StochasticClassifier_CC_ID = "$Id: StochasticClassifier.cc,v 1.1 20
 
 #include <torch/Object.h>
 
-#include <imatlib/IVecInt.hh>
+
 #include "StochasticClassifier.hh"
 
 #include "gen_defines.h"

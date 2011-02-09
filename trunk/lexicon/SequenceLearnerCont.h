@@ -15,7 +15,6 @@
 #include <math.h>
 #include <time.h>
 #include <stdio.h>
-#include <sndfile.h>
 #include <vector>
 #include <string>
 
@@ -24,6 +23,7 @@
 #include "../RMLE/HMM.hh"
 #include "../RMLE/StochasticClassifier.hh"
 #include "../RMLE/Gaussian.hh"
+#include "../RMLE/N.hh"
 #include "../imatlib/IMat.hh"
 #include "../imatlib/IVec.hh"
 #include "../imatlib/IVecInt.hh"
@@ -37,8 +37,8 @@ class SequenceLearnerCont : public SequenceLearner
 public:
 
 	//constructor/destructor
-	SequenceLearnerCont(int, int, int, int, double, double, double,double,double); //with covreg
-	SequenceLearnerCont(int, int, int, int, double,double,double);				//w/o covreg
+	SequenceLearnerCont(int r_, int d_, int b_, int epochs_, double thresh_, double prior_, double eps_, double alpha_, double xi_, bool makeLR_ = false); //with covreg
+	SequenceLearnerCont(int r_, int d_, int b_, int epochs_, double thresh_, double prior_, double eps_, bool makeLR_ = false);				//w/o covreg
 	virtual ~SequenceLearnerCont();
 	void init();
 
@@ -56,6 +56,7 @@ public:
 	void printToFile(string);
 	//void packA(Bottle &, int);
 	void packObs(Bottle &, int);
+	bool generateSequence(IMat &data, int n, double dscale = 1.0);
 
 	//int nInitialized;
 
@@ -70,8 +71,12 @@ private:
 	Gaussian ** obs_dist;
 	IMat initData;
 
+	//exemplar info storage (mainly for generation)
+	IVec ** exemplar_initPos;
+	int * exemplar_length;
 
 	//options
+	bool makeLR;		//implement pseudo-lr init
 	double alpha; 		//controls covariance matrix regularization
 	double xi;			//upper bound of covariance
 	bool stent;

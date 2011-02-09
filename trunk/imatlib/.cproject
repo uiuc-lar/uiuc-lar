@@ -36,14 +36,8 @@
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.541274173" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
 <option defaultValue="true" id="gnu.cpp.link.option.shared.1324512517" name="Shared (-shared)" superClass="gnu.cpp.link.option.shared" valueType="boolean"/>
-<option id="gnu.cpp.link.option.libs.2055091037" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-<listOptionValue builtIn="false" value="blas"/>
-<listOptionValue builtIn="false" value="lapack"/>
-<listOptionValue builtIn="false" value="torch"/>
-</option>
-<option id="gnu.cpp.link.option.paths.1817221011" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-<listOptionValue builtIn="false" value="/usr/lib/atlas"/>
-</option>
+<option id="gnu.cpp.link.option.libs.2055091037" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs"/>
+<option id="gnu.cpp.link.option.paths.1817221011" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths"/>
 <inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.605862810" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 <additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 <additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -505,10 +499,10 @@
 <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1235599067" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1126285154" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release">
-<option defaultValue="true" id="gnu.c.link.option.shared.2124196254" superClass="gnu.c.link.option.shared" valueType="boolean"/>
+<option defaultValue="true" id="gnu.c.link.option.shared.2124196254" name="Shared (-shared)" superClass="gnu.c.link.option.shared" valueType="boolean"/>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.692087309" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
-<option defaultValue="true" id="gnu.cpp.link.option.shared.581128289" superClass="gnu.cpp.link.option.shared" valueType="boolean"/>
+<option defaultValue="true" id="gnu.cpp.link.option.shared.581128289" name="Shared (-shared)" superClass="gnu.cpp.link.option.shared" valueType="boolean"/>
 <inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.834176298" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 <additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 <additionalInput kind="additionalinput" paths="$(LIBS)"/>

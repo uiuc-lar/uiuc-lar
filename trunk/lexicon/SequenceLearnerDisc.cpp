@@ -1,6 +1,6 @@
 #include "SequenceLearnerDisc.h"
 
-SequenceLearnerDisc::SequenceLearnerDisc(int r_, int * d_, int n_, int b_, int epochs_, double thresh_, bool makeLR_, double prior_, double eps_)
+SequenceLearnerDisc::SequenceLearnerDisc(int r_, int * d_, int n_, int b_, int epochs_, double thresh_, double prior_, double eps_, bool makeLR_)
 	: d(d_), nOuts(n_), makeLR(makeLR_), SequenceLearner(r_, b_, epochs_, thresh_, prior_, eps_) {
 
 	//allocate everything
