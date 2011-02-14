@@ -35,11 +35,14 @@
 	[module parameters]
 	input	-- input port name (O, D /lex:i)
 	output	-- output port name (O, D /lex:o)
+	greq	-- input port for generation commands (O, D /lex:r)
+	gen		-- generated element output port (O, D /lex:g)
 	rpc		-- rpc port name (O, D /lex/rpc)
 
  *
  * PORTS:
  *	Inputs: /pc/words   	(Bottle of bottles/ints. Corresponding to continuous or discrete sequences)
+ *	Inputs: /assocMem/symb  (Bottle w/ single int. Tells the module to generate a sequence for a given model)
  *	Outputs: /lex/class		(Bottle of with one int, corresponding to classification of the sequence)
  *	Outputs: /lex/gen		(Bottle of either ints or more bottles. generated sample from HMM encoding)
  *	RPC: /lex/rpc			(RPC communication port to interact with the running module)
@@ -131,20 +134,23 @@ public:
 
 		Bottle gendSequence;
 		Bottle replySeq;
+		bool gresult;
 
 		if (S->getType()) {
 
 			//continuous
 			IMat data;
-			S->generateSequence(data, n, scale);
+			gresult = S->generateSequence(data, n, scale);
 			for (int i = 0; i < data.m; i++) {
 				Bottle & samp = gendSequence.addList();
 				for (int j = 0; j < data.n; j++) {
 					samp.add(data(i,j));
 				}
 			}
-			replySeq.copy(gendSequence);
-			generated->write(gendSequence);
+			if (gresult) {
+				replySeq.copy(gendSequence);
+				generated->write(gendSequence);
+			}
 
 		} else {
 
@@ -244,6 +250,32 @@ public:
 
 };
 
+class GenReqPort : public BufferedPort<Bottle> {
+
+protected:
+
+	LexiconThread * L;
+	double scale;
+
+
+public:
+
+	GenReqPort(LexiconThread *& L_, double scale_) : L(L_), scale(scale_) { }
+
+	virtual void onRead(Bottle& b) {
+
+		//if the input is poorly formed, yell about it
+		if (!(b.get(0).isInt() || b.get(0).isDouble())) {
+			printf("Received poorly formed request, ignoring\n");
+		}
+		else {
+			L->generateOutput(b.get(0).asInt(), scale);
+		}
+	}
+
+};
+
+
 //module for handling inputs and objects
 class LexiconModule : public RFModule {
 
@@ -287,7 +319,9 @@ protected:
 	string sendPort;
 	string rpcName;
 	string genPort;
+	string greqName;
 	LexiconThread * L;
+	GenReqPort * greqPort;
 	Port rpcPort;
 
 
@@ -298,6 +332,7 @@ public:
 		//get port names
 		recvPort = rf.check("input",Value("/lex:i"),"input port name").asString();
 		sendPort = rf.check("output",Value("/lex:o"),"output port name").asString();
+		greqName = rf.check("greq",Value("/lex:r"),"generation request port").asString();
 		genPort = rf.check("gen",Value("/lex:g"),"generated example port name").asString();
 		rpcName = rf.check("rpc",Value("/lex/rpc"),"rpc port name").asString();
 
@@ -489,6 +524,11 @@ public:
 
 		//pass everything off to the execution thread
 		L = new LexiconThread(S, recvPort, sendPort, genPort);
+
+		//set up the request port
+		greqPort = new GenReqPort(L, dt);
+		greqPort->useCallback();
+		greqPort->open(greqName.c_str());
 
 		return L->start();
 

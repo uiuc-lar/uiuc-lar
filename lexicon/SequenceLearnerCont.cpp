@@ -475,6 +475,8 @@ bool SequenceLearnerCont::generateSequence(IMat &data, int n, double dscale) {
 	delete Sxi;
 	delete Sxdx;
 
+	return true;
+
 
 }
 

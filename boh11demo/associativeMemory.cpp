@@ -373,6 +373,8 @@ public:
 				}
 				else if (arg == "eps") {
 					eps = command.get(2).asDouble();
+					p->eps0 = eps;
+					obs_dist->eps0 = eps;
 				}
 				else if (arg == "decay") {
 					decay = command.get(2).asDouble();
