@@ -20,6 +20,7 @@ ADD_EXECUTABLE(phoneticClassifier phoneClassifier.cpp)
 ADD_EXECUTABLE(lexiconLearner lexiconLearner.cpp)
 ADD_EXECUTABLE(associativeMemory associativeMemory.cpp)
 ADD_EXECUTABLE(robotMicFix robotMicConditioning.cpp)
+ADD_EXECUTABLE(hmmgenerator hmmgenerator.cpp)
 
 # we now add the YARP and iCub libraries to our project.
 TARGET_LINK_LIBRARIES(vaDetect ${YARP_LIBRARIES} ${ICUB_LIBRARIES} speech fftw3)
@@ -29,3 +30,4 @@ TARGET_LINK_LIBRARIES(associativeMemory ${YARP_LIBRARIES} ${ICUB_LIBRARIES} RMLE
 TARGET_LINK_LIBRARIES(armFwdKin ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(maDetect ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(robotMicFix ${YARP_LIBRARIES} ${ICUB_LIBRARIES} fftw3 sndfile)
+TARGET_LINK_LIBRARIES(hmmgenerator ${YARP_LIBRARIES} ${ICUB_LIBRARIES} RMLE imatlib torch blas lapack lexicon)
