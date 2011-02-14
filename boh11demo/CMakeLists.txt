@@ -14,14 +14,12 @@ LINK_DIRECTORIES(/home/logan/uiuc-lar/lib /usr/lib/atlas /usr/local/lib)
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ICUB_LINK_FLAGS}")              
 SET(CMAKE_CXX_FLAGS_DEBUG "-g")
 
-ADD_EXECUTABLE(activityChecker  actchecker.cpp)
 ADD_EXECUTABLE(armFwdKin  fwdConverter.cpp)
 ADD_EXECUTABLE(maDetect   actionVad.cpp)
 ADD_EXECUTABLE(vaDetect audioProcessing.cpp)
 ADD_EXECUTABLE(phoneticClassifier phoneClassifier.cpp)
 ADD_EXECUTABLE(lexiconLearner lexiconLearner.cpp)
 ADD_EXECUTABLE(associativeMemory associativeMemory.cpp)
-ADD_EXECUTABLE(hmmgenerator hmmgenerator.cpp)
 ADD_EXECUTABLE(robotMicFix robotMicConditioning.cpp)
 
 # we now add the YARP and iCub libraries to our project.
@@ -31,6 +29,4 @@ TARGET_LINK_LIBRARIES(lexiconLearner ${YARP_LIBRARIES} ${ICUB_LIBRARIES} RMLE im
 TARGET_LINK_LIBRARIES(associativeMemory ${YARP_LIBRARIES} ${ICUB_LIBRARIES} RMLE imatlib torch blas lapack)
 TARGET_LINK_LIBRARIES(armFwdKin ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(maDetect ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
-TARGET_LINK_LIBRARIES(activityChecker ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
-TARGET_LINK_LIBRARIES(hmmgenerator ${YARP_LIBRARIES} ${ICUB_LIBRARIES} lexicon RMLE imatlib torch blas lapack)
 TARGET_LINK_LIBRARIES(robotMicFix ${YARP_LIBRARIES} ${ICUB_LIBRARIES} fftw3 sndfile)
