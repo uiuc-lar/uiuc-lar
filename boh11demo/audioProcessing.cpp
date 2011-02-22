@@ -10,6 +10,7 @@
  * Module Args: (activity detection)
  * 	input 		-- input port name
  *  output		-- output port name (features)
+ *  energy		-- output port name (energy for current frame)
  *	decimate	-- decimate by X, after applying a filter (handle the filter here automatically)
  *  alpha		-- exponential filter coefficient for the energy signal
  *  threshold	-- activity threshold
@@ -149,8 +150,10 @@ protected:
 	//communication objects
 	string recvPort;
 	string sendPort;
+	string energyPort;
 	VADPort * inPort;
 	Port   * outPort;
+	BufferedPort<Vector>  * ePort;
 	Port   * statPort;
 	StatusChecker * checker;
 
@@ -191,6 +194,7 @@ public:
 		//activity detection args
 		recvPort = rf.check("input",Value("/vad:i"),"input port").asString();
 		sendPort = rf.check("output",Value("/vad:o"),"output port").asString();
+		energyPort = rf.check("energy",Value("/vad:e"),"energy monitor port").asString();
 		alpha = rf.check("alpha",Value(0.1),"exp filter coeff").asDouble();
 		adThreshold = rf.check("threshold",Value(0.0001),"activity threshold").asDouble();
 		adJump = rf.check("jump",Value(30),"activity hysteresis").asInt();
@@ -218,8 +222,11 @@ public:
 		//set up ports
 		inPort = new VADPort(buf, decimate);
 		outPort = new Port;
+		ePort = new BufferedPort<Vector>;
 		outPort->open(sendPort.c_str());
+		ePort->open(energyPort.c_str());
 		outPort->setTimeout(TIMEOUT);
+		//ePort->enableBackgroundWrite(true);
 
 		//set callback
 		inPort->useCallback();
@@ -298,9 +305,14 @@ public:
 				break;
 			}
 
-			//filter energy (use exp filter here)
+			//filter energy (use exp filter here), and publish
 			// b = [alpha]; a = [1, alpha-1]; alpha in [0,1]
 			energy = (1-alpha)*energy + alpha*(mTemp[0]-baseline);
+			Vector &ep = ePort->prepare();
+			ep.clear();
+			ep.push_back(adThreshold);
+			ep.push_back(energy);
+			ePort->write();
 
 			//bottle the data
 			Bottle f;
