@@ -30,6 +30,13 @@
 	<tag>wordlearner</tag>
 	<stdio>nebula</stdio>
    </module>
+   <module>
+	<name>demoGate</name>
+	<parameters>--input /gate:i --output /gate:o</parameters>
+	<node>nebula</node>
+	<tag>gater</tag>
+	<stdio>nebula</stdio>
+   </module>
 <connection>
   <output>/microphone</output>
   <input>/vad:i</input>
@@ -43,6 +50,11 @@
 <connection>
   <output>/phone:o</output>
   <input>/words:i</input>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <output>/words:o</output>
+  <input>/gate:i</input>
   <protocol>tcp</protocol>
 </connection>
 </application>
