@@ -78,6 +78,10 @@ using namespace yarp::os;
 using namespace yarp::sig;
 using namespace yarp::math;
 
+//csv functions
+void dumbCSVReader(const char *, IMat &, int, int);
+void dumbCSVWriter(const char *, IMat &);
+
 //wrapper thread for the learning algorithm
 class LexiconThread : public Thread {
 
@@ -570,3 +574,56 @@ int main(int argc, char *argv[])
 }
 
 
+void dumbCSVReader(const char * fileName, IMat &tM, int length, int width) {
+
+	//load the csv file into the target matrix
+	FILE *fp;
+	int z = length;
+	char line[4096];
+	char * coeff;
+
+	fp = fopen(fileName, "r");
+
+	if (fp == NULL) {
+
+		printf("file %s not found, segfault inc\n",fileName);
+
+	}
+
+	if (z == 0) { //set length = 0 to find the file size
+		while (!feof(fp)) {
+			fscanf(fp,"%s",line);
+			z++;
+		}
+		rewind(fp);
+		z--;
+	}
+
+	tM.resize(z,width);
+	for (int i = 0; i < z; i++) {
+		fscanf(fp,"%s",line);
+		coeff = strtok(line,",");
+		tM.ptr[i][0] = atof(coeff);
+		for (int j = 1; j < width; j++) {
+			coeff = strtok(NULL,",");
+			tM.ptr[i][j] = atof(coeff);
+		}
+	}
+
+	fclose(fp);
+
+}
+
+void dumbCSVWriter(const char * fileName, IMat &tM) {
+
+	FILE *fp = fopen(fileName,"w");
+
+	for (int i = 0; i < tM.m; i++) {
+		for (int j = 0; j < tM.n-1; j++) {
+			fprintf(fp,"%f,",tM(i,j));
+		}
+		fprintf(fp,"%f\n",tM(i,tM.n-1));
+	}
+	fclose(fp);
+
+}

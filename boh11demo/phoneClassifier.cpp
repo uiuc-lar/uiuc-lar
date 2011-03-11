@@ -326,6 +326,8 @@ public:
 			dumbCSVReader(mufile.asString().c_str(), MU, r, d);
 			dumbCSVReader(ufile.asString().c_str(), U, r, d*d);
 
+			printf("read files in successfully\n");
+
 			//init gaussian obs and HMM
 			allocator = new Allocator;
 			p = new(allocator) HMM;
@@ -402,6 +404,12 @@ void dumbCSVReader(const char * fileName, IMat &tM, int length, int width) {
 	char * coeff;
 
 	fp = fopen(fileName, "r");
+
+	if (fp == NULL) {
+
+		printf("file %s not found, segfault inc\n",fileName);
+
+	}
 
 	if (z == 0) { //set length = 0 to find the file size
 		while (!feof(fp)) {
