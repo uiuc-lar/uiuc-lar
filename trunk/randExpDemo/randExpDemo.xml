@@ -1,0 +1,24 @@
+<application>
+<name>Motor Babbling Demo</name>
+<dependencies>
+	<port>/root</port>
+</dependencies>
+	<module>
+		<name>./fwdConv</name>
+		<parameters>--input /fwdConv:i --output /fwdConv:o</parameters>
+		<node>johnny5</node>
+			<tag>fwdConv</tag>
+	</module>
+	<module>
+		<name>./randHead</name>
+		<parameters>--robot icub</parameters>
+		<node>johnny5</node>
+			<tag>randHead</tag>
+	</module>
+	<module>
+		<name>./randArmExplore</name>
+		<parameters>--robot icub</parameters>
+		<node>johnny5</node>
+			<tag>randArmExplore</tag>
+	</module>
+</application>
