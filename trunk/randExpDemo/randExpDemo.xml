@@ -21,4 +21,14 @@
 		<node>johnny5</node>
 			<tag>randArmExplore</tag>
 	</module>
+	<module>
+		<name>salience</name>
+		<parameters>--filter motion --numBlurPasses 1 --thresholdSalience 0.5</parameters>
+		<node>johnny5</node>
+			<tag>salience</tag>
+	</module>
+	<connection>
+		<from>/icub/cam/left</from>
+		<to>/salience/view</to>
+	</connection>
 </application>

@@ -65,11 +65,13 @@ int main(int argc, char *argv[]){
 	}
 
 	IPositionControl *pos;
+	//IVelocityControl *vel;
 	IEncoders *enc;
 
 	bool ok;
 	ok = robotDevice.view(pos);
 	ok = ok && robotDevice.view(enc);
+	//ok = ok && robotDevice.view(vel);
 
 	if (!ok){
 		printf("Problems acquiring interfaces\n");
@@ -113,36 +115,55 @@ int main(int argc, char *argv[]){
     // robot needs to be able to look at the object
     // have robot learn to look at anything it can already see
 
-    //bool attn = 0;
-    //attn = Network::exists("/salience/map");
-    //if (attn) {
-    //	Port sal;
-    //	sal.open("/randHead/salience");
-    //	Network::connect("/salience/map","/randHead/salience");
-    //}
+    bool attn = 0;
+    attn = Network::exists("/salience/map");
+    Port sal;
+    if (attn) {
+    	sal.open("/randHead/salience");
+    	Network::connect("/salience/peak","/randHead/salience");
+    }
 
-    //just move randomly for now
     while (true){
-    	tmp = command;
-    	command[0] += 20*(2*gsl_rng_uniform(r)-1);
-    	command[1] += 20*(2*gsl_rng_uniform(r)-1);
-    	command[2] += 20*(2*gsl_rng_uniform(r)-1);
-    	if (command[0] < -30 || command[0] > 30){
-    		command[0] = tmp[0];
+    	// find if there is any moving thing and look at it if so
+    	if (attn){
+    		Bottle peak;
+    		sal.read(peak);
+    		if (peak != NULL){
+    			double dx = peak.get(2).asDouble(); //get normalized dx from center to peak
+    			double dy = peak.get(3).asDouble(); //get normalized dy from center to peak
+    			printf("%.1lf, %.1lf\n", dx, dy);
+    			command[0] += dy*15; //assume 15 deg.
+    			command[2] += -dx*15;
+            	pos->positionMove(command.data());
+            	done = false;
+            	while(!done){
+            	    pos->checkMotionDone(&done);
+            	    Time::delay(0.1);
+            	}
+    		}
     	}
-    	if (command[1] < -30 || command[1] > 30){
-    		command[1] = tmp[1];
+    	else{
+        	tmp = command;
+        	command[0] += 20*(2*gsl_rng_uniform(r)-1);
+        	command[1] += 20*(2*gsl_rng_uniform(r)-1);
+        	command[2] += 20*(2*gsl_rng_uniform(r)-1);
+        	if (command[0] < -30 || command[0] > 30){
+        		command[0] = tmp[0];
+        	}
+        	if (command[1] < -30 || command[1] > 30){
+        		command[1] = tmp[1];
+        	}
+        	if (command[2] <-30 || command[2] > 30){
+        		command[2] = tmp[2];
+        	}
+        	pos->positionMove(command.data());
+        	done = false;
+        	while(!done){
+        	    pos->checkMotionDone(&done);
+        	    Time::delay(0.1);
+        	}
     	}
-    	if (command[2] <-30 || command[2] > 30){
-    		command[2] = tmp[2];
-    	}
-    	pos->positionMove(command.data());
-    	done = false;
-    	while(!done){
-    	    pos->checkMotionDone(&done);
-    	    Time::delay(0.1);
-    	}
-    	Time::delay(10);
+    	Time::delay(1);
     }
 
 
