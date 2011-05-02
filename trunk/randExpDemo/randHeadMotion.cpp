@@ -132,7 +132,7 @@ int main(int argc, char *argv[]){
     			double dx = peak.get(2).asDouble(); //get normalized dx from center to peak
     			double dy = peak.get(3).asDouble(); //get normalized dy from center to peak
     			printf("%.1lf, %.1lf\n", dx, dy);
-    			command[0] += dy*15; //assume 15 deg.
+    			command[0] += -dy*15; //assume 15 deg.
     			command[2] += -dx*15;
             	pos->positionMove(command.data());
             	done = false;

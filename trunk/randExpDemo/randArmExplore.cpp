@@ -168,7 +168,7 @@ int main(int argc, char *argv[]){
     	}
     	double rad = sqrt(commandCart[0]*commandCart[0]+commandCart[1]*commandCart[1]);
     	// 30 cm safety radius
-    	if (rad > 0.3){
+    	if (rad > 0.4){
     		pos->positionMove(command.data());
     		done = false;
     		while(!done){

@@ -4,19 +4,19 @@
 	<port>/root</port>
 </dependencies>
 	<module>
-		<name>./fwdConv</name>
+		<name>/home/niehaus4/uiuc-lar/randExpDemo/fwdConv</name>
 		<parameters>--input /fwdConv:i --output /fwdConv:o</parameters>
 		<node>johnny5</node>
 			<tag>fwdConv</tag>
 	</module>
 	<module>
-		<name>./randHead</name>
+		<name>/home/niehaus4/uiuc-lar/randExpDemo/randHead</name>
 		<parameters>--robot icub</parameters>
 		<node>johnny5</node>
 			<tag>randHead</tag>
 	</module>
 	<module>
-		<name>./randArmExplore</name>
+		<name>/home/niehaus4/uiuc-lar/randExpDemo/randArmExplore</name>
 		<parameters>--robot icub</parameters>
 		<node>johnny5</node>
 			<tag>randArmExplore</tag>
