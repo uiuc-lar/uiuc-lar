@@ -1,3 +1,19 @@
+/*
+ *  gazeLearner.cpp
+ *
+ * 	Logan Niehaus
+ * 	5/2/11
+ * 	learning module for head position to world-coordinates map using nn (unfinished)
+ *
+ * inputs: takes vectors of the current gaze estimate, the head position, and location of detected objects
+ * params: neuron running params: range of inputs, range of outputs, number of neurons
+ * 			covariance matrices for input/output smearing
+ * 			learning rate, leakage rate, etc...
+ * outputs: should probably set up an RPC port so that modules can ping it for various settings
+ * TODOs: Basically does nothing right now, just gathers the relevant data and dumps it to stdout
+ * 		In the future, this will be able to train online, and do things like negative reinforcement?
+ */
+
 #include <yarp/os/Network.h>
 #include <yarp/os/RFModule.h>
 #include <yarp/os/BufferedPort.h>
@@ -82,8 +98,8 @@ public:
 
         	if (featVec && headBox) {
 
-        		printf("%d %d %f\n", motionDetect->get(0).asInt(), motionDetect->get(1).asInt(),
-        				(*featVec)[0]);
+        		printf("%d %d %d, %d, %f, %f\n", (int)((*headBox)[0]+(*headBox)[2]/2), (int)((*headBox)[1]+(*headBox)[3]/2),
+        				motionDetect->get(0).asInt(), motionDetect->get(1).asInt(), (*featVec)[0], (*featVec)[1]);
 
         	}
 
