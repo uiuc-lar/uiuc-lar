@@ -1,5 +1,5 @@
 /*
- *  skinfilt.cpp
+ *  gazeEstimator.cpp
  *
  * 	Logan Niehaus
  * 	5/2/11
@@ -176,7 +176,7 @@ public:
 			Mat * subFace = new Mat(*T, faceRect);
 
 
-			//with face bounding box, use diff thresholds
+			//with face bounding box, use diff thresholds if desired
 			threshold(*subFace, *subFace, eyeThresh, 255.0, CV_THRESH_BINARY);
 			drawContours(*T, contours, biggestblob, Scalar(255), 1, 8, hierarchy, 0);
 			subFace->convertTo(X,CV_8UC1);
@@ -184,39 +184,7 @@ public:
 			contours.clear();
 			findContours(X, contours, hierarchy, CV_RETR_LIST, CHAIN_APPROX_NONE, Point(faceRect.x,faceRect.y));
 
-			/*
-			//again look for the largest contour
-			deque<int> eyeCan(2);
-			deque<double> canVals(2);
-			cts = contours;
-			sort(cts.begin(),cts.end(),contComp);
-			biggestblob = 0;
-			//drawContours(mainImg, cts, biggestblob, Scalar(255, 0, 0), 0, 8, hierarchy, 0);
-			for (int i = 1; i < cts.size(); i++) {
-				Moments m = moments(cts[i]);
-				if ((pointPolygonTest(cts[0], Point2f(m.m10/m.m00,m.m01/m.m00), false) > 0) &&
-						abs(contourArea(cts[i])) > minEyeSize) {
-					if (canVals.front() <= 0) {
-						canVals.push_front(abs(contourArea(cts[i])));
-						eyeCan.push_front(i);
-						canVals.pop_back();
-						eyeCan.pop_back();
-					} else {
-						Moments n = moments(cts[eyeCan.front()]);
-						double edst = sqrt((m.m10/m.m00-n.m10/n.m00)*(m.m10/m.m00-n.m10/n.m00) +
-								(m.m01/m.m00-n.m01/n.m00)*(m.m01/m.m00-n.m01/n.m00));
-						if (edst < maxEyeDist) {
-							canVals.pop_back();
-							eyeCan.pop_back();
-							canVals.push_back(abs(contourArea(cts[i])));
-							eyeCan.push_back(i);
-						}
-					}
-				}
-			}
-			contours = cts;
-			 */
-
+			//find the main head blob (assuming largest inside the head box)
 			maxSize = 0.0;
 			biggestblob = -1;
 			for (int i = 0; i < contours.size(); i++) {
@@ -279,8 +247,9 @@ public:
 
 			circle(mainImg, *eyeMidPoint, 1, Scalar(0, 255, 0), 2);
 
-			//representation is the ratio of area in bb to left of center, to that right of center
+			//azimuth representation is the ratio of area in bb to left of center, to that right of center, minus one
 			double ratio = (double)(eyeMidPoint->x-(faceRect.x+faceRect.width/2.0))/(double)(faceRect.width/2.0);
+			//elevation representation is distance from eye midpt to bottom of bounding box
 			double botdist = (double)(faceRect.y+faceRect.height-eyeMidPoint->y);
 
 			//annotate the output image (debugging mostly)
@@ -302,7 +271,6 @@ public:
 			IplImage outImg = mainImg;
 			imgOut.wrapIplImage(&outImg);
 
-			//imgOut.copy(*pSal);
 
 			portImgOut->write();
 			portFeatOut->write();
@@ -312,8 +280,6 @@ public:
 			delete C;
 			delete pDest;
 			delete pSal;
-			//delete pThresh;
-			//delete txs;
 
 		}
 	}
