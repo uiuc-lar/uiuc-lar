@@ -60,9 +60,6 @@ using namespace yarp::sig;
 using namespace iCub::vis;
 
 
-bool contComp(vector<Point> c1, vector<Point> c2) { return (contourArea(c1) < contourArea(c2)); }
-
-
 class skinDetThread : public RateThread
 {
 protected:
@@ -159,9 +156,9 @@ public:
 			int biggestblob = -1;
 			for (int i = 0; i < contours.size(); i++) {
 				//also assume the face is in the top half of the image
-				Moments fc = moments(contours[i]);
-				if ((abs(contourArea(contours[i])) > maxSize) && (fc.m01/fc.m00 < pSal->height()/2)) {
-					maxSize = abs(contourArea(contours[i]));
+				Moments fc = moments(Mat(contours[i]));
+				if ((abs(contourArea(Mat(contours[i]))) > maxSize) && (fc.m01/fc.m00 < pSal->height()/2)) {
+					maxSize = abs(contourArea(Mat(contours[i])));
 					biggestblob = i;
 				}
 			}
@@ -169,7 +166,7 @@ public:
 			Mat mainImg((IplImage *)imgOut.getIplImage(), false);
 
 			//draw a box around the face zone
-			Rect faceRect = boundingRect(contours[biggestblob]);
+			Rect faceRect = boundingRect(Mat(contours[biggestblob]));
 
 			//select the face part of the image
 			Mat * subFace = new Mat(*T, faceRect);
@@ -187,8 +184,8 @@ public:
 			maxSize = 0.0;
 			biggestblob = -1;
 			for (int i = 0; i < contours.size(); i++) {
-				if (abs(contourArea(contours[i])) > maxSize) {
-					maxSize = abs(contourArea(contours[i]));
+				if (abs(contourArea(Mat(contours[i]))) > maxSize) {
+					maxSize = abs(contourArea(Mat(contours[i])));
 					biggestblob = i;
 				}
 			}
@@ -199,18 +196,18 @@ public:
 			deque<double> canVals(2);
 			for (int i = 0; i < contours.size(); i++) {
 				if (i != biggestblob) {
-					Moments m = moments(contours[i]);
-					if ((pointPolygonTest(contours[biggestblob], Point2f(m.m10/m.m00,m.m01/m.m00), false) > 0) &&
-							abs(contourArea(contours[i])) > minEyeSize) {
-						if (abs(contourArea(contours[i])) > canVals.front()) {
-							canVals.push_front(abs(contourArea(contours[i])));
+					Moments m = moments(Mat(contours[i]));
+					if ((pointPolygonTest(Mat(contours[biggestblob]), Point2f(m.m10/m.m00,m.m01/m.m00), false) > 0) &&
+							abs(contourArea(Mat(contours[i]))) > minEyeSize) {
+						if (abs(contourArea(Mat(contours[i]))) > canVals.front()) {
+							canVals.push_front(abs(contourArea(Mat(contours[i]))));
 							canVals.pop_back();
 							eyeCan.push_front(i);
 							eyeCan.pop_back();
 						}
-						else if (abs(contourArea(contours[i])) > canVals.back()) {
+						else if (abs(contourArea(Mat(contours[i]))) > canVals.back()) {
 							canVals.pop_back();
-							canVals.push_back(abs(contourArea(contours[i])));
+							canVals.push_back(abs(contourArea(Mat(contours[i]))));
 							eyeCan.pop_back();
 							eyeCan.push_back(i);
 						}
@@ -221,16 +218,16 @@ public:
 
 			//calculate the center position of the eyes
 			Point * eyeMidPoint = NULL;
-			Moments m = moments(contours[biggestblob]);
-			Moments n = moments(contours[biggestblob]);
+			Moments m = moments(Mat(contours[biggestblob]));
+			Moments n = moments(Mat(contours[biggestblob]));
 			if (canVals.front() > 0) {
-				m = moments(contours[eyeCan.front()]);
-				n = moments(contours[eyeCan.front()]);
+				m = moments(Mat(contours[eyeCan.front()]));
+				n = moments(Mat(contours[eyeCan.front()]));
 				drawContours(mainImg, contours, eyeCan.front(), Scalar(0, 0, 255), 1, 8, hierarchy, 0);
 			}
 			//if we have detected the second eye, find the midpoint
 			if (canVals.back() > 0) {
-				n = moments(contours[eyeCan.back()]);
+				n = moments(Mat(contours[eyeCan.back()]));
 				eyeMidPoint = new Point((m.m10/m.m00+n.m10/n.m00)/2, (m.m01/m.m00+n.m01/n.m00)/2);
 				drawContours(mainImg, contours, eyeCan.back(), Scalar(0, 0, 255), 1, 8, hierarchy, 0);
 			}

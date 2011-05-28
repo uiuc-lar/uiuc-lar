@@ -255,7 +255,7 @@ public:
 			findContours(X, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
 			amaxr = 0;
 			for (int i = 0; i < contours.size(); i++) {
-				if (pointPolygonTest(contours[i], Point2f(xy(0),xy(1)), false) >= 0) {
+				if (pointPolygonTest(Mat(contours[i]), Point2f(xy(0),xy(1)), false) >= 0) {
 					amaxr = i;
 				}
 			}
@@ -279,7 +279,7 @@ public:
 
 			//fit an ellipse around the salient area and filter
 			if (nimp.size() >= 6) {
-				RotatedRect GP = fitEllipse(nimp);
+				RotatedRect GP = fitEllipse(Mat(nimp));
 				if (GP.size.width < 500.0 && GP.size.height < 500.0 &&
 						GP.size.width > 0.0 && GP.size.height > 0.0) {
 					ellipse(*IM, GP, Scalar(100.0), -1, 8);
