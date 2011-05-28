@@ -180,9 +180,9 @@ public:
         		//weed out small ones ones first
         		if (contours[i].size() > minobjsize) {
 
-        			br = boundingRect(contours[i]);
-        			if (sum(Mat(*N,br))[0]/abs(contourArea(contours[i])) > maxSal) {
-        				maxSal = sum(Mat(*N,br))[0]/abs(contourArea(contours[i]));
+        			br = boundingRect(Mat(contours[i]));
+        			if (sum(Mat(*N,br))[0]/abs(contourArea(Mat(contours[i]))) > maxSal) {
+        				maxSal = sum(Mat(*N,br))[0]/abs(contourArea(Mat(contours[i])));
         				iBlob = i;
         			}
 
