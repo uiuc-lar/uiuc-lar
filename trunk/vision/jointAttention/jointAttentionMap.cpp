@@ -10,7 +10,10 @@
  * inputs: 	receives gaze estimate from gaze estimation module
  * 			checks for location of detected objects (and either learns or evaluates the previous,
  * 				based on if it is there or not)
- * 			rpc service to change runtime parameters
+ * 			rpc service to interact at runtime (not fully functional). neuron
+ * 				weights, input centers, and output centers can be saved to a file
+ * 				by issuing the command "save <X> filename.tab" over the RPC port, where
+ * 				<X> is either W, M, or N
  *
  * params: 	<param name> - <desc> (Req/Def <val>/Opt: <example value>)
  * 			mr - input neuron center ranges (R: "mr m0_low m0_high m1_low m1_high")
@@ -23,7 +26,7 @@
  * 			w, h - output map dimensions (D: 320x240)
  * 			tol - tolerance on nonmax supression (0 chooses only max, 1 allows everything) (D: 0.5)
  * 			alpha - zero location for temporal exponential filtering (O)
- * 			weights, inputs, outputs - data files containing previously trained parameters, csv format (O)
+ * 			weights, inputs, outputs - data files containing previously trained parameters, tab format (O)
  *
  * outputs: rbg (should be float) salience map normalized to have inf_norm of 255
  * 			upon request should also produce the neuron weights, params, etc...
@@ -54,6 +57,8 @@
 #include <deque>
 #include <queue>
 
+#include "RBFMap.h"
+
 //namespaces
 using namespace std;
 using namespace cv;
@@ -61,8 +66,6 @@ using namespace yarp;
 using namespace yarp::os;
 using namespace yarp::sig;
 using namespace yarp::math;
-
-#define PI 3.14159
 
 class jointAttentionThread : public RateThread
 {
@@ -79,91 +82,42 @@ protected:
 	BufferedPort<ImageOf<PixelRgb> > *portImgOut;
 
 	//running params
-	int m0, m1, n0, n1;
+	yarp::sig::Vector m;
+	yarp::sig::Vector n;
 	yarp::sig::Vector mr;
 	yarp::sig::Vector nr;
+	yarp::sig::Vector sm;
+	yarp::sig::Vector sn;
 	double eta, leak;
+	Matrix Sm, Sn, iSm, iSn;
+
 	int ih,iw;
 	bool filtering;
 	double alpha;
-	Matrix Sm, Sn, iSm, iSn;
 	double tolerance;
 
 	//runtime data/map parameters
-	Matrix W,M,N;
-	yarp::sig::Vector nmlzr;
-	double sqDetSm;
-	double sqDetSn;
+	RBFMap * R;
 	ImageOf<PixelFloat> * oMap;
-	bool initialized;
 
 	//optional loading of trained network data
 	string weightsfile;
 	string inputsfile;
 	string outputsfile;
-	ImageOf<PixelFloat> * Wimg;
-	ImageOf<PixelFloat> * Isimg;
-	ImageOf<PixelFloat> * Osimg;
 
 
 public:
 
-	jointAttentionThread(ResourceFinder &_rf) : RateThread(50), rf(_rf), initialized(false)
-	{ }
+	jointAttentionThread(ResourceFinder &_rf) : RateThread(50), rf(_rf)
+	{
 
-	Matrix getW() { return W; }
-
-	virtual bool loadTrainingData(string weightsfile, string inputsfile, string outputsfile) {
-
-		//load neural net data
-		Wimg = new ImageOf<PixelFloat>;
-		if (file::read(*Wimg, weightsfile.c_str())) {
-			W.resize(Wimg->height(),Wimg->width());
-			for (int i = 0; i < Wimg->width(); i++) {
-				for (int j = 0; j < Wimg->height(); j++) {
-					W(j,i) = Wimg->pixel(i,j);
-				}
-			}
-		} else {
-			fprintf(stderr,"could not read weight file, skipping...\n");
-			return false;
-		}
-
-		Isimg = new ImageOf<PixelFloat>;
-		if (file::read(*Isimg, inputsfile.c_str())) {
-			M.resize(Isimg->height(),Isimg->width());
-			for (int i = 0; i < Isimg->width(); i++) {
-				for (int j = 0; j < Isimg->height(); j++) {
-					M(j,i) = Isimg->pixel(i,j);
-				}
-			}
-		} else {
-			fprintf(stderr,"could not read inputs file, skipping...\n");
-			return false;
-		}
-
-		Osimg = new ImageOf<PixelFloat>;
-		if (file::read(*Osimg, outputsfile.c_str())) {
-			N.resize(Osimg->height(),Osimg->width());
-			nmlzr.resize(Osimg->height());
-			for (int i = 0; i < Osimg->width(); i++) {
-				for (int j = 0; j < Osimg->height(); j++) {
-					N(j,i) = Osimg->pixel(i,j);
-					nmlzr(j) = 1;
-				}
-			}
-		} else {
-			fprintf(stderr,"could not read outputs file, skipping...\n");
-			return false;
-		}
-
-		//get all of the other necessary parameters based on the provided data (assuming a particular structure)
-
-
-		return true;
+		R = new RBFMap();
 
 	}
 
+	Matrix getW() { return R->getW(); }
+	Matrix getM() { return R->getM(); }
+	Matrix getN() { return R->getN(); }
 
 	virtual bool handleParams()
 	{
@@ -175,10 +129,8 @@ public:
 			inputsfile = rf.find("inputs").asString().c_str();
 			outputsfile = rf.find("outputs").asString().c_str();
 
-			if (loadTrainingData(weightsfile,inputsfile,outputsfile)) {
+			if (R->initFromFiles(weightsfile,inputsfile,outputsfile)) {
 				fprintf(stdout,"provided training data loaded successfully, proceeding...\n");
-				initialized = true;
-				return true;
 			} else {
 				fprintf(stdout,"tried to load provided training data but failed, continuing as normal...\n");
 			}
@@ -196,10 +148,11 @@ public:
 			fprintf(stderr,"number of neurons not properly set (sizes %d, %d), exiting...\n", mneurons.size(), nneurons.size());
 			return false;
 		} else {
-			m0 = mneurons.get(1).asInt();
-			m1 = mneurons.get(2).asInt();
-			n0 = nneurons.get(1).asInt();
-			n1 = nneurons.get(2).asInt();
+			m.push_back(mneurons.get(1).asInt());
+			m.push_back(mneurons.get(2).asInt());
+			n.push_back(nneurons.get(1).asInt());
+			n.push_back(nneurons.get(2).asInt());
+			R->setNetworkSize(m,n);
 		}
 		if (mrange.isNull() || nrange.isNull() || mrange.size() != 5 || nrange.size() != 5) {
 			fprintf(stderr,"neuron center ranges not properly set, exiting...\n");
@@ -209,31 +162,29 @@ public:
 				mr.push_back(mrange.get(i).asDouble());
 				nr.push_back(nrange.get(i).asDouble());
 			}
+			R->setNeuronRanges(mr,nr);
 		}
 		if (sigm.isNull() || sign.isNull() || sigm.size() != 3 || sign.size() != 3) {
 			fprintf(stderr,"number of neurons not properly set, exiting...\n");
 			return false;
 		} else {
-			Sm.resize(2,2);
-			Sn.resize(2,2);
-			Sm.zero();
-			Sn.zero();
-			Sm(0,0) = sigm.get(1).asDouble();
-			Sm(1,1) = sigm.get(2).asDouble();
-			Sn(0,0) = sign.get(1).asDouble();
-			Sn(1,1) = sign.get(2).asDouble();
+			sm.push_back(sigm.get(1).asDouble());
+			sm.push_back(sigm.get(2).asDouble());
+			sn.push_back(sign.get(1).asDouble());
+			sn.push_back(sign.get(2).asDouble());
+			R->setActivationRadii(sm,sn);
 		}
 		if (!rf.check("eta")) {
 			fprintf(stderr,"no learning rate (eta) set, unable to proceed\n");
 			return false;
 		} else {
-			eta = rf.find("eta").asDouble();
+			R->setEta(rf.find("eta").asDouble());
 		}
 		if (!rf.check("leak")) {
 			fprintf(stderr,"no leakage rate (leak) set, unable to proceed\n");
 			return false;
 		} else {
-			leak = rf.find("leak").asDouble();
+			R->setLeak(rf.find("leak").asDouble());
 		}
 
 		//optional params
@@ -279,44 +230,12 @@ public:
 		portImgOut->open(portOutName.c_str());
 
 		//initialize all data structures (if not pre-loaded)
-		if (!initialized) {
+		if (!R->initNetwork()) {
 
-			//init weight matrix to zero
-			W.resize(n0*n1,m0*m1);
-			W.zero();
-
-			//set input neuron center locations
-			double tmp;
-			M.resize(m0*m1,2);
-			for (int i = 0; i < m0; i++) {
-				tmp = i*((mr[1]-mr[0])/(double)(m0-1))+mr[0];
-				for (int j = 0; j < m1; j++) {
-					M(i*m1+j,0) = tmp;
-					M(i*m1+j,1) = j*((mr[3]-mr[2])/(double)(m1-1))+mr[2];
-				}
-			}
-
-			//set output neuron center locations
-			N.resize(n0*n1,2);
-			nmlzr.resize(n0*n1);
-			for (int i = 0; i < n0; i++) {
-				tmp = i*((nr[1]-nr[0])/(double)(n0-1))+nr[0];
-				for (int j = 0; j < n1; j++) {
-					N(i*n1+j,0) = tmp;
-					N(i*n1+j,1) = j*((nr[3]-nr[2])/(double)(n1-1))+nr[2];
-					nmlzr(i*n1+j) = 1.0;
-				}
-			}
-
-			initialized = true;
+			fprintf(stderr,"error: failed to initialize neural network, quitting\n");
+			return false;
 
 		}
-
-		//pre-calculate some things
-		iSm = luinv(Sm);
-		iSn = luinv(Sn);
-		sqDetSm = sqrt(det(Sm));
-		sqDetSn = sqrt(det(Sn));
 
 		oMap = new ImageOf<PixelFloat>;
 		oMap->resize(iw,ih);
@@ -326,68 +245,24 @@ public:
 
 	}
 
-	yarp::sig::Vector forwardActivation(const yarp::sig::Vector &in) {
+	void evaluateMap(const yarp::sig::Vector &Ax, ImageOf<PixelFloat> &map) {
 
-		yarp::sig::Vector Ap(0);
-
-		//get activations
-		Ap.resize(M.rows());
-		yarp::sig::Vector mc(2);
-		for (int i = 0; i < M.rows(); i++) {
-			mc = in-M.getRow(i);
-			Ap[i] = (1/(sqDetSm*2*PI))*exp(-0.5*dot(mc,(iSm*mc)));
-		}
-
-		return Ap;
-
-	}
-
-	yarp::sig::Vector backwardActivation(const yarp::sig::Vector &fb) {
-
-		yarp::sig::Vector Ax(0);
-
-		//get activations
-		Ax.resize(N.rows());
-		yarp::sig::Vector mc(2);
-		for (int i = 0; i < M.rows(); i++) {
-			mc = fb-N.getRow(i);
-			Ax[i] = (1/(sqDetSn*2*PI))*exp(-0.5*dot(mc,(iSn*mc)));
-		}
-
-		return Ax;
-
-	}
-
-	void evaluateMap(const yarp::sig::Vector &in, ImageOf<PixelFloat> &map) {
-
-		yarp::sig::Vector Ap;
-		yarp::sig::Vector Ax;
 		yarp::sig::Vector xy(2);
 		yarp::sig::Vector xym(2);
-		double nconst = 1;
-		double maxresp, pmaxv;
+		Matrix N = getN();
+		double pmaxv;
 		int amaxr;
 
 		map.resize(iw,ih);
 		map.zero();
 
-		//get input activations
-		Ap = forwardActivation(in);
-
-		//evaluate feedforward activation (normalize)
-		Ax.resize(N.rows());
-		Ax = W*Ap;
-		nconst = 1.0/dot(Ax,nmlzr);
-		Ax = nconst*Ax;
-		pmaxv = 0.0;
-
 		//use this to create a saliency map output
 		ImageOf<PixelFloat> * Xr = new ImageOf<PixelFloat>;
-		Xr->resize(n0,n1);
+		Xr->resize(n[0],n[1]);
 		Xr->zero();
-		for (int i = 0; i < n0; i++) {
-			for (int j = 0; j < n1; j++) {
-				Xr->pixel(i,j) = (255.0)*10*Ax[i*n1+j];
+		for (int i = 0; i < n[0]; i++) {
+			for (int j = 0; j < n[1]; j++) {
+				Xr->pixel(i,j) = (255.0)*10*Ax[i*n[1]+j];
 				if (Xr->pixel(i,j) > pmaxv) {
 					pmaxv = Xr->pixel(i,j);
 					xy(0) = i;
@@ -420,11 +295,11 @@ public:
 		vector<Point> nimp(0);
 		drawContours(*C, contours, amaxr, Scalar(1.0), -1, 8, hierarchy, 0);
 		int npx = 0;
-		for (int i = 0; i < n0; i++) {
-			for (int j = 0; j < n1; j++) {
+		for (int i = 0; i < n[0]; i++) {
+			for (int j = 0; j < n[1]; j++) {
 				if (Xr->pixel(i,j) > 0) {
-					xym(0) = N[i*n1+j][0];
-					xym(1) = N[i*n1+j][1];
+					xym(0) = N[i*n[1]+j][0];
+					xym(1) = N[i*n[1]+j][1];
 					if (map.isPixel((int)xym(0)-1,(int)xym(1)-1)) {
 						nimp.push_back(Point((int)xym(0)-1,(int)xym(1)-1));
 					}
@@ -462,41 +337,6 @@ public:
 
 	}
 
-	void trainMap(const yarp::sig::Vector &in, const yarp::sig::Vector &fb, ImageOf<PixelFloat> &map) {
-
-		yarp::sig::Vector Ap;
-		yarp::sig::Vector Ax;
-		Matrix Apm, Axm;
-		Matrix Wh;
-		double wsum = 0.0;
-
-		//get forward activation
-		Ap = forwardActivation(in);
-		Apm.resize(1,Ap.size());
-		Apm.setRow(0, Ap);
-
-		//get feedback activation
-		Ax = backwardActivation(fb);
-		Axm.resize(Ax.size(),1);
-		Axm.setCol(0, Ax);
-
-		//take outer product of forward and backward activations, normalize
-		Wh = Axm*Apm;
-		for (int i = 0; i < Wh.rows(); i++) {
-			for (int j = 0; j < Wh.cols(); j++) {
-				wsum += Wh(i,j);
-			}
-		}
-		Wh = (1.0/wsum)*Wh;
-
-		//update weight matrix with hebb rule
-		W = eta*Wh + leak*W;
-
-		//get the map for the updated neuron weights
-		evaluateMap(in, map);
-
-	}
-
 	virtual void run()
 	{
 
@@ -509,6 +349,7 @@ public:
 		{
 
 			ImageOf<PixelFloat> * sMap = new ImageOf<PixelFloat>;
+			yarp::sig::Vector Ax;
 
 			//check to see if a corresponding output space sample was also generated
 			featVec = portFeatVec->read(false);
@@ -516,15 +357,17 @@ public:
 			//if one was, perform a training iteration
 			if (featVec) {
 
-				trainMap(*headVec, *featVec, *sMap);
 				printf("received feed forward and feedback data, training\n");
+				R->trainHebb(*headVec, *featVec, Ax);
+				evaluateMap(Ax, *sMap);
 
 			}
 
 			//if only feed-forward, just evaluate map
 			else {
 
-				evaluateMap(*headVec, *sMap);
+				R->evaluate(*headVec, Ax);
+				evaluateMap(Ax, *sMap);
 
 			}
 
@@ -557,6 +400,8 @@ public:
 		delete portMapOut;
 		delete portImgOut;
 
+		delete R;
+
 	}
 
 };
@@ -584,16 +429,43 @@ public:
 				reply.add(-1);
 			}
 			else {
+				//just a placeholder for now
+				reply.add(-1);
+			}
+		}
+		else if (msg == "save") {
+			if (command.size() < 3) {
+				reply.add(-1);
+			}
+			else {
 				string arg(command.get(1).asString().c_str());
+				string filename(command.get(2).asString().c_str());
+				Matrix S;
+				ImageOf<PixelFloat> imToWrite;
 				if (arg == "W") {
-					Matrix W = thr->getW();
-					for (int i = 0; i < W.rows(); i++) {
-						for (int j = 0; j < W.cols(); j++) {
-							reply.add(W(i,j));
-						}
+					S = thr->getW();
+				}
+				else if (arg == "M") {
+					S = thr->getM();
+				}
+				else if (arg == "N") {
+					S = thr->getN();
+				}
+				else {
+					reply.add(-1);
+				}
+				imToWrite.resize(S.cols(),S.rows());
+				for (int i = 0; i < S.rows(); i++) {
+					for (int j = 0; j < S.cols(); j++) {
+						imToWrite.pixel(j,i) = S(i,j);
 					}
 				}
+				file::write(imToWrite,filename.c_str());
+				reply.add(1);
 			}
+		}
+		else {
+			reply.add(-1);
 		}
 
 		return true;
