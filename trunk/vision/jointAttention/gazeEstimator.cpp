@@ -88,7 +88,7 @@ public:
 	virtual bool threadInit()
 	{
 
-		name=rf.check("name",Value("myFaceDetector")).asString().c_str();
+		name=rf.check("name",Value("faceDetector")).asString().c_str();
 		faceThresh=rf.check("facethresh",Value(20.0)).asDouble();
 		eyeThresh=rf.check("eyethresh",Value(20.0)).asDouble();
 		minEyeSize=rf.check("mineyesize",Value(10)).asInt();
@@ -145,7 +145,6 @@ public:
 
 			//find the list of skin colored blobs using connected components
 			vector<vector<Point> > contours;
-			vector<vector<Point> > cts;
 			vector<Vec4i> hierarchy;
 			Mat X;
 			C->convertTo(X,CV_8UC1);
@@ -171,14 +170,12 @@ public:
 			//select the face part of the image
 			Mat * subFace = new Mat(*T, faceRect);
 
-
 			//with face bounding box, use diff thresholds if desired
 			threshold(*subFace, *subFace, eyeThresh, 255.0, CV_THRESH_BINARY);
-			//drawContours(*T, contours, biggestblob, Scalar(255), 1, 8, hierarchy, 0);
 			subFace->convertTo(X,CV_8UC1);
 			hierarchy.clear();
 			contours.clear();
-			findContours(X, contours, hierarchy, CV_RETR_LIST, CHAIN_APPROX_NONE, Point(faceRect.x,faceRect.y));
+			findContours(X, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE, Point2i(faceRect.x,faceRect.y));
 
 			//find the main head blob (assuming largest inside the head box)
 			maxSize = 0.0;
@@ -189,7 +186,6 @@ public:
 					biggestblob = i;
 				}
 			}
-
 
 			//for this contour, find its two largest internal contours above a min size, call these the eyes
 			deque<int> eyeCan(2);
@@ -214,7 +210,6 @@ public:
 					}
 				}
 			}
-
 
 			//calculate the center position of the eyes
 			Point * eyeMidPoint = NULL;

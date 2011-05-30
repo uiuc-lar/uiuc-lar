@@ -65,7 +65,7 @@ protected:
 
 	BufferedPort<ImageOf<PixelRgb> > *portImgIn;
 	BufferedPort<ImageOf<PixelRgb> > *portImgOut;
-	BufferedPort<Bottle>			 *portDetLoc;
+	BufferedPort<yarp::sig::Vector>	 *portDetLoc;
 
 	ImageOf<PixelFloat> *prevSal;
 
@@ -90,7 +90,7 @@ public:
     virtual bool threadInit()
     {
 
-        name=rf.check("name",Value("myShakeDetector")).asString().c_str();
+        name=rf.check("name",Value("shakeDetector")).asString().c_str();
         alpha=rf.check("alpha",Value(0.05)).asDouble();
         leakage=rf.check("leak",Value(0.9999)).asDouble();
         detthresh=rf.check("threshold",Value(90.0)).asDouble();
@@ -107,7 +107,7 @@ public:
         string portOutName="/"+name+"/img:o";
         portImgOut->open(portOutName.c_str());
 
-        portDetLoc=new BufferedPort<Bottle>;
+        portDetLoc=new BufferedPort<yarp::sig::Vector>;
         string portLocName="/"+name+"/loc:o";
         portDetLoc->open(portLocName.c_str());
 
@@ -138,7 +138,6 @@ public:
         	ImageOf<PixelFloat> *pSal = new ImageOf<PixelFloat>;
         	ImageOf<PixelFloat> *cSal = new ImageOf<PixelFloat>;
         	ImageOf<PixelRgb> &imgOut=portImgOut->prepare();
-        	Bottle &detectedLoc=portDetLoc->prepare();
 
         	//apply motion salience filter
         	filter->apply(*pImgIn, *pDest, *pSal);
@@ -205,9 +204,10 @@ public:
 
         		if (sqrt((xmax/mcnt-lsx)*(xmax/mcnt-lsx)+(ymax/mcnt-lsy)*(ymax/mcnt-lsy)) > nmaxmindst) {
 
+                	yarp::sig::Vector &detectedLoc=portDetLoc->prepare();
 					detectedLoc.clear();
-					detectedLoc.addInt(xmax/mcnt);
-					detectedLoc.addInt(ymax/mcnt);
+					detectedLoc.push_back(xmax/mcnt);
+					detectedLoc.push_back(ymax/mcnt);
 					portDetLoc->write();
 					draw::addCrossHair(imgOut, PixelRgb(0,255,0), xmax/mcnt, ymax/mcnt, 10);
 					lsx = xmax/mcnt;

@@ -86,7 +86,7 @@ public:
     virtual bool threadInit()
     {
 
-        name=rf.check("name",Value("mySalAgg")).asString().c_str();
+        name=rf.check("name",Value("objectSalience")).asString().c_str();
         colthresh=rf.check("colthresh",Value(10.0)).asDouble();
         minobjsize=rf.check("minobjsize",Value(30.0)).asDouble();
 
