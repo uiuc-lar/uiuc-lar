@@ -12,7 +12,7 @@
    </module>
    <module>
       <name>shakeSalience</name>
-      <parameters></parameters>
+      <parameters>--from /home/niehaus4/uiuc-lar/vision/jointAttention/conf/eventdetector.ini</parameters>
 	  <node>johnny5</node>
 	<tag>shakesalience</tag>
    </module>

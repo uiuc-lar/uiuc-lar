@@ -37,6 +37,7 @@
 #include <iCub/vis/Salience.h>
 #include <iCub/vis/MotionSalience.h>
 #include <iCub/vis/ColorSalience.h>
+#include <iCub/vis/RuddySalience.h>
 
 #include <cv.h>
 
@@ -67,7 +68,10 @@ protected:
 	BufferedPort<ImageOf<PixelRgb> > *portImgOut;
 	BufferedPort<yarp::sig::Vector>	 *portDetLoc;
 
-	ImageOf<PixelFloat> *prevSal;
+	ImageOf<PixelFloat> *accu;
+	ImageOf<PixelFloat> *deccu;
+	Mat * A;
+	Mat * D;
 
 	int imx,imy;
 
@@ -75,11 +79,13 @@ protected:
 	ColorSalience * cfilter;
 
 	double alpha;
-	double leakage;
 	double detthresh;
 	double colthresh;
 	double motionsat;
+	double motionthresh;
 	double nmaxmindst;
+	int decaytime;
+	int nmineventsize;
 	int lsx, lsy;
 
 public:
@@ -91,13 +97,13 @@ public:
     {
 
         name=rf.check("name",Value("shakeDetector")).asString().c_str();
-        alpha=rf.check("alpha",Value(0.05)).asDouble();
-        leakage=rf.check("leak",Value(0.9999)).asDouble();
         detthresh=rf.check("threshold",Value(90.0)).asDouble();
         colthresh=rf.check("colthresh",Value(30.0)).asDouble();
         motionsat=rf.check("motionsat",Value(50.0)).asDouble();
         nmaxmindst=rf.check("nmaxmindst",Value(25.0)).asDouble();
-
+        motionthresh=rf.check("motionthresh",Value(10.0)).asDouble();
+        nmineventsize=rf.check("mineventsize",Value(40)).asInt();
+        decaytime=rf.check("decayt",Value(10)).asInt();
 
         portImgIn=new BufferedPort<ImageOf<PixelRgb> >;
         string portInName="/"+name+"/img:i";
@@ -117,7 +123,11 @@ public:
         cfilter = new ColorSalience;
         cfilter->open(rf);
 
-        prevSal = NULL;
+        accu = new ImageOf<PixelFloat>;
+        accu->resize(0,0);
+        deccu = new ImageOf<PixelFloat>;
+        deccu->resize(0,0);
+
         lsx = -1000;
         lsy = -1000;
 
@@ -140,99 +150,104 @@ public:
         	ImageOf<PixelRgb> &imgOut=portImgOut->prepare();
 
         	//apply motion salience filter
-        	filter->apply(*pImgIn, *pDest, *pSal);
         	cfilter->apply(*pImgIn, *pDest, *cSal);
+        	filter->apply(*pImgIn, *pDest, *pSal);
 
         	//set up dimensions if first sample
-        	if (prevSal == NULL) {
+        	if (accu->height() == 0 || accu->width() == 0) {
         		imx = pSal->width();
         		imy = pSal->height();
-        		prevSal = new ImageOf<PixelFloat>;
-        		prevSal->resize(imx,imy);
-        		prevSal->zero();
+        		accu->resize(imx,imy);
+        		accu->zero();
+        		deccu->resize(imx,imy);
+        		deccu->zero();
+           	    A = new Mat(accu->height(), accu->width(), CV_32F, (void *)accu->getRawImage());
+           	    D = new Mat(deccu->height(), deccu->width(), CV_32F, (void *)deccu->getRawImage());
         	}
 
 
-        	//temporal filtering
-        	ImageOf<PixelFloat> * motionSal = new ImageOf<PixelFloat>;
-        	ImageOf<PixelFloat> * motionBase = new ImageOf<PixelFloat>;
-        	motionSal->copy(*pSal);
-        	motionBase->copy(*pSal);
-
-        	//color salience mask
+        	//threshold to get color salience mask
         	Mat * M = new Mat(cSal->height(), cSal->width(), CV_32F, (void *)cSal->getRawImage());
         	Mat * msk = new Mat(cSal->height(), cSal->width(), CV_32F);
         	threshold(*M, *msk, colthresh, 1.0, CV_THRESH_BINARY);
-        	msk->copyTo(*M);
 
-        	//spatial filter first
-        	Mat * T = new Mat(motionSal->height(), motionSal->width(), CV_32F, (void *)motionSal->getRawImage());
-        	Mat * C = new Mat(motionSal->height(), motionSal->width(), CV_32F);
+        	//smooth out and saturate the motion salience map
+        	Mat * T = new Mat(pSal->height(), pSal->width(), CV_32F, (void *)pSal->getRawImage());
+        	Mat * C = new Mat(pSal->height(), pSal->width(), CV_32F);
         	GaussianBlur(*T, *C, Size(25,25), 5.0, 5.0);
         	threshold(*C, *T, motionsat, 1.0, THRESH_TRUNC);
 
+        	//combine the two maps and threshold to get 'colorful, moving' objects
+        	multiply(*msk, *T, *M);
+        	threshold(*M, *C, motionthresh, 1.0, CV_THRESH_BINARY);
+
+        	//to detect a 'sustained' activity event, keep an integrator of the combined map
+        	add(*A,*C,*A);
+
+        	//also keep an inactivity accumulator (activity in a pixel resets its count)
+        	add(*D,1.0,*D);
+        	subtract(1.0, *C, *msk);
+        	multiply(*D, *msk, *D);
+        	min(*D, decaytime+1, *D);
+
+        	//if a pixel is inactive long enough, reset its accumulator
+        	threshold(*D, *msk, decaytime, 1.0, CV_THRESH_BINARY_INV);
+        	multiply(*A, *msk, *A);
+        	min(*A, 255.0, *A);
+        	imgOut.copy(*accu);
+
+        	//threshold the accumulator to find regions of sustained interest (such as a moving toy)
+        	double * cmax = new double;
+        	Point * mloc = new Point;
         	int xmax, ymax, mcnt;
-        	double cmax = 0.0;
+        	minMaxLoc(*A, NULL, cmax, NULL, mloc);
 
-        	mcnt = 0;
-        	xmax = 0;
-        	ymax = 0;
-        	for (int i = 0; i < motionSal->width(); i++) {
-        		for (int j = 0; j < motionSal->height(); j++) {
+        	//find the region of the most active point
+        	if (*cmax > detthresh) {
 
-        			motionSal->pixel(i,j) = cSal->pixel(i,j)*(alpha*motionSal->pixel(i,j) + leakage*prevSal->pixel(i,j));
-        			if (motionSal->pixel(i,j) > 255) {
-        				motionSal->pixel(i,j) = 255;
-        			}
+        		Rect * bbox = new Rect;
+				threshold(*A, *C, detthresh, 1.0, CV_THRESH_BINARY);
+				mcnt = floodFill(*C, *mloc, Scalar(255.0), bbox);
+				C->copyTo(*T);
 
-        			motionBase->pixel(i,j) = cSal->pixel(i,j)*motionSal->pixel(i,j);
+				xmax = bbox->x+(bbox->width/2.0);
+				ymax = bbox->y+(bbox->height/2.0);
 
-        			//find current centroid of detected pixels
-        			if (motionBase->pixel(i,j) > detthresh) {
-        				mcnt++;
-        				xmax += i;
-        				ymax += j;
-        			}
+				//if the region has enough active points to be considered an 'event'
+				if (mcnt > nmineventsize) {
 
-        		}
-        	}
+					//non-max supression of sequential detection
+					if (sqrt((xmax-lsx)*(xmax-lsx)+(ymax-lsy)*(ymax-lsy)) > nmaxmindst) {
 
-        	imgOut.copy(*motionBase);
+						yarp::sig::Vector &detectedLoc=portDetLoc->prepare();
+						detectedLoc.clear();
+						detectedLoc.push_back(xmax);
+						detectedLoc.push_back(ymax);
+						portDetLoc->write();
+						draw::addCrossHair(imgOut, PixelRgb(0,255,0), xmax, ymax, 10);
+						lsx = xmax;
+						lsy = ymax;
+						printf("event detected, generating point\n");
 
+					} else {
 
-        	if (mcnt > 0) {
+						draw::addCrossHair(imgOut, PixelRgb(255,0,0), xmax, ymax, 10);
 
-        		if (sqrt((xmax/mcnt-lsx)*(xmax/mcnt-lsx)+(ymax/mcnt-lsy)*(ymax/mcnt-lsy)) > nmaxmindst) {
+					}
 
-                	yarp::sig::Vector &detectedLoc=portDetLoc->prepare();
-					detectedLoc.clear();
-					detectedLoc.push_back(xmax/mcnt);
-					detectedLoc.push_back(ymax/mcnt);
-					portDetLoc->write();
-					draw::addCrossHair(imgOut, PixelRgb(0,255,0), xmax/mcnt, ymax/mcnt, 10);
-					lsx = xmax/mcnt;
-					lsy = ymax/mcnt;
+				}
 
-        		} else {
-
-        			draw::addCrossHair(imgOut, PixelRgb(255,0,0), xmax/mcnt, ymax/mcnt, 10);
-
-        		}
-
+				delete bbox;
 
         	}
-        	else {
-        		portDetLoc->unprepare();
-        	}
 
-        	delete prevSal;
-        	prevSal = motionSal;
+        	delete cmax;
+        	delete mloc;
 
             portImgOut->write();
 
             delete msk;
             delete C;
-            delete motionBase;
             delete pDest;
             delete pSal;
             delete cSal;
