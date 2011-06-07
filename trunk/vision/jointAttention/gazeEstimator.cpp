@@ -142,7 +142,6 @@ public:
 			Mat * C = new Mat(pSal->height(), pSal->width(), CV_32F);
 			threshold(*T, *C, faceThresh, 255.0, CV_THRESH_BINARY);
 
-
 			//find the list of skin colored blobs using connected components
 			vector<vector<Point> > contours;
 			vector<Vec4i> hierarchy;
@@ -248,10 +247,7 @@ public:
 			sprintf(labelc,"r = %f", ratio);
 			string label(labelc);
 			rectangle(mainImg, Point(faceRect.x,faceRect.y), Point(faceRect.x+faceRect.width,faceRect.y+faceRect.height), Scalar(255,0,0));
-			//line(mainImg, Point(eyeMidPoint->x,faceRect.y), Point(eyeMidPoint->x,faceRect.y+faceRect.height), Scalar(0,0,255));
-			//line(mainImg, Point(faceRect.x,eyeMidPoint->y), Point(faceRect.x+faceRect.width,eyeMidPoint->y), Scalar(0,0,255));
 			circle(mainImg, *eyeMidPoint, 1, Scalar(0, 255, 0), 2);
-			//putText(mainImg, label, Point(faceRect.x,faceRect.y+faceRect.height), FONT_HERSHEY_SIMPLEX, 0.2, Scalar(0, 0, 255));
 
 			//write out the image, features, and head position
 			featureVec.clear();
@@ -262,13 +258,6 @@ public:
 			headBoxVec.push_back(faceRect.y);
 			headBoxVec.push_back(faceRect.width);
 			headBoxVec.push_back(faceRect.height);
-
-			//cvtColor(mainImg,mainImg,CV_BGR2RGB);
-			//IplImage outImg = mainImg;
-			//ImageOf<PixelBgr> tmps;
-			//tmps.resize(imgOut);
-			//tmps.wrapIplImage(&outImg);
-			//imgOut.copy(tmps);
 
 
 			portImgOut->write();
