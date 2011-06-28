@@ -7,9 +7,6 @@
  * --side <left/right>
  */
 
-// modify this to (a) widen safety radius, (b) keep robot from putting hand behind
-// body
-
 
 //yarp
 #include <yarp/os/all.h>
@@ -167,8 +164,8 @@ int main(int argc, char *argv[]){
     		commandCart[i] = pred.get(i).asDouble();
     	}
     	double rad = sqrt(commandCart[0]*commandCart[0]+commandCart[1]*commandCart[1]);
-    	// 30 cm safety radius
-    	if (rad > 0.4){
+    	// safety radius back to 30 cm
+    	if (rad > 0.3){
     		pos->positionMove(command.data());
     		done = false;
     		while(!done){
