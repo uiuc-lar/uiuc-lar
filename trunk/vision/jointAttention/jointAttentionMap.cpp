@@ -28,10 +28,11 @@
  * 			alpha - zero location for temporal exponential filtering (O)
  * 			weights, inputs, outputs - data files containing previously trained parameters, tab format (O)
  *
- * outputs: rbg (should be float) salience map normalized to have inf_norm of 255
+ * outputs: rbg and PixelFloat salience maps normalized to have inf_norm of 255
  * 			upon request should also produce the neuron weights, params, etc...
  *
- * TODOs: Yarpify this much more, break some things out into classes, fix N1,N2 garbage
+ * TODOs:   improve functionality for rpc interface,
+ * 			more configuration options for rbfnn output post-processing.
  *
  */
 

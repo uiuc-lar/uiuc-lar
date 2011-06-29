@@ -1,28 +1,42 @@
 /*
- *  salienceAggregator.cpp
+ *  randObjSeg
  *
  * 	Logan Niehaus
- * 	5/7/11 (overhaul 6/21/11)
- * 	demo-ish module for testing the joint attention capabilities. updated to use
- * 		watershed-based object segmentation documented in randObjSeg.cpp. segmented
- * 		object with highest average salience value is written to port.
+ * 	6/12/11
+ * 	module that segments a particular kind of image, namely a color image taken
+ *  from the robot with the expectation of a white background with dark or colorful
+ *  objects sitting on a table. uses the watershed algorithm provided by opencv
+ *  to do the segmentation. chooses a random segmented object and publishes its contour
+ *  data.
  *
- * inputs:
- * 		/objectSalience/img:i	-- input image from icub
- * 		/objectSalience/jas:i 	-- salience map from joint attention system
+ *  segmentation desc: pixelwise OR taken between thresholded color and (inverted) intensity
+ *  	salience maps, responding to colorful or dark objects. canny edge detection is applied
+ *  	to these maps as well, and the pixelwise OR of the edge maps is inverted and used as a
+ *  	mask for the combined thresholded image, in order to further separate occluded objects.
+ *  	specks are filtered out and all proper object contours are given markers for the
+ *  	watershed algorithm. all non-salient pixels in top half of image are marked as backdrop,
+ *  	and all non-salient pixels in bottom half are marked as the table. the watershed algorithm
+ *  	is run using these initial markings. basin markers corresponding to non-backdrop/table
+ *  	pixels are then segmented. a random segmented object is chosen from these and its contour
+ *  	data is published to port.
  *
- * params:
+ *
+ *  inputs:
+ *  	/randObjSeg/img:i	-- RGB input image as described above
+ *
+ *  params:
  *  	colthresh	-- color salience threshold (D 50.0)
  *  	inthresh	-- intensity salience threshold (D 130.0)
  *  	minobjsize	-- minimum segmented obj size; smaller objects not chosen (D 100.0)
- *  	name		-- module ports basename (D /objectSalience)
+ *  	name		-- module ports basename (D /randObjSeg)
+ *  	rate		-- update rate in ms; objs segmented and published at this rate (D 50)
  *
- * outputs:
- * 		/objectSalience/img:o 	-- image with a contour placed around the attended to region
- * 		/objectSalience/obj:o	-- Nx2 Matrix containing list of contour pixels for segmented obj.
+ *  outputs:
+ *  	/randObjSeg/img:o	-- same as input image, but with segmented object outlined
+ *  	/randObjSeg/obj:o	-- Nx2 Matrix containing list of contour pixels for segmented obj.
  *
- * TODOs: doesn't quite work right yet, a lot of mis-segmentations happening. need better object
- * 			filtering, probably using prior knowledge of experimental setup.
+ *  TODO:
+ *  	need to make this a lot more configurable, and a lot more general. pretty hackish right now
  *
  */
 
@@ -45,7 +59,6 @@
 #include <cv.h>
 
 #include <string>
-#include <time.h>
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -59,11 +72,9 @@ using namespace yarp::sig;
 using namespace yarp::math;
 using namespace iCub::vis;
 
-
 #define PI 3.14159
 
-
-class salAggThread : public RateThread
+class randObjSegThread : public RateThread
 {
 protected:
 
@@ -72,26 +83,28 @@ protected:
 
 	BufferedPort<ImageOf<PixelRgb> > *portImgIn;
 	BufferedPort<ImageOf<PixelRgb> > *portImgOut;
-	BufferedPort<ImageOf<PixelFloat> > *portGazeIn;
 	BufferedPort<yarp::sig::Matrix>	*portObjOut;
 
 	IntensitySalience * ifilter;
 
 	double colthresh, inthresh;
 	int minobjsize;
+	int trate;
 
 public:
 
-	salAggThread(ResourceFinder &_rf) : RateThread(50), rf(_rf)
+	randObjSegThread(ResourceFinder &_rf) : RateThread(50), rf(_rf)
 	{ }
 
 	virtual bool threadInit()
 	{
 
-		name=rf.check("name",Value("objectSalience")).asString().c_str();
-		colthresh=rf.check("colthresh",Value(50.0)).asDouble();
+		name=rf.check("name",Value("randObjSeg")).asString().c_str();
+		colthresh = rf.check("colthresh",Value(50.0)).asDouble();
 		inthresh = rf.check("inthresh",Value(130.0)).asDouble();
-		minobjsize=rf.check("minobjsize",Value(100)).asInt();
+		minobjsize = rf.check("minobjsize",Value(100)).asInt();
+		trate = rf.check("rate",Value(50)).asInt();
+		this->setRate(trate);
 
 		portImgIn=new BufferedPort<ImageOf<PixelRgb> >;
 		string portInName="/"+name+"/img:i";
@@ -101,16 +114,14 @@ public:
 		string portOutName="/"+name+"/img:o";
 		portImgOut->open(portOutName.c_str());
 
-		portGazeIn=new BufferedPort<ImageOf<PixelFloat> >;
-		string portGazeName="/"+name+"/jas:i";
-		portGazeIn->open(portGazeName.c_str());
-
 		portObjOut=new BufferedPort<yarp::sig::Matrix>;
 		string portObjName="/"+name+"/obj:o";
 		portObjOut->open(portObjName.c_str());
 
 		ifilter = new IntensitySalience;
 		ifilter->open(rf);
+
+		srand(time(NULL));
 
 		return true;
 
@@ -126,10 +137,9 @@ public:
 		ImageOf<PixelFloat> *iSal = NULL;
 
 
-		if (pImgIn) {
-
-			ImageOf<PixelRgb> &imgOut= portImgOut->prepare();
-			ImageOf<PixelFloat> *pJAIn = portGazeIn->read(true);
+		//if there is a camera image, use that
+		if (pImgIn)
+		{
 
 			cDest = new ImageOf<PixelRgb>;
 			cSal = new ImageOf<PixelFloat>;
@@ -138,6 +148,8 @@ public:
 
 			//apply color normalization and invert to get color based salience
 			normalizeColor(*pImgIn, *cDest, *cSal);
+
+			ImageOf<PixelRgb> &imgOut= portImgOut->prepare();
 
 			Mat Y,Z,Tmp;
 			Mat * M = new Mat(cSal->height(), cSal->width(), CV_32F, (void *)cSal->getRawImage());
@@ -235,44 +247,37 @@ public:
 			contours.clear();
 			M->convertTo(X,CV_8UC1);
 			findContours(X, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
-			M->setTo(Scalar(0));
-			Mat icubImg((IplImage *)imgOut.getIplImage(), false);
-			for (int i = 0; i < contours.size(); i++) {
-				if (contours[i].size() > minobjsize) {
-					drawContours(*M, contours, i, Scalar(255), -1);
-					drawContours(icubImg, contours, i, Scalar(255, 0, 0), 1);
-				}
-			}
 
-			//use the color salience bw image to mask the joint attention map
-			Mat * P = new Mat(pJAIn->height(), pJAIn->width(), CV_32F, (void *)pJAIn->getRawImage());
-			multiply(*M, *P, *N);
-
-			//find the blob with highest average salience
-			Rect br;
-			double maxSal = 0.0;
+			//pick a random segmented object
 			int iBlob = -1;
+			vector<int> vBlobs(0);
 			for (int i = 0; i < contours.size(); i++) {
-
-				//weed out small ones ones first
-				if (contours[i].size() > minobjsize) {
-
-					br = boundingRect(Mat(contours[i]));
-					if (sum(Mat(*N,br))[0]/abs(contourArea(Mat(contours[i]))) > maxSal) {
-						maxSal = sum(Mat(*N,br))[0]/abs(contourArea(Mat(contours[i])));
-						iBlob = i;
-					}
+				if (contourArea(Mat(contours[i])) > minobjsize) {
+					vBlobs.push_back(i);
 				}
-
+			}
+			if (vBlobs.size() > 0) {
+				iBlob = vBlobs.at(rand() % vBlobs.size());
 			}
 
+			//write the contour pixels of the object to port
+			Matrix &object = portObjOut->prepare();
+			yarp::sig::Vector xs, ys;
+			vector<Point> cts = contours[iBlob];
+			for (int i = 0; i < cts.size(); i++) {
+				xs.push_back(cts.at(i).y);
+				ys.push_back(cts.at(i).x);
+				imgOut.pixel(cts.at(i).x,cts.at(i).y) = PixelRgb(255, 0, 0);
+			}
+			object.resize(xs.size(),2);
+			object.setCol(0,xs);
+			object.setCol(1,ys);
 
-			drawContours(icubImg, contours, iBlob, Scalar(0, 0, 255), 1);
+
+			portObjOut->write();
 			portImgOut->write();
 
-			delete M;
-			delete N;
-			delete P;
+
 			delete Mt;
 			delete Nt;
 			delete mark;
@@ -282,8 +287,6 @@ public:
 
 		}
 
-
-
 	}
 
 	virtual void threadRelease()
@@ -291,34 +294,31 @@ public:
 
 		portImgIn->interrupt();
 		portImgOut->interrupt();
-		portGazeIn->interrupt();
 		portObjOut->interrupt();
-
 
 		delete portImgIn;
 		delete portImgOut;
-		delete portGazeIn;
 		delete portObjOut;
 
 	}
 
 };
 
-class salAggModule: public RFModule
+class randObjSegModule: public RFModule
 {
 
 protected:
 
-	salAggThread *thr;
+	randObjSegThread *thr;
 
 public:
-	salAggModule() { }
+	randObjSegModule() { }
 
 	virtual bool configure(ResourceFinder &rf)
 	{
 		Time::turboBoost();
 
-		thr=new salAggThread(rf);
+		thr=new randObjSegThread(rf);
 		if (!thr->start())
 		{
 			delete thr;
@@ -352,7 +352,7 @@ int main(int argc, char *argv[])
 
 	rf.configure("ICUB_ROOT",argc,argv);
 
-	salAggModule mod;
+	randObjSegModule mod;
 
 	return mod.runModule(rf);
 }
