@@ -148,9 +148,12 @@ public:
             pImgBRR->resize(*pImgR);
             Mat * T, * X;
 			vector<vector<Point> > contours;
-			vector<vector<Point> > cts;
 			vector<Vec4i> hierarchy;
+			int biggestBlob;
 			loc.clear();
+
+
+    		ImageOf<PixelRgb> &imgOut= portImgD->prepare();
 
         	//pull out the blueness channel
         	PixelRgb pxl;
@@ -177,8 +180,10 @@ public:
                 		bn = 255.0F * pxl.b/lum;
 
                 		//get the blueness
-                		val = (bn - (rn+gn)/2);
-                		if (val > 255.0) {
+                		//val = (bn - (rn+gn)/2);
+                		
+				val = (rn+gn)/2.0 - bn;
+				if (val > 255.0) {
                 			val = 255.0;
                 		}
                 		if (val < 0.0) {
@@ -191,18 +196,22 @@ public:
 
                 //threshold to find blue blobs
     			T = new Mat(oImg->height(), oImg->width(), CV_32F, (void *)oImg->getRawImage());
-    			threshold(*T, *T, 200.0, 255.0, CV_THRESH_BINARY);
+    			threshold(*T, *T, 15.0, 255.0, CV_THRESH_BINARY);
+
+        		imgOut.copy(*oImg);
+
     			X = new Mat(oImg->height(), oImg->width(), CV_8UC1);
     			T->convertTo(*X,CV_8UC1);
     			findContours(*X, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
 
     			//find largest blob and its moment
     			double maxSize = 0.0;
-    			int biggestBlob = -1;
+    			biggestBlob = -1;
     			double xloc, yloc;
     			for (int i = 0; i < contours.size(); i++) {
-    				if (abs(contourArea(Mat(contours[i]))) > maxSize) {
-    					maxSize = abs(contourArea(Mat(contours[i])));
+    				if (abs(contourArea(Mat(contours[i])))/arcLength(Mat(contours[i]), true) > maxSize &&
+    						abs(contourArea(Mat(contours[i])))/arcLength(Mat(contours[i]), true) > 2.0) {
+    					maxSize = abs(contourArea(Mat(contours[i])))/arcLength(Mat(contours[i]), true);
     					biggestBlob = i;
     				}
     			}
@@ -221,9 +230,6 @@ public:
     			delete X;
 
     		}
-
-    		ImageOf<PixelRgb> &imgOut= portImgD->prepare();
-    		imgOut.copy(*pImgL);
 
     		//if a blob in both images was detected, go to it
     		if (loc.size() == 4) {

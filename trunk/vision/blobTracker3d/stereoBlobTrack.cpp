@@ -68,6 +68,7 @@ protected:
 	double tol;	//stopping tolerance
 	int color; 	//which color blob to find
 	double thresh;
+	bool stopped;
 
 public:
 
@@ -132,11 +133,13 @@ public:
 
 		}
 
-		igaze->setNeckTrajTime(0.4);
-		igaze->setEyesTrajTime(0.1);
+		igaze->setNeckTrajTime(1.0);
+		igaze->setEyesTrajTime(0.5);
 		igaze->bindNeckPitch(-30,30);
 		igaze->bindNeckYaw(-25,25);
 		igaze->bindNeckRoll(-10,10);
+
+		stopped = false;
 
 		return true;
 
@@ -268,21 +271,25 @@ public:
 				//check to see if within acceptable tolerance
 				du = (loc[0] - 160 + loc[2] -160)/2.0;
 				dv = (loc[1] - 120 + loc[3] -120)/2.0;
+				printf("left/right average divergence: %f\n", sqrt(du*du+dv*dv));
 				if (sqrt(du*du+dv*dv) < tol) {
 
 					//stop tracking command
 					igaze->stopControl();
-
+					stopped = true;
 
 				} else {
 
-					//continue tracking the object
-					yarp::sig::Vector pxl, pxr;
-					pxl.push_back(loc[0]);
-					pxl.push_back(loc[1]);
-					pxr.push_back(loc[2]);
-					pxr.push_back(loc[3]);
-					igaze->lookAtStereoPixels(pxl,pxr);
+					if (!stopped || (sqrt(du*du+dv*dv) > 2.0*tol)) { 
+						//continue tracking the object
+						yarp::sig::Vector pxl, pxr;
+						pxl.push_back(loc[0]);
+						pxl.push_back(loc[1]);
+						pxr.push_back(loc[2]);
+						pxr.push_back(loc[3]);
+						igaze->lookAtStereoPixels(pxl,pxr);
+						stopped = false;
+					}
 
 				}
 				draw::addCrossHair(imgOut, PixelRgb(0, 255, 0), loc[0], loc[1], 10);
