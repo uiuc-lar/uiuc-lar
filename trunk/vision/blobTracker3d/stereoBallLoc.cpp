@@ -201,15 +201,15 @@ public:
     			int biggestBlob = -1;
     			double xloc, yloc;
     			for (int i = 0; i < contours.size(); i++) {
-    				if (abs(contourArea(contours[i])) > maxSize) {
-    					maxSize = abs(contourArea(contours[i]));
+    				if (abs(contourArea(Mat(contours[i]))) > maxSize) {
+    					maxSize = abs(contourArea(Mat(contours[i])));
     					biggestBlob = i;
     				}
     			}
     			if (biggestBlob >= 0) {
 
     				//if a valid object was found, add its location
-    				Moments m = moments(contours[biggestBlob]);
+    				Moments m = moments(Mat(contours[biggestBlob]));
     				xloc = m.m10/m.m00;
     				yloc = m.m01/m.m00;
     				loc.add(xloc);

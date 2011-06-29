@@ -37,7 +37,6 @@
 #include <iCub/vis/Salience.h>
 #include <iCub/vis/MotionSalience.h>
 #include <iCub/vis/ColorSalience.h>
-#include <iCub/vis/RuddySalience.h>
 
 #include <cv.h>
 
@@ -150,8 +149,8 @@ public:
         	ImageOf<PixelRgb> &imgOut=portImgOut->prepare();
 
         	//apply motion salience filter
-        	cfilter->apply(*pImgIn, *pDest, *cSal);
         	filter->apply(*pImgIn, *pDest, *pSal);
+        	cfilter->apply(*pImgIn, *pDest, *cSal);
 
         	//set up dimensions if first sample
         	if (accu->height() == 0 || accu->width() == 0) {
@@ -243,6 +242,8 @@ public:
 
         	delete cmax;
         	delete mloc;
+
+        	imgOut.copy(*pDest);
 
             portImgOut->write();
 

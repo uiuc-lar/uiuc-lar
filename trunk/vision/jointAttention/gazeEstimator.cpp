@@ -79,6 +79,7 @@ protected:
 	double eyeThresh;
 	int minEyeSize;
 	double maxEyeDist;
+	double minFaceSize;
 
 public:
 
@@ -93,6 +94,7 @@ public:
 		eyeThresh=rf.check("eyethresh",Value(20.0)).asDouble();
 		minEyeSize=rf.check("mineyesize",Value(10)).asInt();
 		maxEyeDist=rf.check("maxeyedist",Value(30.0)).asDouble();
+		minFaceSize=rf.check("minfacesize",Value(100.0)).asDouble();
 
 		portImgIn=new BufferedPort<ImageOf<PixelRgb> >;
 		string portInName="/"+name+"/img:i";
@@ -155,114 +157,124 @@ public:
 			for (int i = 0; i < contours.size(); i++) {
 				//also assume the face is in the top half of the image
 				Moments fc = moments(Mat(contours[i]));
-				if ((abs(contourArea(Mat(contours[i]))) > maxSize) && (fc.m01/fc.m00 < pSal->height()/2)) {
+				if ((abs(contourArea(Mat(contours[i]))) > maxSize) && (fc.m01/fc.m00 < pSal->height()/2) &&
+						abs(contourArea(Mat(contours[i]))) > minFaceSize) {
 					maxSize = abs(contourArea(Mat(contours[i])));
 					biggestblob = i;
 				}
 			}
 
-			Mat mainImg((IplImage *)imgOut.getIplImage(), false);
+			if (biggestblob < 0) {
 
-			//draw a box around the face zone
-			Rect faceRect = boundingRect(Mat(contours[biggestblob]));
+				portImgOut->write();
+				portFeatOut->unprepare();
+				portHeadBox->unprepare();
 
-			//select the face part of the image
-			Mat * subFace = new Mat(*T, faceRect);
-
-			//with face bounding box, use diff thresholds if desired
-			threshold(*subFace, *subFace, eyeThresh, 255.0, CV_THRESH_BINARY);
-			subFace->convertTo(X,CV_8UC1);
-			hierarchy.clear();
-			contours.clear();
-			findContours(X, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE, Point2i(faceRect.x,faceRect.y));
-
-			//find the main head blob (assuming largest inside the head box)
-			maxSize = 0.0;
-			biggestblob = -1;
-			for (int i = 0; i < contours.size(); i++) {
-				if (abs(contourArea(Mat(contours[i]))) > maxSize) {
-					maxSize = abs(contourArea(Mat(contours[i])));
-					biggestblob = i;
-				}
 			}
+			else {
 
-			//for this contour, find its two largest internal contours above a min size, call these the eyes
-			deque<int> eyeCan(2);
-			deque<double> canVals(2);
-			for (int i = 0; i < contours.size(); i++) {
-				if (i != biggestblob) {
-					Moments m = moments(Mat(contours[i]));
-					if ((pointPolygonTest(Mat(contours[biggestblob]), Point2f(m.m10/m.m00,m.m01/m.m00), false) > 0) &&
-							abs(contourArea(Mat(contours[i]))) > minEyeSize) {
-						if (abs(contourArea(Mat(contours[i]))) > canVals.front()) {
-							canVals.push_front(abs(contourArea(Mat(contours[i]))));
-							canVals.pop_back();
-							eyeCan.push_front(i);
-							eyeCan.pop_back();
-						}
-						else if (abs(contourArea(Mat(contours[i]))) > canVals.back()) {
-							canVals.pop_back();
-							canVals.push_back(abs(contourArea(Mat(contours[i]))));
-							eyeCan.pop_back();
-							eyeCan.push_back(i);
+				Mat mainImg((IplImage *)imgOut.getIplImage(), false);
+
+				//draw a box around the face zone
+				Rect faceRect = boundingRect(Mat(contours[biggestblob]));
+
+				//select the face part of the image
+				Mat * subFace = new Mat(*T, faceRect);
+
+				//with face bounding box, use diff thresholds if desired
+				threshold(*subFace, *subFace, eyeThresh, 255.0, CV_THRESH_BINARY);
+				subFace->convertTo(X,CV_8UC1);
+				hierarchy.clear();
+				contours.clear();
+				findContours(X, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE, Point2i(faceRect.x,faceRect.y));
+
+				//find the main head blob (assuming largest inside the head box)
+				maxSize = 0.0;
+				biggestblob = -1;
+				for (int i = 0; i < contours.size(); i++) {
+					if (abs(contourArea(Mat(contours[i]))) > maxSize) {
+						maxSize = abs(contourArea(Mat(contours[i])));
+						biggestblob = i;
+					}
+				}
+
+				//for this contour, find its two largest internal contours above a min size, call these the eyes
+				deque<int> eyeCan(2);
+				deque<double> canVals(2);
+				for (int i = 0; i < contours.size(); i++) {
+					if (i != biggestblob) {
+						Moments m = moments(Mat(contours[i]));
+						if ((pointPolygonTest(Mat(contours[biggestblob]), Point2f(m.m10/m.m00,m.m01/m.m00), false) > 0) &&
+								abs(contourArea(Mat(contours[i]))) > minEyeSize) {
+							if (abs(contourArea(Mat(contours[i]))) > canVals.front()) {
+								canVals.push_front(abs(contourArea(Mat(contours[i]))));
+								canVals.pop_back();
+								eyeCan.push_front(i);
+								eyeCan.pop_back();
+							}
+							else if (abs(contourArea(Mat(contours[i]))) > canVals.back()) {
+								canVals.pop_back();
+								canVals.push_back(abs(contourArea(Mat(contours[i]))));
+								eyeCan.pop_back();
+								eyeCan.push_back(i);
+							}
 						}
 					}
 				}
-			}
 
-			//calculate the center position of the eyes
-			Point * eyeMidPoint = NULL;
-			Moments m = moments(Mat(contours[biggestblob]));
-			Moments n = moments(Mat(contours[biggestblob]));
-			if (canVals.front() > 0) {
-				m = moments(Mat(contours[eyeCan.front()]));
-				n = moments(Mat(contours[eyeCan.front()]));
-				drawContours(mainImg, contours, eyeCan.front(), Scalar(0, 0, 255), 1, 8, hierarchy, 0);
-			}
-			//if we have detected the second eye, find the midpoint
-			if (canVals.back() > 0) {
-				n = moments(Mat(contours[eyeCan.back()]));
-				eyeMidPoint = new Point((m.m10/m.m00+n.m10/n.m00)/2, (m.m01/m.m00+n.m01/n.m00)/2);
-				drawContours(mainImg, contours, eyeCan.back(), Scalar(0, 0, 255), 1, 8, hierarchy, 0);
-			}
-			//if we do not detect the second eye, assume its location to be at edge of bounding box (on the correct side)
-			else {
-				if (m.m10/m.m00 < (faceRect.x+faceRect.width/2)) {
-					eyeMidPoint = new Point((m.m10/m.m00+faceRect.x)/2, (m.m01/m.m00+n.m01/n.m00)/2);
+				//calculate the center position of the eyes
+				Point * eyeMidPoint = NULL;
+				Moments m = moments(Mat(contours[biggestblob]));
+				Moments n = moments(Mat(contours[biggestblob]));
+				if (canVals.front() > 0) {
+					m = moments(Mat(contours[eyeCan.front()]));
+					n = moments(Mat(contours[eyeCan.front()]));
+					drawContours(mainImg, contours, eyeCan.front(), Scalar(0, 0, 255), 1, 8, hierarchy, 0);
 				}
+				//if we have detected the second eye, find the midpoint
+				if (canVals.back() > 0) {
+					n = moments(Mat(contours[eyeCan.back()]));
+					eyeMidPoint = new Point((m.m10/m.m00+n.m10/n.m00)/2, (m.m01/m.m00+n.m01/n.m00)/2);
+					drawContours(mainImg, contours, eyeCan.back(), Scalar(0, 0, 255), 1, 8, hierarchy, 0);
+				}
+				//if we do not detect the second eye, assume its location to be at edge of bounding box (on the correct side)
 				else {
-					eyeMidPoint = new Point((m.m10/m.m00+faceRect.x+faceRect.width)/2, (m.m01/m.m00+n.m01/n.m00)/2);
+					if (m.m10/m.m00 < (faceRect.x+faceRect.width/2)) {
+						eyeMidPoint = new Point((m.m10/m.m00+faceRect.x)/2, (m.m01/m.m00+n.m01/n.m00)/2);
+					}
+					else {
+						eyeMidPoint = new Point((m.m10/m.m00+faceRect.x+faceRect.width)/2, (m.m01/m.m00+n.m01/n.m00)/2);
+					}
 				}
+
+				//azimuth representation is the ratio of area in bb to left of center, to that right of center, minus one
+				double ratio = (double)(eyeMidPoint->x-(faceRect.x+faceRect.width/2.0))/(double)(faceRect.width/2.0);
+				//elevation representation is distance from eye midpt to bottom of bounding box
+				double botdist = (double)(faceRect.y+faceRect.height-eyeMidPoint->y);
+
+				//annotate the output image (debugging mostly)
+				char labelc[100];
+				sprintf(labelc,"r = %f", ratio);
+				string label(labelc);
+				rectangle(mainImg, Point(faceRect.x,faceRect.y), Point(faceRect.x+faceRect.width,faceRect.y+faceRect.height), Scalar(255,0,0));
+				circle(mainImg, *eyeMidPoint, 1, Scalar(0, 255, 0), 2);
+
+				//write out the image, features, and head position
+				featureVec.clear();
+				headBoxVec.clear();
+				featureVec.push_back(ratio);
+				featureVec.push_back(botdist);
+				headBoxVec.push_back(faceRect.x);
+				headBoxVec.push_back(faceRect.y);
+				headBoxVec.push_back(faceRect.width);
+				headBoxVec.push_back(faceRect.height);
+
+				portFeatOut->write();
+				portHeadBox->write();
+
 			}
-
-
-
-			//azimuth representation is the ratio of area in bb to left of center, to that right of center, minus one
-			double ratio = (double)(eyeMidPoint->x-(faceRect.x+faceRect.width/2.0))/(double)(faceRect.width/2.0);
-			//elevation representation is distance from eye midpt to bottom of bounding box
-			double botdist = (double)(faceRect.y+faceRect.height-eyeMidPoint->y);
-
-			//annotate the output image (debugging mostly)
-			char labelc[100];
-			sprintf(labelc,"r = %f", ratio);
-			string label(labelc);
-			rectangle(mainImg, Point(faceRect.x,faceRect.y), Point(faceRect.x+faceRect.width,faceRect.y+faceRect.height), Scalar(255,0,0));
-			circle(mainImg, *eyeMidPoint, 1, Scalar(0, 255, 0), 2);
-
-			//write out the image, features, and head position
-			featureVec.clear();
-			headBoxVec.clear();
-			featureVec.push_back(ratio);
-			featureVec.push_back(botdist);
-			headBoxVec.push_back(faceRect.x);
-			headBoxVec.push_back(faceRect.y);
-			headBoxVec.push_back(faceRect.width);
-			headBoxVec.push_back(faceRect.height);
-
 
 			portImgOut->write();
-			portFeatOut->write();
-			portHeadBox->write();
 
 			delete T;
 			delete C;
