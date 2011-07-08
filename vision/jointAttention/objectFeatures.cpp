@@ -56,16 +56,13 @@ protected:
 	BufferedPort<ImageOf<PixelRgb> > * iPort;
 	BufferedPort<yarp::sig::Vector> * oPort;
 
-	//cached image
-	ImageOf<PixelRgb> * cImg;
-
 	bool verbose;
 
 public:
 
 	vfPort(visFeatures *&_V, BufferedPort<ImageOf<PixelRgb> > *& _iPort,
 			BufferedPort<yarp::sig::Vector> *& oPort_)
-	: V(_V), iPort(_iPort), oPort(oPort_), verbose(false), cImg(NULL) { }
+	: V(_V), iPort(_iPort), oPort(oPort_), verbose(false) {	}
 
 	void setVerbosity(bool _verbose) { verbose = _verbose; }
 
@@ -76,13 +73,6 @@ public:
 		ImageOf<PixelRgb> *pImgIn = iPort->read(false);
 
 		if (pImgIn) {
-
-			//if we have a new image, use it; if not, used the cached image
-			cImg->copy(*pImgIn);
-
-		}
-
-		if (cImg) {
 
 			yarp::sig::Vector &features = oPort->prepare();
 
