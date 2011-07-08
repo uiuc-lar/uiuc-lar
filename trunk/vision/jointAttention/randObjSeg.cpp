@@ -177,13 +177,47 @@ class randObjSegModule: public RFModule
 protected:
 
 	randObjSegThread *thr;
+	Port * rpcPort;
+	string name;
 
 public:
 	randObjSegModule() { }
 
+	bool respond(const Bottle& command, Bottle& reply) {
+
+		//handle information requests
+		string msg(command.get(0).asString().c_str());
+		if (msg == "rate") {
+			if (command.size() < 2) {
+				reply.add(-1);
+			}
+			else {
+				int newrate = command.get(1).asInt();
+				if (newrate > 0) {
+					thr->setRate(newrate);
+				}
+			}
+		}
+		else {
+			reply.add(-1);
+		}
+
+
+		return true;
+
+	}
+
+
 	virtual bool configure(ResourceFinder &rf)
 	{
 		Time::turboBoost();
+
+		//set up the rpc port
+		name=rf.check("name",Value("randObjSeg")).asString().c_str();
+		rpcPort = new Port;
+		string portRpcName="/"+name+"/rpc";
+		rpcPort->open(portRpcName.c_str());
+		attach(*rpcPort);
 
 		thr=new randObjSegThread(rf);
 		if (!thr->start())
@@ -199,6 +233,9 @@ public:
 	{
 		thr->stop();
 		delete thr;
+
+		rpcPort->interrupt();
+		delete rpcPort;
 
 		return true;
 	}
