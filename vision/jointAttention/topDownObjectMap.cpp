@@ -116,6 +116,7 @@ public:
 			mask = new yarp::sig::Vector(fv.size());
 			(*mask) = 1.0;
 		}
+		printf("received new top-down event\n");
 
 		//create top-down event descriptor and pass to main thread
 		tdEvent T;
