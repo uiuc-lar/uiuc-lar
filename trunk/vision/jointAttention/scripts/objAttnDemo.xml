@@ -2,57 +2,57 @@
 <name>Object Attention System Demo</name>
 <dependencies>
       <port>/root</port>
-      <port>/icub/camcalib/right</port>
+      <port>/icub/camcalib/right/out</port>
 </dependencies>
    <module>
       <name>objectSegmentation</name>
       <parameters>--inthresh 120</parameters>
-      <node>nebula</node>
+      <node>johnny5</node>
 	<tag>objseg</tag>
    </module>
    <module>
       <name>randObjSeg</name>
       <parameters></parameters>
-	  <node>nebula</node>
+	  <node>johnny5</node>
 	<tag>rndobjseg</tag>
    </module>
    <module>
       <name>hmmRMLE</name>
       <parameters>--from /home/logan/uiuc-lar/vision/jointAttention/conf/objDemoRMLE.ini</parameters>
-      <node>nebula</node>
+      <node>johnny5</node>
 	<tag>hmmrmle</tag>
-	<stdio>nebula</stdio>
+	<stdio>johnny5</stdio>
    </module>
    <module>
       <name>objectFeatures</name>
       <parameters></parameters>
-	  <node>nebula</node>
+	  <node>johnny5</node>
 	<tag>objfeat</tag>
    </module>
    <module>
       <name>topDownObjectMap</name>
       <parameters>--wta</parameters>
-	  <node>nebula</node>
+	  <node>johnny5</node>
 	<tag>tdomap</tag>
    </module>
    <module>
       <name>yarpview</name>
       <parameters>--name /segview/img:i</parameters>
-	  <node>nebula</node>
+	  <node>johnny5</node>
 	<tag>segviewer</tag>
    </module>
    <module>
       <name>yarpview</name>
       <parameters>--name /objattnview/img:i</parameters>
-	  <node>nebula</node>
+	  <node>johnny5</node>
 	<tag>objattnviewer</tag>
    </module>
    <module>
       <name>yarp rpc</name>
       <parameters>/objHMM/rpc</parameters>
-      <node>nebula</node>
+      <node>johnny5</node>
        <tag>genrpc</tag>
-	<stdio>nebula</stdio>
+	<stdio>johnny5</stdio>
    </module>
 <connection>
   <from>/randObjSeg/obj:o</from>
@@ -75,17 +75,17 @@
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <from>/imageloader/out</from>
+  <from>/icub/camcalib/right/out</from>
   <to>/objectSeg/img:i</to>
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <from>/icub/camcalib/right</from>
+  <from>/icub/camcalib/right/out</from>
   <to>/objectFeatures/img:i</to>
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <from>/icub/camcalib/right</from>
+  <from>/icub/camcalib/right/out</from>
   <to>/randObjSeg/ref:i</to>
   <protocol>tcp</protocol>
 </connection>
@@ -105,7 +105,7 @@
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <from>/icub/camcalib/right</from>
+  <from>/icub/camcalib/right/out</from>
   <to>/topDownObjMap/img:i</to>
   <protocol>tcp</protocol>
 </connection>
