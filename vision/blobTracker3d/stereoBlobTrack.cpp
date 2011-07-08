@@ -24,6 +24,7 @@
  *  	name					-- module port basename (D /stereoBlobTrack)
  *  	robot					-- robot name, changes default traj time values (D icub)
  *  	mode					-- output data mode; arg should be either 'xyz' for cart or 'azelv' for azimuth/elevation/vergence (D xyz)
+ *  	verbose					-- setting flag makes the position echo to stdout when triggered
  *
  *  outputs:
  *  	/stereoBlobTrack/img:o  -- debug image, shows right threshold image w/ target blob locations marked
@@ -91,6 +92,7 @@ protected:
 	double neckTT, eyeTT; //neck and eye trajectory times (see ikingazectrl docs)
 	double hval; //hysteresis tolerance multiplier
 	bool mode; //output publishing mode
+	bool verbose;
 
 	bool stopped;
 
@@ -107,6 +109,7 @@ public:
 		tol=rf.check("tol",Value(5.0)).asDouble();
 		thresh=rf.check("thresh",Value(15.0)).asDouble();
 		hval=rf.check("hysval",Value(1.0)).asDouble();
+		verbose=rf.check("verbose");
 
 		//get the color channel from command line, parse for sanity
 		color = -1;
@@ -334,8 +337,14 @@ public:
 						yarp::sig::Vector &cPos = portPos->prepare();
 						if (mode) {
 							igaze->getFixationPoint(cPos);
+							if (verbose) {
+								printf("fixated xyz: %f,\t%f,\t%f\n", cPos[0], cPos[1], cPos[2]);
+							}
 						} else {
 							igaze->getAngles(cPos);
+							if (verbose) {
+								printf("fixed azelr: %f,\t%f,\t%f\n", cPos[0], cPos[1], cPos[2]);
+							}
 						}
 						Bottle tStamp;
 						tStamp.clear();
