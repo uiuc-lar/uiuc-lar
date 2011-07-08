@@ -700,6 +700,11 @@ public:
 				}
 			}
 		}
+		else if (msg == "reset") {
+			hs = thr->getHMMHandle();
+			hs->reset();
+			reply.add(0);
+		}
 		else {
 			reply.add(-1);
 		}
