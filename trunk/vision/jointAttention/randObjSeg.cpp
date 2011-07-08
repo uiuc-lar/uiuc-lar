@@ -2,38 +2,22 @@
  *  randObjSeg
  *
  * 	Logan Niehaus
- * 	6/12/11
- * 	module that segments a particular kind of image, namely a color image taken
- *  from the robot with the expectation of a white background with dark or colorful
- *  objects sitting on a table. uses the watershed algorithm provided by opencv
- *  to do the segmentation. chooses a random segmented object and publishes its contour
- *  data.
- *
- *  segmentation desc: pixelwise OR taken between thresholded color and (inverted) intensity
- *  	salience maps, responding to colorful or dark objects. canny edge detection is applied
- *  	to these maps as well, and the pixelwise OR of the edge maps is inverted and used as a
- *  	mask for the combined thresholded image, in order to further separate occluded objects.
- *  	specks are filtered out and all proper object contours are given markers for the
- *  	watershed algorithm. all non-salient pixels in top half of image are marked as backdrop,
- *  	and all non-salient pixels in bottom half are marked as the table. the watershed algorithm
- *  	is run using these initial markings. basin markers corresponding to non-backdrop/table
- *  	pixels are then segmented. a random segmented object is chosen from these and its contour
- *  	data is published to port.
- *
+ * 	6/12/11 (updated 7/7/11)
+ * 	receives a binary image (PixelFloat) in, which is a mask for all regions to be segmented.
+ * 	draws contours around all non-zero blobs and selects a random one to be sent to port.
+ * 	module no longer handles segmentation directly, and selects only a random object
  *
  *  inputs:
- *  	/randObjSeg/img:i	-- RGB input image as described above
+ *  	/randObjSeg/img:i	-- pixelfloat image with all non-zero pixels to be segmented.
+ *  	/randObjSeg/ref:i	-- rgb reference image, used to create debug output image
  *
  *  params:
- *  	colthresh	-- color salience threshold (D 50.0)
- *  	inthresh	-- intensity salience threshold (D 130.0)
- *  	minobjsize	-- minimum segmented obj size; smaller objects not chosen (D 100.0)
  *  	name		-- module ports basename (D /randObjSeg)
  *  	rate		-- update rate in ms; objs segmented and published at this rate (D 50)
  *
  *  outputs:
- *  	/randObjSeg/img:o	-- same as input image, but with segmented object outlined
  *  	/randObjSeg/obj:o	-- Nx2 Matrix containing list of contour pixels for segmented obj.
+ *  	/randObjSeg/img:o	-- rgb output image with the selected contour outlined in red.
  *
  *  TODO:
  *  	need to make this a lot more configurable, and a lot more general. pretty hackish right now
@@ -52,10 +36,6 @@
 #include <yarp/sig/ImageFile.h>
 #include <yarp/math/Math.h>
 
-#include <iCub/vis/Salience.h>
-#include <iCub/vis/IntensitySalience.h>
-#include "colorTransform.h"
-
 #include <cv.h>
 
 #include <string>
@@ -70,9 +50,6 @@ using namespace yarp;
 using namespace yarp::os;
 using namespace yarp::sig;
 using namespace yarp::math;
-using namespace iCub::vis;
-
-#define PI 3.14159
 
 class randObjSegThread : public RateThread
 {
@@ -81,14 +58,11 @@ protected:
 	ResourceFinder &rf;
 	string name;
 
-	BufferedPort<ImageOf<PixelRgb> > *portImgIn;
+	BufferedPort<ImageOf<PixelFloat> > *portImgIn;
+	BufferedPort<ImageOf<PixelRgb> > *portRefIn;
 	BufferedPort<ImageOf<PixelRgb> > *portImgOut;
 	BufferedPort<yarp::sig::Matrix>	*portObjOut;
 
-	IntensitySalience * ifilter;
-
-	double colthresh, inthresh;
-	int minobjsize;
 	int trate;
 
 public:
@@ -100,15 +74,16 @@ public:
 	{
 
 		name=rf.check("name",Value("randObjSeg")).asString().c_str();
-		colthresh = rf.check("colthresh",Value(50.0)).asDouble();
-		inthresh = rf.check("inthresh",Value(130.0)).asDouble();
-		minobjsize = rf.check("minobjsize",Value(100)).asInt();
 		trate = rf.check("rate",Value(50)).asInt();
 		this->setRate(trate);
 
-		portImgIn=new BufferedPort<ImageOf<PixelRgb> >;
+		portImgIn=new BufferedPort<ImageOf<PixelFloat> >;
 		string portInName="/"+name+"/img:i";
 		portImgIn->open(portInName.c_str());
+
+		portRefIn=new BufferedPort<ImageOf<PixelRgb> >;
+		string portRefName="/"+name+"/ref:i";
+		portRefIn->open(portRefName.c_str());
 
 		portImgOut=new BufferedPort<ImageOf<PixelRgb> >;
 		string portOutName="/"+name+"/img:o";
@@ -117,9 +92,6 @@ public:
 		portObjOut=new BufferedPort<yarp::sig::Matrix>;
 		string portObjName="/"+name+"/obj:o";
 		portObjOut->open(portObjName.c_str());
-
-		ifilter = new IntensitySalience;
-		ifilter->open(rf);
 
 		srand(time(NULL));
 
@@ -131,133 +103,33 @@ public:
 	{
 
 		// get inputs
-		ImageOf<PixelRgb> *pImgIn=portImgIn->read(false);
-		ImageOf<PixelRgb> *cDest = NULL;
-		ImageOf<PixelFloat> *cSal = NULL;
-		ImageOf<PixelFloat> *iSal = NULL;
+		ImageOf<PixelFloat> *pSegIn=portImgIn->read(false);
 
-
-		//if there is a camera image, use that
-		if (pImgIn)
+		//if there is a seg image, use that
+		if (pSegIn)
 		{
 
-			cDest = new ImageOf<PixelRgb>;
-			cSal = new ImageOf<PixelFloat>;
-			iSal = new ImageOf<PixelFloat>;
-			ifilter->apply(*pImgIn, *cDest, *iSal);
-
-			//apply color normalization and invert to get color based salience
-			normalizeColor(*pImgIn, *cDest, *cSal);
-
+			ImageOf<PixelRgb> *pImgIn=portRefIn->read(false);
 			ImageOf<PixelRgb> &imgOut= portImgOut->prepare();
 
-			Mat Y,Z,Tmp;
-			Mat * M = new Mat(cSal->height(), cSal->width(), CV_32F, (void *)cSal->getRawImage());
-			Mat * N = new Mat(iSal->height(), iSal->width(), CV_32F, (void *)iSal->getRawImage());
-			Mat * Mt = new Mat(cSal->height(), cSal->width(), CV_32F);
-			Mat * Nt = new Mat(iSal->height(), iSal->width(), CV_32F);
-			Mat * mark = new Mat(cSal->height(), cSal->width(), CV_32S);
-
-			//do a rough canny edge detection
-			M->convertTo(Tmp, CV_8UC1);
-			Canny(Tmp, Y, 140, 150);
-			N->convertTo(Tmp, CV_8UC1);
-			Canny(Tmp, Z, 140, 150);
-			max(Y,Z,Y);
-
-			//get the binary image of salient areas (high color and dark areas)
-			threshold(*M, *Mt, colthresh, 255.0, CV_THRESH_BINARY);
-			threshold(*N, *Nt, inthresh, 255.0, CV_THRESH_BINARY_INV);
-			max(*Mt,*Nt,*Mt);
-
-			//clear away some of the flecks inside of the blobs
-			dilate(*Mt, *M, Mat());
-			dilate(*M, *M, Mat());
-			erode(*M, *M, Mat());
-			erode(*M, *M, Mat());
-			erode(*M, *M, Mat());
-
-			//use canny boundaries to cut some lines b/w different objects
-			M->setTo(Scalar(0),Y);
-
-			//get list of blobs, do rough marking for watershed algorithm
+			Mat * M = new Mat(pSegIn->height(), pSegIn->width(), CV_32F, (void *)pSegIn->getRawImage());
+			Mat X;
 			vector<vector<Point> > contours;
 			vector<Vec4i> hierarchy;
-			Mat X;
-			int nblobs = 3;
-			double mv;
-			M->convertTo(X,CV_8UC1);
-			findContours(X, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
-			mark->setTo(Scalar(0));
-			for (int i = 0; i < contours.size(); i++) {
-				if (contourArea(Mat(contours[i])) > minobjsize) {
 
-					//check here if shape is roughly compact
-					mv = arcLength(Mat(contours[i]),true);
-					if (4*PI*contourArea(Mat(contours[i]))/(mv*mv) < .3) {
-
-						//for complex shapes, using contours as marker init works better
-						drawContours(*mark, contours, i, Scalar(nblobs), -1);
-
-					} else {
-
-						//for very compact shapes, just use the central moment
-						Moments m = moments(Mat(contours[i]));
-						mark->at<int>(Point2f(m.m10/m.m00,m.m01/m.m00)) = nblobs;
-
-					}
-					nblobs++;
-				}
-			}
-
-			//mark pixels which are definitely in the background
-			//assume a bit of structure here - namely there is a table and background
-			for (int i = 0; i < 10; i++) {
-				dilate(*M,*M,Mat());
-			}
-			for (int i = 0; i < M->rows; i++) {
-				for (int j = 0; j < M->cols; j++) {
-					if (M->at<float>(i,j) == 0) {
-						if (i > cSal->height()/2+50) {
-							mark->at<float>(i,j) = 1; //table
-						}
-						if (i < cSal->height()/2-50) {
-							mark->at<float>(i,j) = 2; //backdrop
-						}
-					}
-				}
-			}
-
-			//run watershed algorithm
-			imgOut.copy(*pImgIn);
-			Mat I((IplImage *)imgOut.getIplImage(), false);
-			watershed(I, *mark);
-
-			//zero out all marked background pixels
-			mark->convertTo(*M, CV_32F);
-			for (int i = 0; i < M->rows; i++) {
-				for (int j = 0; j < M->cols; j++) {
-					if (M->at<float>(i,j) <= 2) {
-						M->at<float>(i,j) = 0;
-					} else {
-						M->at<float>(i,j) *= 255.0/(float)nblobs;
-					}
-				}
-			}
-			contours.clear();
 			M->convertTo(X,CV_8UC1);
 			findContours(X, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
 
 			//pick a random segmented object
 			int iBlob = -1;
-			vector<int> vBlobs(0);
-			for (int i = 0; i < contours.size(); i++) {
-				if (contourArea(Mat(contours[i])) > minobjsize) {
-					vBlobs.push_back(i);
-				}
+			if (contours.size() > 0) {
+				iBlob = rand() % contours.size();
 			}
-			if (vBlobs.size() > 0) {
-				iBlob = vBlobs.at(rand() % vBlobs.size());
+
+			if (pImgIn) {
+				imgOut.copy(*pImgIn);
+			} else {
+				imgOut.copy(*pSegIn);
 			}
 
 			//write the contour pixels of the object to port
@@ -273,17 +145,10 @@ public:
 			object.setCol(0,xs);
 			object.setCol(1,ys);
 
-
 			portObjOut->write();
 			portImgOut->write();
 
-
-			delete Mt;
-			delete Nt;
-			delete mark;
-			delete cDest;
-			delete iSal;
-			delete cSal;
+			delete M;
 
 		}
 
@@ -293,10 +158,12 @@ public:
 	{
 
 		portImgIn->interrupt();
+		portRefIn->interrupt();
 		portImgOut->interrupt();
 		portObjOut->interrupt();
 
 		delete portImgIn;
+		delete portRefIn;
 		delete portImgOut;
 		delete portObjOut;
 

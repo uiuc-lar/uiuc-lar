@@ -76,8 +76,8 @@ public:
 		M = Mat::ones(_IM.height(), _IM.width(), CV_8UC1) - M;
 		I.setTo(Scalar(0,0,0),M);
 		Scalar aVal = sum(I);
-		f.push_back(aVal[1]/(double)bSize);
-		f.push_back(aVal[2]/(double)bSize);
+		f.push_back((aVal[1]/(double)bSize-128.0)/64.0);
+		f.push_back((aVal[2]/(double)bSize-128.0)/64.0);
 
 		//find convex hull and its area
 		cArea = contourArea(Mat(vp));
