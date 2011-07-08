@@ -26,6 +26,7 @@
  *  	bfile	--  ""			""     obs matrix data (O, disc only)
  *  	train	-- set to either 0 or 1, to give initial value for training flag (D 1)
  *  	log		-- flag to stream vector of all parameter values to port after each classification (O 0)
+ *  	verbose	-- for now just enables echoing of the current state to stdout
  *  	name	-- module basename (D /hmmRMLE)
  *
  *  outputs:
@@ -164,6 +165,7 @@ protected:
 	bool logparams;
 	int initsamples;
 	int nkmiter;
+	bool verbose;
 
 	//gsl rng vars
 	const gsl_rng_type * T;
@@ -203,8 +205,9 @@ public:
 
 	}
 
-	bool genFromModel(yarp::sig::Vector &G, int gstate) {
+	bool genFromModel(yarp::sig::Vector &Gout, int gstate) {
 
+		yarp::sig::Vector &G = portGenOut->prepare();
 		G.clear();
 
 		if (type) {
@@ -258,6 +261,10 @@ public:
 		}
 
 
+		Gout = G;
+		portGenOut->write();
+
+
 	}
 
 
@@ -273,6 +280,7 @@ public:
 		ltr = rf.check("lr");
 		training = (bool)rf.check("train",Value(1)).asInt();
 		logparams = (bool)rf.check("log");
+		verbose = (bool)rf.check("verbose");
 
 		//require number of states
 		if (rf.check("nstates")) {
@@ -474,6 +482,7 @@ public:
 						}
 						g_dist->KMeansInit(inData, true, nkmiter);
 						initsamples = 0;
+						printf("k-means initialization has been completed...\n");
 					}
 
 				}
@@ -572,6 +581,9 @@ public:
 					yarp::sig::Vector &cs = portStateOut->prepare();
 					cs.clear();
 					cs.push_back(cstate);
+					if (verbose) {
+						printf("current model state: %d\n", cstate);
+					}
 					portStateOut->write();
 
 				}
@@ -593,10 +605,9 @@ public:
 				}
 
 				//generate according to type
-				yarp::sig::Vector &G = portGenOut->prepare();
+				yarp::sig::Vector G;;
 				G.clear();
 				genFromModel(G, gstate);
-				portGenOut->write();
 			}
 		}
 	}
