@@ -595,8 +595,9 @@ public:
 
 				int gstate = -1;
 				yarp::sig::Vector *vPtr = genBuffer.front();
-				gstate = (int)(*vPtr)[0];
-				obsBuffer.pop_front();
+				yarp::sig::Vector greq(*vPtr);
+				gstate = (int)greq[0];
+				genBuffer.pop_front();
 				delete vPtr;
 
 				//allow the user to send any negative number to generate based on current model state
@@ -605,7 +606,7 @@ public:
 				}
 
 				//generate according to type
-				yarp::sig::Vector G;;
+				yarp::sig::Vector G;
 				G.clear();
 				genFromModel(G, gstate);
 			}
