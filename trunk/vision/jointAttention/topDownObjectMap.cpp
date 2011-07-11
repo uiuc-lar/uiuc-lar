@@ -24,6 +24,14 @@
  * 					object is made salient. it is set to full (255.0) salience. (O)
  *	 	name	-- module basename (D /topDownObjMap)
  *
+ *	 (feature extractor params)
+ *	 	all		-- flag to turn on complete feature set, which is completely off by default
+ *  	avcolor	-- flag to turn on avcolor feature
+ *  	waviness	-- flag '' 	''
+ *  	circularity	-- flag ''	''
+ *  	squareness	-- flag ''	''
+ *  	aspratio	-- flag ''	''
+ *
  *
  * outputs:
  * 		/topDownObjMap/map:o	-- object matching salience map described above
@@ -168,7 +176,20 @@ public:
 		decaytime=rf.check("decay",Value(60)).asInt();
 		wta = rf.check("wta");
 
-		V = new visFeatures();
+		V = new visFeatures(false);
+		if (rf.check("all"))
+			V->setAllFeatures(true);
+		if (rf.check("avcolor"))
+			V->featAvcolor(true);
+		if (rf.check("waviness"))
+			V->featWaviness(true);
+		if (rf.check("circularity"))
+			V->featCircularity(true);
+		if (rf.check("squareness"))
+			V->featSquareness(true);
+		if (rf.check("aspratio"))
+			V->featAspratio(true);
+
 
 		portImgIn=new BufferedPort<ImageOf<PixelRgb> >;
 		string portInName="/"+name+"/img:i";

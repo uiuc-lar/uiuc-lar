@@ -38,12 +38,39 @@ using namespace yarp::math;
 class visFeatures {
 
 
+protected:
+
+	//feature vector masks
+	bool avcolor;
+	bool waviness;
+	bool circularity;
+	bool squareness;
+	bool aspratio;
+
+
 public:
 
 	//constructors/destructors
-	visFeatures() {
+	visFeatures()
+	: avcolor(true), waviness(true), circularity(true), squareness(true), aspratio(true) {	}
+	visFeatures(bool all)
+	: avcolor(all), waviness(all), circularity(all), squareness(all), aspratio(all) {  }
+	visFeatures(bool avc, bool wav, bool circ, bool squar, bool aspr) :
+		avcolor(avc), waviness(wav), circularity(circ), squareness(squar), aspratio(aspr) { }
 
+	void featAvcolor(bool flag) { avcolor = flag; }
+	void featWaviness(bool flag) { waviness = flag; }
+	void featCircularity(bool flag) { circularity = flag; }
+	void featSquareness(bool flag) { squareness = flag; }
+	void featAspratio(bool flag) { aspratio = flag; }
+	void setAllFeatures(bool flag) {
+		avcolor = flag;
+		waviness = flag;
+		circularity = flag;
+		squareness = flag;
+		aspratio = flag;
 	}
+
 	~visFeatures() {
 
 	}
@@ -72,12 +99,14 @@ public:
 		drawContours(M, objCont, 0, Scalar(1), -1);
 
 		//calculate the avg pixel value of the blob
-		int bSize = countNonZero(M);
-		M = Mat::ones(_IM.height(), _IM.width(), CV_8UC1) - M;
-		I.setTo(Scalar(0,0,0),M);
-		Scalar aVal = sum(I);
-		f.push_back((aVal[1]/(double)bSize-128.0)/64.0);
-		f.push_back((aVal[2]/(double)bSize-128.0)/64.0);
+		if (avcolor) {
+			int bSize = countNonZero(M);
+			M = Mat::ones(_IM.height(), _IM.width(), CV_8UC1) - M;
+			I.setTo(Scalar(0,0,0),M);
+			Scalar aVal = sum(I);
+			f.push_back((aVal[1]/(double)bSize-128.0)/64.0);
+			f.push_back((aVal[2]/(double)bSize-128.0)/64.0);
+		}
 
 		//find convex hull and its area
 		cArea = contourArea(Mat(vp));
@@ -85,30 +114,34 @@ public:
 		hArea = contourArea(Mat(hp));
 
 		//calculate 'waviness'
-		f.push_back(arcLength(Mat(hp),true)/arcLength(Mat(vp),true));
+		if (waviness) {
+			f.push_back(arcLength(Mat(hp),true)/arcLength(Mat(vp),true));
+		}
 
 		//calculate 'circularity'
-		f.push_back(4*PI*cArea/(arcLength(Mat(vp),true)*arcLength(Mat(vp),true)));
+		if (circularity) {
+			f.push_back(4*PI*cArea/(arcLength(Mat(vp),true)*arcLength(Mat(vp),true)));
+		}
 
 		//calculate 'squareness'
 		RotatedRect RR = minAreaRect(Mat(vp));
-		f.push_back(hArea/(RR.size.width*RR.size.height));
-
-		//calculate aspect ratio
-		if (RR.size.width/RR.size.height > 1) {
-			f.push_back(RR.size.width/RR.size.height);
-		} else {
-			f.push_back(RR.size.height/RR.size.width);
+		if (squareness) {
+			f.push_back(hArea/(RR.size.width*RR.size.height));
 		}
 
-
+		//calculate aspect ratio
+		if (aspratio) {
+			if (RR.size.width/RR.size.height > 1) {
+				f.push_back(RR.size.width/RR.size.height);
+			} else {
+				f.push_back(RR.size.height/RR.size.width);
+			}
+		}
 
 		return f;
 
 	}
 
-
-protected:
 
 
 };

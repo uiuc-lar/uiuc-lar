@@ -25,13 +25,13 @@
    </module>
    <module>
       <name>objectFeatures</name>
-      <parameters></parameters>
+      <parameters>--all</parameters>
 	  <node>johnny5</node>
 	<tag>objfeat</tag>
    </module>
    <module>
       <name>topDownObjectMap</name>
-      <parameters>--wta</parameters>
+      <parameters>--wta --all</parameters>
 	  <node>johnny5</node>
 	<tag>tdomap</tag>
    </module>
