@@ -22,3 +22,4 @@ ADD_EXECUTABLE(hmmRMLE  hmmRMLE.cpp)
 TARGET_LINK_LIBRARIES(hmmRMLE  ${YARP_LIBRARIES} RMLE imatlib torch blas lapack gsl)
 
 install(TARGETS RMLE DESTINATION lib)
+install(TARGETS hmmRMLE DESTINATION vision/jointAttention)
