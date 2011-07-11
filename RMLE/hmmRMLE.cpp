@@ -22,7 +22,7 @@
  *  	lr		-- flag to enforce left-to-right condition on model (O)
  *  	afile	-- csv file containing A matrix data to be loaded
  *  	mufile	-- csv file containing mu vectors (O, gauss only)
- *  	ufile	--	""			""	   cov matrices (O, gauss only)
+ *  	rfile	--	""			""	   chol. decomp. cov matrices (O, gauss only)
  *  	bfile	--  ""			""     obs matrix data (O, disc only)
  *  	train	-- set to either 0 or 1, to give initial value for training flag (D 1)
  *  	log		-- flag to stream vector of all parameter values to port after each classification (O 0)
@@ -141,7 +141,7 @@ protected:
 	//data objects
 	DataBuffer obsBuffer;
 	DataBuffer genBuffer;
-	IMat *Am, *MUm, *Um;
+	IMat *Am, *MUm, *Rm;
 	IMat *inData;
 	IMat **Bm;
 
@@ -182,7 +182,6 @@ public:
 	IndepPMF * getDiscHandle() { return d_dist;	}
 
 	bool getMatFromFile(IMat *& M, const char * matName, ResourceFinder &_rf) {
-
 		ImageOf<PixelFloat> pD;
 		if (rf.check(matName)) {
 			if (file::read(pD, rf.find(matName).asString().c_str())) {
@@ -200,6 +199,27 @@ public:
 		} else {
 			return false;
 		}
+		return true;
+	}
+
+	bool writeMatToFile(IMat *& M, const char * fname) {
+
+		FILE *fp;
+
+		fp = fopen(fname, "w");
+
+		if (M == NULL || fp == NULL) {
+			return false;
+		}
+
+		for (int i = 0; i < M->m; i++) {
+			for (int j = 0; j < M->n-1; j++) {
+				fprintf(fp,"%f\t", M->ptr[i][j]);
+			}
+			fprintf(fp,"%f\n",M->ptr[i][M->n-1]);
+		}
+
+		fclose(fp);
 
 		return true;
 
@@ -366,7 +386,7 @@ public:
 
 
 		//check for previously loaded data
-		Am = MUm = Um = inData = NULL;
+		Am = MUm = Rm = inData = NULL;
 		Bm = NULL;
 
 		//initialize model objects
@@ -389,15 +409,17 @@ public:
 			} else {
 
 				getMatFromFile(MUm, "mufile", rf);
-				getMatFromFile(Um, "ufile", rf);
-				g_dist = new(allocator) Gaussian(r, d[0], MUm, Um, 0.1, true);
+				getMatFromFile(Rm, "rfile", rf);
+				g_dist = new(allocator) Gaussian(r, d[0], MUm, NULL, 0.1, true);
 				if (MUm) delete MUm;
-				if (Um) delete Um;
+				if (Rm) {
+					g_dist->R->set(Rm->base, Rm->m, Rm->n, Rm->ld, true, true);
+					delete Rm;
+				}
 
 			}
 			obs_dist = g_dist;
 			d_dist = NULL;
-
 		}
 
 		//initialize internal model
@@ -672,7 +694,7 @@ public:
 						}
 					}
 				}
-				else if (arg == "U") {
+				else if (arg == "R") {
 					gs = thr->getGaussHandle();
 					if (gs) {
 						for (int i = 0; i < gs->R->m; i++) {
@@ -684,6 +706,43 @@ public:
 					}
 				}
 				else {
+					reply.add(-1);
+				}
+			}
+		}
+		if (msg == "save") {
+			if (command.size() < 3) {
+				reply.add(-1);
+			}
+			else {
+				string arg(command.get(1).asString().c_str());
+				string fname(command.get(2).asString().c_str());
+				bool res = true;
+				if (arg == "A") {
+					hs = thr->getHMMHandle();
+					res &= thr->writeMatToFile(hs->A, fname.c_str());
+				}
+				else if (arg == "B") {
+					int bn = command.get(2).asInt();
+					fname = command.get(3).asString().c_str();
+					ds = thr->getDiscHandle();
+					res &= thr->writeMatToFile(ds->b[bn], fname.c_str());
+				}
+				else if (arg == "MU") {
+					gs = thr->getGaussHandle();
+					res &= thr->writeMatToFile(gs->MU, fname.c_str());
+				}
+				else if (arg == "R") {
+					gs = thr->getGaussHandle();
+					res &= thr->writeMatToFile(gs->R, fname.c_str());
+				}
+				else {
+					reply.add(-1);
+				}
+				if (res && reply.size() == 0) {
+					reply.add(1);
+				}
+				else if (!res && reply.size() == 0) {
 					reply.add(-1);
 				}
 			}
@@ -704,7 +763,7 @@ public:
 		else if (msg == "reset") {
 			hs = thr->getHMMHandle();
 			hs->reset();
-			reply.add(0);
+			reply.add(1);
 		}
 		else {
 			reply.add(-1);

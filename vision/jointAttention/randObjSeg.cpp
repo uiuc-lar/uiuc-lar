@@ -193,8 +193,13 @@ public:
 			}
 			else {
 				int newrate = command.get(1).asInt();
+				bool rssuc;
 				if (newrate > 0) {
-					thr->setRate(newrate);
+					rssuc = thr->setRate(newrate);
+					if (rssuc)
+						reply.add(1);
+					else
+						reply.add(-1);
 				}
 			}
 		}
