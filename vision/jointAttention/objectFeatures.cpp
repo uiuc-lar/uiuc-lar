@@ -12,6 +12,12 @@
  *  params:
  *  	name	-- module basename (D /objectFeatures)
  *  	verbose -- flag to turn on/off dumping of features to screen (O)
+ *  	all		-- flag to turn on complete feature set, which is completely off by default
+ *  	avcolor	-- flag to turn on avcolor feature
+ *  	waviness	-- flag '' 	''
+ *  	circularity	-- flag ''	''
+ *  	squareness	-- flag ''	''
+ *  	aspratio	-- flag ''	''
  *
  *  outputs:
  *  	/objectFeatures/feat:o	-- Vector containing feature vales extracted for provided object
@@ -119,7 +125,19 @@ public:
 
 		name=rf.check("name",Value("objectFeatures")).asString().c_str();
 
-		V = new visFeatures();
+		V = new visFeatures(false);
+		if (rf.check("all"))
+			V->setAllFeatures(true);
+		if (rf.check("avcolor"))
+			V->featAvcolor(true);
+		if (rf.check("waviness"))
+			V->featWaviness(true);
+		if (rf.check("circularity"))
+			V->featCircularity(true);
+		if (rf.check("squareness"))
+			V->featSquareness(true);
+		if (rf.check("aspratio"))
+			V->featAspratio(true);
 
 		portImgIn=new BufferedPort<ImageOf<PixelRgb> >;
 		string portInName="/"+name+"/img:i";

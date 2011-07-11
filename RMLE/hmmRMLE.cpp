@@ -587,6 +587,7 @@ public:
 					}
 					if (nomark) {
 						p->A->fill((real)1.0/r);
+						p->reset();
 					}
 					if (ltr) {
 						for (int i = 0; i < r; i++) {

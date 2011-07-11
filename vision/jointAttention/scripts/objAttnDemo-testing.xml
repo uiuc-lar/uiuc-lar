@@ -25,13 +25,13 @@
    </module>
    <module>
       <name>objectFeatures</name>
-      <parameters></parameters>
+      <parameters>--all</parameters>
 	  <node>nebula</node>
 	<tag>objfeat</tag>
    </module>
    <module>
       <name>topDownObjectMap</name>
-      <parameters>--wta</parameters>
+      <parameters>--wta --all</parameters>
 	  <node>nebula</node>
 	<tag>tdomap</tag>
    </module>
