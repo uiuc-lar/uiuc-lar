@@ -4,28 +4,40 @@
  * 	Logan Niehaus
  * 	7/12/11
  * 	module for remapping a provided calibrated image to an egosphere image.
- * 	head and torso joint state ports must be running for this module to	function,
- * 	as they are used to get the current head pose estimates for remapping.
- *  input images should	be only pixelfloats (intended for salience maps)
+ * 	head joint state port must be running for this module to function,
+ * 	as it is used to get the current head pose estimates for remapping.
+ *  input images should	be only pixelfloats (intended for salience maps).
+ *  each map is placed in a mosaic, and only values in the current field
+ *  of view are updated each time a new image is received. these mosaics are
+ *  combined as a weighted sum into an aggregate attention map, which is also
+ *  published.
  *
  *  inputs:
- *  	/egoRemapper/img:l	-- left camera image stream (calibrated)
- *  	/egoRemapper/img:r	-- right camera image stream (calibrated)
+ *  	/egoRemapper/map<0-N>:l	-- left camera image stream (calibrated)
+ *  	/egoRemapper/map<0-N>:r	-- right camera image stream (calibrated)
  *
  *
  *  params: ([R]equired/[D]efault <Value>/[O]ptional)
  *
- *		mapw, maph					-- egosphere image width/height (D 320 x 240)
- *		azrange					-- total range of azimuth angles (D, -180 180)
- *		elrange					-- total range of elevation angles (D, -180 180)
+ *		mapw, maph				-- egosphere image width/height (D 320 x 240)
+ *		azrange					-- total range of azimuth angles in deg (R, ex: 0 180)
+ *		elrange					-- total range of elevation angles in deg (R, ex: -90 90)
  *		<camera parameters>		-- intrinsic calibration parameters for each camera listed under [CAMERA_CALIBRATION_LEFT/RIGHT].
  *										see iKinGazeCtrl docs for example of how to do this
+ *		weights					-- vector of weights applied to each input map, (ex: weights 0.1 1.0 0.5)
+ *									length should be equal to nmaps (R)
+ *		decays					-- vector of decay factors applied to each mosaic before updates are
+ *									applied. decays should be near zero as (1-decay) will be premultiplied to the mosaic
+ *		nmaps					-- number of stereo map ports to open. maps are labeled /egoRemapper/mapN:l, with
+ *										N ranging from 0 to nmaps-1 (D 1)
  *  	name					-- module port basename (D /egoRemapper)
  *  	verbose					-- setting flag makes the module shoot debug info to stdout
  *
  *  outputs:
- *  	/egoRemapper/img:lo  -- left egosphere remapped image
- *  	/egoRemapper/img:ro  -- right egosphere remapped image
+ *  	/egoRemapper/map<0-N>:lo  -- left egosphere remapped image
+ *  	/egoRemapper/map<0-N>:ro  -- right egosphere remapped image
+ *  	/egoRemapper/agg:lo		  -- left aggregate egosphere remapped image
+ *  	/egoRemapper/agg:ro		  -- right aggregate egosphere remapped image
  *
  */
 
@@ -41,11 +53,6 @@
 #include <yarp/sig/ImageDraw.h>
 #include <yarp/math/Math.h>
 
-#include <yarp/dev/Drivers.h>
-#include <yarp/dev/ControlBoardInterfaces.h>
-#include <yarp/dev/GazeControl.h>
-#include <yarp/dev/PolyDriver.h>
-
 #include <cv.h>
 
 #include <string>
@@ -56,7 +63,6 @@
 
 #include <iCub/iKin/iKinFwd.h>
 #include <iCub/ctrl/math.h>
-#include <iCub/vis/spherical_projection.h>
 
 //namespaces
 using namespace std;
@@ -69,8 +75,6 @@ using namespace iCub::iKin;
 using namespace iCub::ctrl;
 
 #define PI 3.14159
-
-//YARP_DECLARE_DEVICES(icubmod)
 
 class iCubCFrame : public iCubEye {
 
@@ -94,13 +98,14 @@ protected:
 	ResourceFinder &rf;
 	string name;
 
-	BufferedPort<ImageOf<PixelFloat> > *portImgL;
-	BufferedPort<ImageOf<PixelFloat> > *portImgR;
-
-	BufferedPort<ImageOf<PixelFloat> > *portImgLO;
-	BufferedPort<ImageOf<PixelFloat> > *portImgRO;
-
 	BufferedPort<yarp::sig::Vector> *portHAngIn;
+	BufferedPort<ImageOf<PixelFloat> > **portImgL;
+	BufferedPort<ImageOf<PixelFloat> > **portImgR;
+	BufferedPort<ImageOf<PixelFloat> > **portImgLO;
+	BufferedPort<ImageOf<PixelFloat> > **portImgRO;
+	BufferedPort<ImageOf<PixelFloat> > *portAggL;
+	BufferedPort<ImageOf<PixelFloat> > *portAggR;
+	int nmaps;
 
 	iCubEye * eyeL;
 	iCubEye * eyeR;
@@ -120,6 +125,17 @@ protected:
 	//important matrices
 	Matrix rootToEgo, egoToRoot;
 	Matrix xrVals, yrVals, zrVals;
+	Mat * Mxl, * Myl, * Mxr, * Myr;
+
+	//mosaics and auxiliary objects
+	Mat ** mosaicl, ** mosaicr;
+	Mat * updMskL, * updMskR;
+	Mat * whtBlk;
+	Mat * maggL, * maggR;
+
+	//aggregate image parameters
+	yarp::sig::Vector weights;
+	yarp::sig::Vector decays;
 
 public:
 
@@ -161,6 +177,7 @@ public:
 	{
 
 		name=rf.check("name",Value("egoRemapper")).asString().c_str();
+		nmaps = rf.check("nmaps", Value(1)).asInt();
 		erows = rf.check("maph", Value(320)).asInt();
 		ecols = rf.check("mapw", Value(240)).asInt();
 
@@ -172,6 +189,22 @@ public:
 		} else {
 			azlo = arng.get(1).asDouble(); azhi = arng.get(2).asDouble();
 			ello = erng.get(1).asDouble(); elhi = erng.get(2).asDouble();
+		}
+
+		//get aggregator weights, decays
+		Bottle wvals = rf.findGroup("weights");
+		Bottle dvals = rf.findGroup("decays");
+		if (wvals.isNull())
+			weights.resize(nmaps); weights = 1.0;
+		if (dvals.isNull())
+			decays.resize(nmaps); decays = 1.0;
+		for (int i = 0; i < nmaps; i++) {
+			if (wvals.size()-1 < i)
+				wvals.addDouble(1.0);
+			if (dvals.size()-1 < i)
+				dvals.addDouble(0.0);
+			weights.push_back(wvals.get(i+1).asDouble());
+			decays.push_back(1.0-dvals.get(i+1).asDouble());
 		}
 
 		//get camera parameters
@@ -195,21 +228,41 @@ public:
 		}
 
 		//open up ports
-		portImgL=new BufferedPort<ImageOf<PixelFloat> >;
-		string portImlName="/"+name+"/img:l";
-		portImgL->open(portImlName.c_str());
+		string tmpName;
+		char mpnStr[10];
+		portImgL = new BufferedPort<ImageOf<PixelFloat> > * [nmaps];
+		portImgR = new BufferedPort<ImageOf<PixelFloat> > * [nmaps];
+		portImgLO = new BufferedPort<ImageOf<PixelFloat> > * [nmaps];
+		portImgRO = new BufferedPort<ImageOf<PixelFloat> > * [nmaps];
+		for (int i = 0; i < nmaps; i++) {
 
-		portImgR=new BufferedPort<ImageOf<PixelFloat> >;
-		string portImrName="/"+name+"/img:r";
-		portImgR->open(portImrName.c_str());
+			sprintf(mpnStr, "map%d", i);
 
-		portImgLO=new BufferedPort<ImageOf<PixelFloat> >;
-		string portImlOName="/"+name+"/img:lo";
-		portImgLO->open(portImlOName.c_str());
+			portImgL[i] = new BufferedPort<ImageOf<PixelFloat> >;
+			tmpName = "/" + name + "/" + mpnStr + ":l";
+			portImgL[i]->open(tmpName.c_str());
 
-		portImgRO=new BufferedPort<ImageOf<PixelFloat> >;
-		string portImrOName="/"+name+"/img:ro";
-		portImgRO->open(portImrOName.c_str());
+			portImgR[i] = new BufferedPort<ImageOf<PixelFloat> >;
+			tmpName = "/" + name + "/" + mpnStr + ":r";
+			portImgR[i]->open(tmpName.c_str());
+
+			portImgLO[i] = new BufferedPort<ImageOf<PixelFloat> >;
+			tmpName = "/" + name + "/" + mpnStr + ":lo";
+			portImgLO[i]->open(tmpName.c_str());
+
+			portImgRO[i] = new BufferedPort<ImageOf<PixelFloat> >;
+			tmpName = "/" + name + "/" + mpnStr + ":ro";
+			portImgRO[i]->open(tmpName.c_str());
+
+		}
+
+		portAggL=new BufferedPort<ImageOf<PixelFloat> >;
+		string portAggLName="/"+name+"/agg:l";
+		portAggL->open(portAggLName.c_str());
+
+		portAggR=new BufferedPort<ImageOf<PixelFloat> >;
+		string portAggRName="/"+name+"/agg:r";
+		portAggR->open(portAggRName.c_str());
 
 		portHAngIn=new BufferedPort<yarp::sig::Vector>;
 		string portHAngName="/"+name+"/pos:h";
@@ -241,7 +294,7 @@ public:
 		for (int mi,mj,i = 0; i < erows; i++) {
 			for (int j = 0; j < ecols; j++) {
 
-				az = j*((azhi-azlo)/(float)ecols)+azlo;
+				az = j*((azhi-azlo)/(float)ecols)+azlo+90;
 				el = i*((elhi-ello)/(float)erows)+180+ello;
 				xyzEgo(0) = cos(PI*az/180.0)*cos(PI*el/180.0);
 				xyzEgo(1) = -sin(PI*el/180.0);
@@ -255,6 +308,26 @@ public:
 			}
 		}
 
+		//initialize storage for maps
+		Mxl = new Mat(erows, ecols, CV_32FC1);
+		Myl = new Mat(erows, ecols, CV_32FC1);
+		Mxr = new Mat(erows, ecols, CV_32FC1);
+		Myr = new Mat(erows, ecols, CV_32FC1);
+
+		//initialize mosaics
+		mosaicl = new Mat * [nmaps];
+		mosaicr = new Mat * [nmaps];
+		for (int i = 0; i < nmaps; i++) {
+			mosaicl[i] = new Mat(erows, ecols, CV_32F);
+			mosaicl[i]->setTo(Scalar(0));
+			mosaicr[i] = new Mat(erows, ecols, CV_32F);
+			mosaicr[i]->setTo(Scalar(0));
+		}
+		updMskL = new Mat(erows, ecols, CV_32F);
+		updMskR = new Mat(erows, ecols, CV_32F);
+		whtBlk = new Mat(cyl*2, cxl*2, CV_32F);
+		whtBlk->setTo(Scalar(255));
+
 		return true;
 
 	}
@@ -262,124 +335,172 @@ public:
 	virtual void run()
 	{
 
-		// get both input images
-		ImageOf<PixelFloat> *pImgL = portImgL->read(false);
-		ImageOf<PixelFloat> *pImgR = portImgR->read(false);
+		//get the current head coordinates, assuming fixed torso for now
+		Matrix Hl, Hr;
+		yarp::sig::Vector *torsoAng = new yarp::sig::Vector(3);
+		yarp::sig::Vector *headAng = portHAngIn->read(true);
+		torsoAng->zero();
 
-		//if we have both images
-		if (pImgL && pImgR)
-		{
+		//find the world to eye root matrices
+		yarp::sig::Vector angles(8);
+		angles[0] = (*torsoAng)[0]; angles[1] = (*torsoAng)[1]; angles[2] = (*torsoAng)[2];
+		angles[3] = (*headAng)[0]; angles[4] = (*headAng)[1];
+		angles[5] = (*headAng)[2]; angles[6] = (*headAng)[3];
+		angles[7] = (*headAng)[4] + (*headAng)[5]/2.0;
+		angles = PI*angles/180.0;
+		Hl = SE3inv(eyeL->getH(angles));
+		angles[7] = PI*((*headAng)[4] - (*headAng)[5]/2.0)/180.0;
+		Hr = SE3inv(eyeR->getH(angles));
 
-			ImageOf<PixelFloat> &loutImg = portImgLO->prepare();
-			ImageOf<PixelFloat> &routImg = portImgRO->prepare();
+		//create spherical warping map for current configuration
+		Mxl->setTo(Scalar(-1)); Myl->setTo(Scalar(-1));
+		Mxr->setTo(Scalar(-1)); Myr->setTo(Scalar(-1));
 
-			//get the current head coordinates, assuming fixed torso for now
-			yarp::sig::Vector *torsoAng = new yarp::sig::Vector(3);
-			torsoAng->zero();
-			yarp::sig::Vector *headAng = portHAngIn->read(true);
-			Matrix Hl, Hr;
-
-			//find the world to eye root matrices
-			yarp::sig::Vector angles(8);
-			angles[0] = (*torsoAng)[0]; angles[1] = (*torsoAng)[1]; angles[2] = (*torsoAng)[2];
-			angles[3] = (*headAng)[0]; angles[4] = (*headAng)[1];
-			angles[5] = (*headAng)[2]; angles[6] = (*headAng)[3];
-			angles[7] = (*headAng)[4] + (*headAng)[5]/2.0;
-			angles = PI*angles/180.0;
-			Hl = SE3inv(eyeL->getH(angles));
-			angles[7] = PI*((*headAng)[4] - (*headAng)[5]/2.0)/180.0;
-			Hr = SE3inv(eyeR->getH(angles));
-
-			//apply spherical warping
-			ImageOf<PixelFloat> mapx, mapy;
-			ImageOf<PixelFloat> oimg;
-			mapx.resize(ecols,erows); mapy.resize(ecols,erows);	oimg.resize(ecols,erows);
-			Mat * Iiml = new Mat(pImgL->height(), pImgL->width(), CV_32F, (void *)pImgL->getRawImage());
-			Mat * Iimr = new Mat(pImgR->height(), pImgR->width(), CV_32F, (void *)pImgR->getRawImage());
-			Mat * Oim = new Mat(erows, ecols, CV_32F, (void *)oimg.getRawImage());
-			Mat * Mx = new Mat(erows, ecols, CV_32FC1, (void *)mapx.getRawImage());
-			Mat * My = new Mat(erows, ecols, CV_32FC1, (void *)mapy.getRawImage());
-
-			//flip images u/d to keep them consistent with output map convention
-			flip(*Iiml, *Iiml, 0);
-			flip(*Iimr, *Iimr, 0);
-
-			//warp left image
-			yarp::sig::Vector xyz(4);
-			yarp::sig::Vector xyzEye(4);
-			double u, v;
-
-			//transform to xyz of current eye root
-			for (int i = 0; i < erows; i++) {
-				for (int j = 0; j < ecols; j++) {
-					xyz(0) = xrVals(i,j); xyz(1) = yrVals(i,j); xyz(2) = zrVals(i,j); xyz(3) = 1.0;
-					xyzEye = Hl*xyz;
-					xyzEye(2) = -xyzEye(2);
-					if (xyzEye(2) > 0) {
-						u = xyzEye(0)/xyzEye(2); v = xyzEye(1)/xyzEye(2);
-						mapx.pixel(j,i) = u*fxl+cxl;
-						mapy.pixel(j,i) = v*fyl+cyl;
-					} else {
-						mapx.pixel(j,i) = -1.0;
-						mapy.pixel(j,i) = -1.0;
-					}
+		//transform to xyz of current eye root
+		yarp::sig::Vector xyz(4);
+		yarp::sig::Vector xyzLE(4);
+		yarp::sig::Vector xyzRE(4);
+		double u, v;
+		for (int i = 0; i < erows; i++) {
+			for (int j = 0; j < ecols; j++) {
+				xyz(0) = xrVals(i,j); xyz(1) = yrVals(i,j); xyz(2) = zrVals(i,j); xyz(3) = 1.0;
+				xyzLE = Hl*xyz;
+				xyzRE = Hr*xyz;
+				xyzLE(2) = -xyzLE(2); xyzRE(2) = -xyzRE(2);
+				if (xyzLE(2) > 0) {
+					u = xyzLE(0)/xyzLE(2); v = xyzLE(1)/xyzLE(2);
+					Mxl->at<float>(i,j) = u*fxl+cxl;
+					Myl->at<float>(i,j) = v*fyl+cyl;
+				}
+				if (xyzRE(2) > 0) {
+					u = xyzRE(0)/xyzRE(2); v = xyzRE(1)/xyzRE(2);
+					Mxr->at<float>(i,j) = u*fxr+cxr;
+					Myr->at<float>(i,j) = v*fyr+cyr;
 				}
 			}
+		}
 
-			//apply map
-			remap(*Iiml, *Oim, *Mx, *My, INTER_LINEAR);
-			loutImg.copy(oimg);
+		//create the update mask for mosaics
+		remap(*whtBlk, *updMskL, *Mxl, *Myl, INTER_LINEAR);
+		remap(*whtBlk, *updMskR, *Mxr, *Myr, INTER_LINEAR);
+		erode(*updMskL, *updMskL, Mat());
+		erode(*updMskR, *updMskR, Mat());
 
-			//do same for right image
-			for (int i = 0; i < erows; i++) {
-				for (int j = 0; j < ecols; j++) {
-					xyz(0) = xrVals(i,j); xyz(1) = yrVals(i,j); xyz(2) = zrVals(i,j); xyz(3) = 1.0;
-					xyzEye = Hr*xyz;
-					xyzEye(2) = -xyzEye(2);
-					if (xyzEye(2) > 0) {
-						u = xyzEye(0)/xyzEye(2); v = xyzEye(1)/xyzEye(2);
-						mapx.pixel(j,i) = u*fxr+cxr;
-						mapy.pixel(j,i) = v*fyr+cyr;
-					} else {
-						mapx.pixel(j,i) = -1.0;
-						mapy.pixel(j,i) = -1.0;
+		//prepare aggregator images
+		ImageOf<PixelFloat> &laggImg = portAggL->prepare();
+		ImageOf<PixelFloat> &raggImg = portAggR->prepare();
+		laggImg.resize(ecols, erows); laggImg.zero();
+		raggImg.resize(ecols,erows); raggImg.zero();
+		maggL = new Mat(laggImg.height(), laggImg.width(), CV_32F, (void *)laggImg.getRawImage());
+		maggR = new Mat(raggImg.height(), raggImg.width(), CV_32F, (void *)raggImg.getRawImage());
+
+		//check for any input images that are available, and apply map
+		ImageOf<PixelFloat> *pImgL;
+		ImageOf<PixelFloat> *pImgR;
+		Mat * Iiml, * Iimr, *Oiml, *Oimr;
+		for (int i = 0; i < nmaps; i++) {
+
+			pImgL = portImgL[i]->read(false);
+			pImgR = portImgR[i]->read(false);
+			(*mosaicl[i]) = decays[i]*(*mosaicl[i]);
+			(*mosaicr[i]) = decays[i]*(*mosaicr[i]);
+
+			if (pImgL && pImgR)
+			{
+
+				ImageOf<PixelFloat> &loutImg = portImgLO[i]->prepare();
+				ImageOf<PixelFloat> &routImg = portImgRO[i]->prepare();
+				loutImg.resize(ecols,erows); routImg.resize(ecols,erows);
+
+				Iiml = new Mat(pImgL->height(), pImgL->width(), CV_32F, (void *)pImgL->getRawImage());
+				Iimr = new Mat(pImgR->height(), pImgR->width(), CV_32F, (void *)pImgR->getRawImage());
+				Oiml = new Mat(loutImg.height(), loutImg.width(), CV_32F, (void *)loutImg.getRawImage());
+				Oimr = new Mat(routImg.height(), routImg.width(), CV_32F, (void *)routImg.getRawImage());
+
+				//flip images to keep them consistent with output map convention
+				flip(*Iiml, *Iiml, -1);
+				flip(*Iimr, *Iimr, -1);
+
+				//apply maps
+				remap(*Iiml, *Oiml, *Mxl, *Myl, INTER_LINEAR);
+				remap(*Iimr, *Oimr, *Mxr, *Myr, INTER_LINEAR);
+
+				//update mosaic
+				for (int j = 0; j < erows; j++) {
+					for (int k = 0; k < ecols; k++) {
+						if (updMskL->at<float>(j,k) > 0)
+							mosaicl[i]->at<float>(j,k) = Oiml->at<float>(j,k);
+						if (updMskR->at<float>(j,k) > 0)
+							mosaicr[i]->at<float>(j,k) = Oimr->at<float>(j,k);
 					}
 				}
+
+				//write to port and cleanup
+				portImgLO[i]->write();
+				portImgRO[i]->write();
+				delete Iiml, Iimr, Oiml, Oimr;
+
 			}
 
-			//apply map
-			remap(*Iimr, *Oim, *Mx, *My, INTER_LINEAR);
-			routImg.copy(oimg);
-
-			//write images out
-			portImgLO->write();
-			portImgRO->write();
-
-			delete Iiml, Iimr, Oim, Mx, My;
+			(*maggL) = (*maggL) + weights[i]*(*mosaicl[i]);
+			(*maggR) = (*maggR) + weights[i]*(*mosaicr[i]);
 
 		}
+
+		//flip final image lr again (not sure why?)
+		flip(*maggL, *maggL, 1);
+		flip(*maggR, *maggR, 1);
+
+		//write aggregated maps, clean
+		portAggL->write();
+		portAggR->write();
+		delete maggL, maggR;
+
 	}
 
 	virtual void threadRelease()
 	{
 
-		portImgL->interrupt();
-		portImgR->interrupt();
-		portImgLO->interrupt();
-		portImgRO->interrupt();
+		for (int i = 0; i < nmaps; i++) {
+
+			portImgL[i]->interrupt();
+			portImgR[i]->interrupt();
+			portImgLO[i]->interrupt();
+			portImgRO[i]->interrupt();
+
+			portImgL[i]->close();
+			portImgR[i]->close();
+			portImgLO[i]->close();
+			portImgRO[i]->close();
+
+			delete portImgL[i];
+			delete portImgR[i];
+			delete portImgLO[i];
+			delete portImgRO[i];
+
+			delete mosaicl[i];
+			delete mosaicr[i];
+
+		}
+
 		portHAngIn->interrupt();
-
-		portImgL->close();
-		portImgR->close();
-		portImgLO->close();
-		portImgRO->close();
 		portHAngIn->close();
+		portAggL->interrupt();
+		portAggL->close();
+		portAggR->interrupt();
+		portAggR->close();
 
+		delete portHAngIn;
 		delete portImgL;
 		delete portImgR;
 		delete portImgLO;
 		delete portImgRO;
-		delete portHAngIn;
+		delete portAggL;
+		delete portAggR;
+
+		delete Mxl, Myl, Mxr, Myr;
+		delete updMskL, updMskR, whtBlk, mosaicl, mosaicr;
+
 
 	}
 
@@ -422,8 +543,6 @@ public:
 
 int main(int argc, char *argv[])
 {
-
-	//YARP_REGISTER_DEVICES(icubmod)
 
 	Network yarp;
 
