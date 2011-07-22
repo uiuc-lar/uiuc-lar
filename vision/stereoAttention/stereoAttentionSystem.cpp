@@ -22,7 +22,6 @@
  *  	/stereoAttention/ego:r	-- ego-mapped right weighted salience sum map
  *  	/stereoAttention/sal:l	-- unwarped left weighted salience sum
  *  	/stereoAttention/sal:r	-- unwarped right weighted salience sum
- *  	/stereoAttention/pos:h	-- streaming robot head position
  *  	/iKinGazeCtrl/head/		-- not connected, but must be running in order to function
  *
  *
@@ -48,7 +47,7 @@
  *
  *  TODO:
  *  	complete system behavior needs testing
- *  	it would also be nice if current eye configuration could be determined just from ikingazectrl
+ *  	also need to basic stereo function using gaze control interface instead of joint port
  *
  */
 
@@ -108,7 +107,6 @@ protected:
 	BufferedPort<ImageOf<PixelFloat> > *portEgoR;
 	BufferedPort<ImageOf<PixelFloat> > *portSalL;
 	BufferedPort<ImageOf<PixelFloat> > *portSalR;
-	BufferedPort<yarp::sig::Vector> *portHAngIn;
 	Port *portFxlOut;
 
 	//ikingaze objects and params
@@ -119,10 +117,6 @@ protected:
 	//ego map params
 	double azlo, azhi;
 	double ello, elhi;
-
-	//head kinematics objects
-	iCubEye * eyeL;
-	iCubEye * eyeR;
 
 	//camera projection matrix/params
 	Mat Pl;
@@ -218,10 +212,6 @@ public:
 		string portSalrName="/"+name+"/sal:r";
 		portSalR->open(portSalrName.c_str());
 
-		portHAngIn=new BufferedPort<yarp::sig::Vector>;
-		string portHAngName="/"+name+"/pos:h";
-		portHAngIn->open(portHAngName.c_str());
-
 		portFxlOut=new Port;
 		string portFxlName="/"+name+"/fxl:o";
 		portFxlOut->open(portFxlName.c_str());
@@ -247,19 +237,9 @@ public:
 		} else {
 
 			printf("could not initialize gaze control interface, failing...\n");
-			//return false;
+			return false;
 
 		}
-
-
-		//set up kinematic chains for the eyes
-		eyeL = new iCubEye("left");
-		eyeR = new iCubEye("right");
-		eyeL->setAllConstraints(false);
-		eyeR->setAllConstraints(false);
-		eyeL->releaseLink(0); eyeR->releaseLink(0);
-		eyeL->releaseLink(1); eyeR->releaseLink(1);
-		eyeL->releaseLink(2); eyeR->releaseLink(2);
 
 		//state = 0;
 		state = 1;
@@ -330,15 +310,13 @@ public:
 				Matrix Hl, Hr, H;
 				Mat R(3,3, CV_64F);
 				vector<double> T(3);
-				yarp::sig::Vector *headAng = portHAngIn->read(true);
-				yarp::sig::Vector angles(8); angles.zero();
-				angles[3] = (*headAng)[0]; angles[4] = (*headAng)[1];
-				angles[5] = (*headAng)[2]; angles[6] = (*headAng)[3];
-				angles[7] = (*headAng)[4] + (*headAng)[5]/2.0;
-				angles = PI*angles/180.0;
-				Hl = eyeL->getH(angles);
-				angles[7] = PI*((*headAng)[4] - (*headAng)[5]/2.0)/180.0;
-				Hr = eyeR->getH(angles);
+				yarp::sig::Vector eo, ep;
+				igaze->getLeftEyePose(eo, ep);
+				Hl = axis2dcm(ep);
+				Hl(0,3) = eo[0]; Hl(1,3) = eo[1]; Hl(2,3) = eo[2];
+				igaze->getRightEyePose(eo, ep);
+				Hr = axis2dcm(ep);
+				Hr(0,3) = eo[0]; Hr(1,3) = eo[1]; Hr(2,3) = eo[2];
 
 				//get the transform matrix from the left image to the right image
 				H = SE3inv(Hr)*Hl;
@@ -467,18 +445,16 @@ public:
 		portEgoR->interrupt();
 		portSalL->interrupt();
 		portSalR->interrupt();
-		portHAngIn->interrupt();
 		portFxlOut->interrupt();
 
 		portEgoL->close();
 		portEgoR->close();
 		portSalL->close();
 		portSalR->close();
-		portHAngIn->close();
 		portFxlOut->close();
 
-		delete portEgoL, portEgoR, portSalL, portSalR,
-		delete portHAngIn, portFxlOut;
+		delete portEgoL, portEgoR, portSalL, portSalR;
+		delete portFxlOut;
 
 	}
 

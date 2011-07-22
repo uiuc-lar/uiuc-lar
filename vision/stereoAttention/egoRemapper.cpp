@@ -38,6 +38,8 @@
  *  	/egoRemapper/map<0-N>:ro  -- right egosphere remapped image
  *  	/egoRemapper/agg:lo		  -- left aggregate egosphere remapped image
  *  	/egoRemapper/agg:ro		  -- right aggregate egosphere remapped image
+ *  	/egoRemapper/sal:lo		  -- left aggregate un-warped image
+ *  	/egoRemapper/sal:ro		  -- right aggregate un-warped image
  *
  */
 
@@ -105,6 +107,8 @@ protected:
 	BufferedPort<ImageOf<PixelFloat> > **portImgRO;
 	BufferedPort<ImageOf<PixelFloat> > *portAggL;
 	BufferedPort<ImageOf<PixelFloat> > *portAggR;
+	BufferedPort<ImageOf<PixelFloat> > *portSalLO;
+	BufferedPort<ImageOf<PixelFloat> > *portSalRO;
 	int nmaps;
 
 	iCubEye * eyeL;
@@ -132,6 +136,7 @@ protected:
 	Mat * updMskL, * updMskR;
 	Mat * whtBlk;
 	Mat * maggL, * maggR;
+	Mat * msagL, * msagR;
 
 	//aggregate image parameters
 	yarp::sig::Vector weights;
@@ -204,7 +209,7 @@ public:
 			if (dvals.size()-1 < i)
 				dvals.addDouble(0.0);
 			weights.push_back(wvals.get(i+1).asDouble());
-			decays.push_back(1.0-dvals.get(i+1).asDouble());
+			decays.push_back(dvals.get(i+1).asDouble());
 		}
 
 		//get camera parameters
@@ -263,6 +268,14 @@ public:
 		portAggR=new BufferedPort<ImageOf<PixelFloat> >;
 		string portAggRName="/"+name+"/agg:r";
 		portAggR->open(portAggRName.c_str());
+
+		portSalLO=new BufferedPort<ImageOf<PixelFloat> >;
+		string portSalLName="/"+name+"/sal:lo";
+		portSalLO->open(portSalLName.c_str());
+
+		portSalRO=new BufferedPort<ImageOf<PixelFloat> >;
+		string portSalRName="/"+name+"/sal:ro";
+		portSalRO->open(portSalRName.c_str());
 
 		portHAngIn=new BufferedPort<yarp::sig::Vector>;
 		string portHAngName="/"+name+"/pos:h";
@@ -394,6 +407,13 @@ public:
 		maggL = new Mat(laggImg.height(), laggImg.width(), CV_32F, (void *)laggImg.getRawImage());
 		maggR = new Mat(raggImg.height(), raggImg.width(), CV_32F, (void *)raggImg.getRawImage());
 
+		ImageOf<PixelFloat> &sagL = portSalLO->prepare();
+		ImageOf<PixelFloat> &sagR = portSalRO->prepare();
+		sagL.resize(cxl*2, cyl*2); sagL.zero();
+		sagR.resize(cxr*2 ,cyr*2); sagR.zero();
+		msagL = new Mat(sagL.height(), sagL.width(), CV_32F, (void *)sagL.getRawImage());
+		msagR = new Mat(sagR.height(), sagR.width(), CV_32F, (void *)sagR.getRawImage());
+
 		//check for any input images that are available, and apply map
 		ImageOf<PixelFloat> *pImgL;
 		ImageOf<PixelFloat> *pImgR;
@@ -416,6 +436,10 @@ public:
 				Iimr = new Mat(pImgR->height(), pImgR->width(), CV_32F, (void *)pImgR->getRawImage());
 				Oiml = new Mat(loutImg.height(), loutImg.width(), CV_32F, (void *)loutImg.getRawImage());
 				Oimr = new Mat(routImg.height(), routImg.width(), CV_32F, (void *)routImg.getRawImage());
+
+				//add unwarped maps straight to the normal aggregator
+				(*msagL) = (*msagL) + weights[i]*(*Iiml);
+				(*msagR) = (*msagR) + weights[i]*(*Iimr);
 
 				//flip images to keep them consistent with output map convention
 				flip(*Iiml, *Iiml, -1);
@@ -451,10 +475,18 @@ public:
 		flip(*maggL, *maggL, 1);
 		flip(*maggR, *maggR, 1);
 
+		//saturate saliences at 0
+		threshold(*maggL, *maggL, 0, 0, CV_THRESH_TOZERO);
+		threshold(*maggR, *maggR, 0, 0, CV_THRESH_TOZERO);
+		threshold(*msagL, *msagL, 0, 0, CV_THRESH_TOZERO);
+		threshold(*msagR, *msagR, 0, 0, CV_THRESH_TOZERO);
+
 		//write aggregated maps, clean
+		portSalLO->write();
+		portSalRO->write();
 		portAggL->write();
 		portAggR->write();
-		delete maggL, maggR;
+		delete maggL, maggR, msagL, msagR;
 
 	}
 
@@ -489,14 +521,16 @@ public:
 		portAggL->close();
 		portAggR->interrupt();
 		portAggR->close();
+		portSalLO->interrupt();
+		portSalLO->close();
+		portSalRO->interrupt();
+		portSalRO->close();
 
 		delete portHAngIn;
-		delete portImgL;
-		delete portImgR;
-		delete portImgLO;
-		delete portImgRO;
-		delete portAggL;
-		delete portAggR;
+		delete portImgL, portImgR;
+		delete portImgLO, portImgRO;
+		delete portAggL, portAggR;
+		delete portSalLO, portSalRO;
 
 		delete Mxl, Myl, Mxr, Myr;
 		delete updMskL, updMskR, whtBlk, mosaicl, mosaicr;
