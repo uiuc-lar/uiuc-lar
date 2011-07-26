@@ -30,6 +30,7 @@
  *									applied. decays should be near zero as (1-decay) will be premultiplied to the mosaic
  *		nmaps					-- number of stereo map ports to open. maps are labeled /egoRemapper/mapN:l, with
  *										N ranging from 0 to nmaps-1 (D 1)
+ *		lpf						-- apply lpf to maps. if set, argument must be kernel variance
  *  	name					-- module port basename (D /egoRemapper)
  *  	verbose					-- setting flag makes the module shoot debug info to stdout
  *
@@ -141,6 +142,8 @@ protected:
 	//aggregate image parameters
 	yarp::sig::Vector weights;
 	yarp::sig::Vector decays;
+	bool lpf;
+	int ksize;
 
 public:
 
@@ -210,6 +213,14 @@ public:
 				dvals.addDouble(0.0);
 			weights.push_back(wvals.get(i+1).asDouble());
 			decays.push_back(dvals.get(i+1).asDouble());
+		}
+
+		//see if lpf is desired
+		lpf = rf.check("lpf");
+		if (lpf) {
+			ksize = rf.check("lpf", Value(25)).asInt();
+		} else {
+			ksize = -1;
 		}
 
 		//get camera parameters
@@ -458,6 +469,8 @@ public:
 							mosaicr[i]->at<float>(j,k) = Oimr->at<float>(j,k);
 					}
 				}
+				flip(*Oiml, *Oiml, 1);
+				flip(*Oimr, *Oimr, 1);
 
 				//write to port and cleanup
 				portImgLO[i]->write();
@@ -480,6 +493,14 @@ public:
 		threshold(*maggR, *maggR, 0, 0, CV_THRESH_TOZERO);
 		threshold(*msagL, *msagL, 0, 0, CV_THRESH_TOZERO);
 		threshold(*msagR, *msagR, 0, 0, CV_THRESH_TOZERO);
+
+		//filter if specified
+		if (lpf) {
+			GaussianBlur(*maggL, *maggL, Size(ksize,ksize), ksize/5.0, ksize/5.0);
+			GaussianBlur(*maggR, *maggR, Size(ksize,ksize), ksize/5.0, ksize/5.0);
+			GaussianBlur(*msagL, *msagL, Size(ksize,ksize), ksize/5.0, ksize/5.0);
+			GaussianBlur(*msagR, *msagR, Size(ksize,ksize), ksize/5.0, ksize/5.0);
+		}
 
 		//write aggregated maps, clean
 		portSalLO->write();
