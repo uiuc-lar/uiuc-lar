@@ -131,6 +131,7 @@ protected:
 	Mat mpxL, mpyL, mpxR, mpyR;
 	Point * mxDxL, * mxDxR;
 	int wsize, nlags;
+	Mat CF;
 
 	double fT;
 	int state;
@@ -217,6 +218,12 @@ public:
 		portFxlOut->open(portFxlName.c_str());
 		portFxlOut->setTimeout(0.5);
 
+		//build the center focusing map
+		CF = Mat::zeros(cyl*2, cxl*2, CV_32F);
+		CF.at<float>(cyl, cxl) = 255.0;
+		GaussianBlur(CF, CF, Size(cxl*2-1, cyl*2-1), cxl, cyl);
+		CF = CF/(CF.at<float>(cyl,cxl));
+
 		//start up gaze control client interface
 		Property option("(device gazecontrollerclient)");
 		option.put("remote","/iKinGazeCtrl");
@@ -241,8 +248,7 @@ public:
 
 		}
 
-		//state = 0;
-		state = 1;
+		state = 0;
 
 		return true;
 
@@ -257,7 +263,7 @@ public:
 
 
 			//state 0: find most salient point, perform pre-focus
-			if (!state) {
+			if (state == 0) {
 
 				ImageOf<PixelFloat> *pEgoL = portEgoL->read(true);
 				ImageOf<PixelFloat> *pEgoR = portEgoR->read(true);
@@ -271,8 +277,9 @@ public:
 				double * mxVal = new double[2];
 				minMaxLoc(*Esl, NULL, mxVal, NULL, mxDxL);
 				minMaxLoc(*Esr, NULL, mxVal+1, NULL, mxDxR);
-				if (mxVal[1] > mxVal[0])
-					mxDxL = mxDxR;
+				if (mxVal[1] > mxVal[0]) {
+					mxDxL->x = mxDxR->x; mxDxL->y = mxDxR->y;
+				}
 
 				//find the az/el location of the point
 				double az, el;
@@ -334,17 +341,22 @@ public:
 				remap(*Sl, *Scl, mpxL, mpyL, INTER_LINEAR);
 				remap(*Sr, *Scr, mpxR, mpyR, INTER_LINEAR);
 
-				//locate the most salient point again
+				//locate the most salient point again (with center focusing)
 				mxDxL = new Point;
 				mxDxR = new Point;
 				int winimg = 0;
 				double * mxVal = new double[2];
+				(*Scl) = (*Scl)*(CF); (*Scr) = (*Scr)*(CF);
 				minMaxLoc(*Scl, NULL, mxVal, NULL, mxDxL);
 				minMaxLoc(*Scr, NULL, mxVal+1, NULL, mxDxR);
 				if (mxVal[1] > mxVal[0]) {
 					mxDxL->x = mxDxR->x; mxDxL->y = mxDxR->y;
 					winimg = 1;
 				}
+
+				//redo the images after the center focus adjustment
+				remap(*Sl, *Scl, mpxL, mpyL, INTER_LINEAR);
+				remap(*Sr, *Scr, mpxR, mpyR, INTER_LINEAR);
 
 				//adjust for vertical offset from left to right image
 				int vamin, vamax, vadj;
@@ -382,10 +394,11 @@ public:
 
 				//remap corresponding point onto the unrectified image
 				if (!winimg) {
-					mxDxR->x = mxDxL->x+mCorr-nlags-1; mxDxR->y = mxDxL->y - voffset;
+					mxDxR->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2), 0);
+					mxDxR->y = mxDxL->y - voffset;
 				} else {
 					mxDxR->x = mxDxL->x; mxDxR->y = mxDxL->y - voffset;
-					mxDxL->x = mxDxL->x+mCorr-nlags-1;
+					mxDxL->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2),0);
 				}
 				int ul = (int)mpxL.at<float>(*mxDxL);
 				int vl = (int)mpyL.at<float>(*mxDxL);
