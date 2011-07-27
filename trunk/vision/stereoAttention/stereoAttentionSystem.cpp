@@ -36,6 +36,7 @@
  *  	fixtime					-- object fixation duration, in seconds (D 5s)
  *  	<camera parameters>		-- intrinsic calibration params for each camera under [CAMERA_CALIBRATION_LEFT/RIGHT].
  *										see iKinGazeCtrl docs for example of how to do this
+ *		lpf						-- apply lpf to maps before choosing max pt. arg is kernel size, w/ var size/5
  *		voffset					-- vertical offset from left to right image in pixels; this adjusts for
  *									vertical camera misalignment on the icub (ex -20 shifts the right image up by 20)
  *  	name					-- module port basename (D /stereoAttention)
@@ -107,6 +108,8 @@ protected:
 	BufferedPort<ImageOf<PixelFloat> > *portEgoR;
 	BufferedPort<ImageOf<PixelFloat> > *portSalL;
 	BufferedPort<ImageOf<PixelFloat> > *portSalR;
+	BufferedPort<ImageOf<PixelFloat> > *portSalLO;
+	BufferedPort<ImageOf<PixelFloat> > *portSalRO;
 	Port *portFxlOut;
 
 	//ikingaze objects and params
@@ -135,6 +138,9 @@ protected:
 
 	double fT;
 	int state;
+	bool lpf;
+	int ksize;
+
 
 
 public:
@@ -196,6 +202,14 @@ public:
 
 		}
 
+		//see if lpf is desired
+		lpf = rf.check("lpf");
+		if (lpf) {
+			ksize = rf.check("lpf", Value(25)).asInt();
+		} else {
+			ksize = -1;
+		}
+
 		//open up ports
 		portEgoL=new BufferedPort<ImageOf<PixelFloat> >;
 		string portEgolName="/"+name+"/ego:l";
@@ -213,6 +227,14 @@ public:
 		string portSalrName="/"+name+"/sal:r";
 		portSalR->open(portSalrName.c_str());
 
+		portSalLO=new BufferedPort<ImageOf<PixelFloat> >;
+		string portSalloName="/"+name+"/sal:lo";
+		portSalLO->open(portSalloName.c_str());
+
+		portSalRO=new BufferedPort<ImageOf<PixelFloat> >;
+		string portSalroName="/"+name+"/sal:ro";
+		portSalRO->open(portSalroName.c_str());
+
 		portFxlOut=new Port;
 		string portFxlName="/"+name+"/fxl:o";
 		portFxlOut->open(portFxlName.c_str());
@@ -221,7 +243,7 @@ public:
 		//build the center focusing map
 		CF = Mat::zeros(cyl*2, cxl*2, CV_32F);
 		CF.at<float>(cyl, cxl) = 255.0;
-		GaussianBlur(CF, CF, Size(cxl*2-1, cyl*2-1), cxl, cyl);
+		GaussianBlur(CF, CF, Size(cxl*2-1, cyl*2-1), cxl/2.0, cyl/2.0);
 		CF = CF/(CF.at<float>(cyl,cxl));
 
 		//start up gaze control client interface
@@ -258,6 +280,7 @@ public:
 	{
 
 		Mat * Esl, * Esr, * Sl, * Sr, * Scl, * Scr;
+		Mat * Eslm, * Esrm, * Sclm, * Scrm;
 
 		while (isStopping() != true) {
 
@@ -269,22 +292,45 @@ public:
 				ImageOf<PixelFloat> *pEgoR = portEgoR->read(true);
 				Esl = new Mat(pEgoL->height(), pEgoL->width(), CV_32F, (void *)pEgoL->getRawImage());
 				Esr = new Mat(pEgoR->height(), pEgoR->width(), CV_32F, (void *)pEgoR->getRawImage());
-
+				Eslm = new Mat(pEgoL->height(), pEgoL->width(), CV_32F);
+				Esrm = new Mat(pEgoR->height(), pEgoR->width(), CV_32F);
 
 				//find point of highest salience across both pairs
 				mxDxL = new Point;
 				mxDxR = new Point;
 				double * mxVal = new double[2];
-				minMaxLoc(*Esl, NULL, mxVal, NULL, mxDxL);
-				minMaxLoc(*Esr, NULL, mxVal+1, NULL, mxDxR);
+
+				//filter if specified
+				if (lpf) {
+					GaussianBlur(*Esl, *Eslm, Size(ksize,ksize), ksize/5.0, ksize/5.0);
+					GaussianBlur(*Esr, *Esrm, Size(ksize,ksize), ksize/5.0, ksize/5.0);
+				} else {
+					Esl->copyTo(*Eslm); Esr->copyTo(*Esrm);
+				}
+				minMaxLoc(*Eslm, NULL, mxVal, NULL, mxDxL);
+				minMaxLoc(*Esrm, NULL, mxVal+1, NULL, mxDxR);
 				if (mxVal[1] > mxVal[0]) {
 					mxDxL->x = mxDxR->x; mxDxL->y = mxDxR->y;
 				}
+
+				//for debug purposes
+				ImageOf<PixelFloat> &loImg = portSalLO->prepare();
+				ImageOf<PixelFloat> &roImg = portSalRO->prepare();
+				(*Esl) = (*Esl)*2.0; (*Esr) = (*Esr)*2.0;
+				if (mxVal[1] > mxVal[0]) {
+					circle(*Esr, *mxDxL, 3, Scalar(255), -1);
+				} else {
+					circle(*Esl, *mxDxL, 3, Scalar(255), -1);
+				}
+				loImg.copy(*pEgoL); roImg.copy(*pEgoR);
+				portSalLO->write();
+				portSalRO->write();
 
 				//find the az/el location of the point
 				double az, el;
 				az = azlo + ((azhi-azlo)/(float)pEgoL->width())*(mxDxL->x);
 				el = elhi - ((elhi-ello)/(float)pEgoL->height())*(mxDxL->y);
+				printf("directing gaze to az: %f, el: %f\n", az, el);
 
 				//move head to that az/el
 				yarp::sig::Vector tang(3);
@@ -296,6 +342,7 @@ public:
 				state = 1;
 
 				delete Esl, Esr;
+				delete Eslm, Esrm;
 				delete mxDxL, mxVal;
 
 
@@ -312,6 +359,8 @@ public:
 				Sr = new Mat(pSalR->height(), pSalR->width(), CV_32F, (void *)pSalR->getRawImage());
 				Scl = new Mat(pSalL->height(), pSalL->width(), CV_32F);
 				Scr = new Mat(pSalR->height(), pSalR->width(), CV_32F);
+				Sclm = new Mat(pSalL->height(), pSalL->width(), CV_32F);
+				Scrm = new Mat(pSalR->height(), pSalR->width(), CV_32F);
 
 				//get head and l/r eye matrices, assuming fixed torso
 				Matrix Hl, Hr, H;
@@ -344,19 +393,23 @@ public:
 				//locate the most salient point again (with center focusing)
 				mxDxL = new Point;
 				mxDxR = new Point;
-				int winimg = 0;
+				bool winimg = false;
 				double * mxVal = new double[2];
-				(*Scl) = (*Scl)*(CF); (*Scr) = (*Scr)*(CF);
-				minMaxLoc(*Scl, NULL, mxVal, NULL, mxDxL);
-				minMaxLoc(*Scr, NULL, mxVal+1, NULL, mxDxR);
+				if (lpf) {
+					GaussianBlur(*Scl, *Sclm, Size(ksize,ksize), ksize/5.0, ksize/5.0);
+					GaussianBlur(*Scr, *Scrm, Size(ksize,ksize), ksize/5.0, ksize/5.0);
+				} else {
+					Scl->copyTo(*Sclm); Scr->copyTo(*Scrm);
+				}
+				multiply(*Sclm, CF, *Sclm);
+				multiply(*Scrm, CF, *Scrm);
+				minMaxLoc(*Sclm, NULL, mxVal, NULL, mxDxL);
+				minMaxLoc(*Scrm, NULL, mxVal+1, NULL, mxDxR);
 				if (mxVal[1] > mxVal[0]) {
 					mxDxL->x = mxDxR->x; mxDxL->y = mxDxR->y;
-					winimg = 1;
+					winimg = true;
 				}
 
-				//redo the images after the center focus adjustment
-				remap(*Sl, *Scl, mpxL, mpyL, INTER_LINEAR);
-				remap(*Sr, *Scr, mpxR, mpyR, INTER_LINEAR);
 
 				//adjust for vertical offset from left to right image
 				int vamin, vamax, vadj;
@@ -375,7 +428,7 @@ public:
 					copyMakeBorder(*Scl, salImg, wsize, wsize, wsize, wsize, BORDER_CONSTANT, Scalar(0));
 					copyMakeBorder(Scr->rowRange(vamin,vamax), srcImg, wsize+vadj, wsize+vamin+1, wsize+nlags, wsize+nlags, BORDER_CONSTANT, Scalar(0));
 				} else {
-					copyMakeBorder(Scr->rowRange(vamin,vamax), salImg, wsize+vadj, wsize+vamin, wsize, wsize, BORDER_CONSTANT, Scalar(0));
+					copyMakeBorder(Scr->rowRange(vamin,vamax), salImg, wsize+vadj, wsize+vamin+1, wsize, wsize, BORDER_CONSTANT, Scalar(0));
 					copyMakeBorder(*Scl, srcImg, wsize, wsize, wsize+nlags, wsize+nlags, BORDER_CONSTANT, Scalar(0));
 					mxDxL->y = mxDxL->y + voffset;
 				}
@@ -398,12 +451,13 @@ public:
 					mxDxR->y = mxDxL->y - voffset;
 				} else {
 					mxDxR->x = mxDxL->x; mxDxR->y = mxDxL->y - voffset;
-					mxDxL->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2),0);
+					printf("%d, %d, %d\n", mCorr, mCorr-nlags-1, (int)cxl*2);
+					mxDxL->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2), 0);
 				}
-				int ul = (int)mpxL.at<float>(*mxDxL);
-				int vl = (int)mpyL.at<float>(*mxDxL);
-				int ur = (int)mpxR.at<float>(*mxDxR);
-				int vr = (int)mpyR.at<float>(*mxDxR);
+				int ul = std::max(std::min((int)mpxL.at<float>(*mxDxL), (int)cxl*2),0);
+				int vl = std::max(std::min((int)mpyL.at<float>(*mxDxL), (int)cyl*2),0);
+				int ur = std::max(std::min((int)mpxR.at<float>(*mxDxR), (int)cxr*2),0);
+				int vr = std::max(std::min((int)mpyR.at<float>(*mxDxR)+voffset, (int)cyr*2),0);
 
 				//triangulate the point (least squares)
 				Matrix A(4,3);
@@ -431,7 +485,28 @@ public:
 				fxloc.addInt(ul); fxloc.addInt(vl); fxloc.addInt(ur); fxloc.addInt(vr);
 				portFxlOut->write(fxloc);
 
+				//for debug purposes
+				ImageOf<PixelFloat> &loImg = portSalLO->prepare();
+				ImageOf<PixelFloat> &roImg = portSalRO->prepare();
+				(*Sl) = (*Sl)*2.0; (*Sr) = (*Sr)*2.0;
+				if (!winimg) {
+					circle(*Sl, Point(ul,vl), 10, Scalar(255), 2);
+					circle(*Sr, Point(ur,vr-voffset), 5, Scalar(255), 2);
+				} else {
+					circle(*Sl, Point(ul,vl), 5, Scalar(255), 2);
+					circle(*Sr, Point(ur,vr-voffset), 10, Scalar(255), 2);
+				}
+				loImg.copy(*pSalL); roImg.copy(*pSalR);
+				portSalLO->write();
+				portSalRO->write();
+
 				//direct gaze to fixate on point
+				printf("fixating on point at x: %f, y: %f, z: %f\n", Xp[0], Xp[1], Xp[2]);
+				printf("img coords ul: %d, vl: %d, ur: %d, vr: %d\n", ul,vl,ur,vr);
+
+				yarp::sig::Vector rperr = A*Xp - b;
+				printf("m.s. error: %f\n", norm2(rperr));
+
 				igaze->lookAtFixationPoint(Xp);
 				igaze->waitMotionDone(0.1, 10.0); //wait a max of 10s for motion to finish
 				Time::delay(fT); //wait some additional time while looking at the object
@@ -439,6 +514,7 @@ public:
 				state = 0;
 
 				delete Sl, Sr, Scl, Scr;
+				delete Sclm, Scrm;
 				delete mxDxL, mxDxR, mxVal;
 
 
@@ -458,12 +534,16 @@ public:
 		portEgoR->interrupt();
 		portSalL->interrupt();
 		portSalR->interrupt();
+		portSalLO->interrupt();
+		portSalRO->interrupt();
 		portFxlOut->interrupt();
 
 		portEgoL->close();
 		portEgoR->close();
 		portSalL->close();
 		portSalR->close();
+		portSalLO->close();
+		portSalRO->close();
 		portFxlOut->close();
 
 		delete portEgoL, portEgoR, portSalL, portSalR;
