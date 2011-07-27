@@ -72,12 +72,12 @@
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <from>/stereoIOR/sal:lo</from>
+  <from>/stereoIOR/ior:l</from>
   <to>/egoRemapper/map1:l</to>
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <from>/stereoIOR/sal:ro</from>
+  <from>/stereoIOR/ior:r</from>
   <to>/egoRemapper/map1:r</to>
   <protocol>tcp</protocol>
 </connection>

@@ -8,7 +8,9 @@
  * inputs:
  *  	/stereoIOR/sal:l	-- unwarped left weighted salience sum (same as stereoAttn)
  *  	/stereoIOR/sal:r	-- unwarped right weighted salience sum (same as stereoAttn)
- *  	/stereoIOR/ior:i	-- ior event location as bottle of image coords [ul vl ur vr]
+ *  	/stereoIOR/ior:i	-- ior event location as bottle of image coords [ul vl ur vr lbr].
+ *  							if lbr is 0, coords can be used to reconstruct and xyz location.
+ *  							if -1/1 only left/right coordinates are viable, and az/el approx is used
  *  	/stereoIOR/pos:h	-- streaming head position, for remapping of old events
  *
  * params:
@@ -69,12 +71,28 @@ using namespace iCub::ctrl;
 
 #define PI 3.14159
 
+class iCubCFrame : public iCubEye {
+
+public:
+
+	iCubCFrame(const string &_type)	: iCubEye(_type) {
+
+		(*this)[getN()-2].setD(0.0);
+		this->blockLink(getN()-2,0.0);
+		this->blockLink(getN()-1,0.0);
+
+	}
+
+};
+
 struct iorEvent {
 
 	int nframes;
 	double x, y, z;
 	double val;
 	int ul, vl, ur, vr;
+	int lbr;
+	double az, el;
 	bool unregistered;
 
 };
@@ -109,10 +127,15 @@ public:
 		int vl = iore.get(1).asInt();
 		int ur = iore.get(2).asInt();
 		int vr = iore.get(3).asInt();
+		int lorr = 0;
+		if (iore.size() > 4) {
+			lorr = iore.get(4).asInt();
+		}
 
 		iorEvent E;
 		E.unregistered = true;
 		E.ul = ul; E.vl = vl; E.ur = ur; E.vr = vr;
+		E.lbr = lorr;
 		b.lock();
 		b.push_back(E);
 		b.unlock();
@@ -142,10 +165,11 @@ protected:
 	ImageOf<PixelFloat> lImgR;
 
 	//kinematics data
-	iCubEye * eyeL;
-	iCubEye * eyeR;
+	iCubEye * eyeL, * eyeR;
+	iCubCFrame * eyeC;
 	Matrix Pl, Pr;
 	Matrix rtToL, rtToR;
+	Matrix egToRt, rtToEg;
 
 	//running parameters
 	double decay;
@@ -219,11 +243,11 @@ public:
 		portSalR->open(portSalrName.c_str());
 
 		portSalLO=new BufferedPort<ImageOf<PixelFloat> >;
-		string portSalloName="/"+name+"/sal:lo";
+		string portSalloName="/"+name+"/ior:l";
 		portSalLO->open(portSalloName.c_str());
 
 		portSalRO=new BufferedPort<ImageOf<PixelFloat> >;
-		string portSalroName="/"+name+"/sal:ro";
+		string portSalroName="/"+name+"/ior:r";
 		portSalRO->open(portSalroName.c_str());
 
 		portHAngIn=new BufferedPort<yarp::sig::Vector>;
@@ -240,9 +264,16 @@ public:
 		eyeR = new iCubEye("right");
 		eyeL->setAllConstraints(false);
 		eyeR->setAllConstraints(false);
-		eyeL->releaseLink(0); eyeR->releaseLink(0);
-		eyeL->releaseLink(1); eyeR->releaseLink(1);
-		eyeL->releaseLink(2); eyeR->releaseLink(2);
+		eyeC = new iCubCFrame("right");
+		eyeC->setAllConstraints(false);
+		eyeL->releaseLink(0); eyeC->releaseLink(0); eyeR->releaseLink(0);
+		eyeL->releaseLink(1); eyeC->releaseLink(1); eyeR->releaseLink(1);
+		eyeL->releaseLink(2); eyeC->releaseLink(2); eyeR->releaseLink(2);
+
+		//get the location in root coordinates of ego center
+		yarp::sig::Vector q(eyeC->getDOF()); q=0.0;
+		egToRt=eyeC->getH(q);
+		rtToEg=SE3inv(egToRt);
 
 		return true;
 
@@ -254,24 +285,45 @@ public:
 		E.nframes = 0;
 		E.val = max(lImgL.pixel(E.ul,E.vl),lImgR.pixel(E.ur,E.vr));
 
-		//get the event location
-		yarp::sig::Vector b(4);
-		yarp::sig::Vector Xp(3);
-		Matrix A(4,3);
-		Matrix Al = Pl;
-		Matrix Ar = Pr;
-		Al(0,2) = Al(0,2)-E.ul; Al(1,2) = Al(1,2)-E.vl;
-		Ar(0,2) = Ar(0,2)-E.ur; Ar(1,2) = Ar(1,2)-E.vr;
-		Al = Al*rtToL; Ar = Ar*rtToR;
-		for (int i = 0; i < 2; i++) {
-			b[i] = -Al(i,3); b[i+2] = -Ar(i,3);
-			for (int j = 0; j < 3; j++) {
-				A(i,j) = Al(i,j);
-				A(i+2,j) = Ar(i,j);
+		//check to see if xyz projection would be valid
+		if (E.lbr == 0) {
+
+			//get the event location
+			yarp::sig::Vector b(4);
+			yarp::sig::Vector Xp(3);
+			Matrix A(4,3);
+			Matrix Al = Pl;
+			Matrix Ar = Pr;
+			Al(0,2) = Al(0,2)-E.ul; Al(1,2) = Al(1,2)-E.vl;
+			Ar(0,2) = Ar(0,2)-E.ur; Ar(1,2) = Ar(1,2)-E.vr;
+			Al = Al*rtToL; Ar = Ar*rtToR;
+			for (int i = 0; i < 2; i++) {
+				b[i] = -Al(i,3); b[i+2] = -Ar(i,3);
+				for (int j = 0; j < 3; j++) {
+					A(i,j) = Al(i,j);
+					A(i+2,j) = Ar(i,j);
+				}
 			}
+			Xp = pinv(A)*b;
+			E.x = Xp[0]; E.y = Xp[1]; E.z = Xp[2];
+
+		} else {
+
+			//get an ego-sphere based approximation
+			yarp::sig::Vector pt(3);
+			if (E.lbr < 0) {
+				pt[0] = E.ul; pt[1] = E.vl; pt[2] = 1; pt = 10*pt;
+				pt = pinv(Pl.transposed()).transposed()*pt;
+				pt = rtToEg*SE3inv(rtToL)*pt; //get point location in ego frame coords
+			} else {
+				pt[0] = E.ur; pt[1] = E.vr; pt[2] = 1; pt = 10*pt;
+				pt = pinv(Pr.transposed()).transposed()*pt;
+				pt = rtToEg*SE3inv(rtToL)*pt; //get point location in ego frame coords
+			}
+			E.az = atan2(pt[0],pt[2]);
+			E.el = -atan2(pt[1],pt[2]);
+
 		}
-		Xp = pinv(A)*b;
-		E.x = Xp[0]; E.y = Xp[1]; E.z = Xp[2];
 
 		E.unregistered = false;
 
@@ -306,7 +358,6 @@ public:
 		ImageOf<PixelFloat> *pSalL = portSalL->read(false);
 		ImageOf<PixelFloat> *pSalR = portSalR->read(false);
 
-
 		if (pSalL && pSalR) {
 
 			//save the current maps
@@ -319,22 +370,43 @@ public:
 			Mat Sr(roImg.height(), roImg.width(), CV_32F, (void *)roImg.getRawImage());
 			Mat ffMskL(loImg.height()+2, loImg.width()+2, CV_8UC1); ffMskL.setTo(Scalar(0));
 			Mat ffMskR(roImg.height()+2, roImg.width()+2, CV_8UC1); ffMskR.setTo(Scalar(0));
-			if (!mode) {
-				Sl.setTo(Scalar(0));
-				Sr.setTo(Scalar(0));
-			}
+			Sl.setTo(Scalar(0));
+			Sr.setTo(Scalar(0));
 
 			yarp::sig::Vector xyz(4), uvl(3), uvr(3);
 			int dcount = 0;
 			for (int i = 0; i < buf.size(); i++) {
 
-				//for each event, project its location onto the current image planes
+				//for each event, check if it is of single sided (ul/vl or ur/vr)
 				iorEvent &tev = buf.at(i);
-				xyz[0] = tev.x; xyz[1] = tev.y; xyz[2] = tev.z; xyz[3] = 1;
-				uvl = Pl*rtToL*xyz;
-				uvr = Pr*rtToR*xyz;
-				uvl[0] = uvl[0]/uvl[2]; uvl[1] = uvl[1]/uvl[2];
-				uvr[0] = uvr[0]/uvr[2]; uvr[1] = uvr[1]/uvr[2];
+
+				if (tev.lbr != 0) {
+
+					//for single sided events, use an az/el/r projection
+					xyz[0] = 10.0*sin(tev.az)*cos(tev.el); xyz[1] = 10.0*sin(-tev.el);
+					xyz[2] = 10.0*cos(tev.az)*cos(tev.el); xyz[3] = 1.0;
+					xyz = egToRt*xyz;
+					uvl = Pl*rtToL*xyz;
+					uvr = Pr*rtToR*xyz;
+					uvl[0] = uvl[0]/uvl[2]; uvl[1] = uvl[1]/uvl[2];
+					uvr[0] = uvr[0]/uvr[2]; uvr[1] = uvr[1]/uvr[2];
+					if (tev.lbr < 0) {
+						uvr[0] = -1; uvr[1] = -1;
+					} else {
+						uvl[0] = -1; uvl[1] = -1;
+					}
+
+
+				} else {
+
+					//if xyz-style event, reproject onto the image plane
+					xyz[0] = tev.x; xyz[1] = tev.y; xyz[2] = tev.z; xyz[3] = 1;
+					uvl = Pl*rtToL*xyz;
+					uvr = Pr*rtToR*xyz;
+					uvl[0] = uvl[0]/uvl[2]; uvl[1] = uvl[1]/uvl[2];
+					uvr[0] = uvr[0]/uvr[2]; uvr[1] = uvr[1]/uvr[2];
+
+				}
 
 				//provide inhibition at the location
 				if (mode) {
@@ -344,14 +416,14 @@ public:
 							uvl[1] > 0 && uvl[1] < pSalL->height()) {
 						//floodFill(Sl, ffMskL, Point((int)uvl[0], (int)uvl[1]), Scalar(255*exp(-tev.nframes*decay)),
 						//		NULL, Scalar((1-pthr)*tev.val), Scalar((1-pthr)*tev.val));
-						circle(Sl, Point((int)uvl[0], (int)uvl[1]), 30, Scalar(tev.val*exp(-tev.nframes*decay)), -1);
+						circle(Sl, Point((int)uvl[0], (int)uvl[1]), pthr, Scalar(tev.val*exp(-tev.nframes*decay)), -1);
 
 					}
 					if (uvr[0] > 0 && uvr[0] < pSalR->width() &&
 							uvr[1] > 0 && uvr[1] < pSalR->height()) {
 						//floodFill(Sr, ffMskR, Point((int)uvr[0], (int)uvr[1]), Scalar(255*exp(-tev.nframes*decay)),
 						//		NULL, Scalar((1-pthr)*tev.val), Scalar((1-pthr)*tev.val));
-						circle(Sr, Point((int)uvr[0], (int)uvr[1]), 30, Scalar(tev.val*exp(-tev.nframes*decay)), -1);
+						circle(Sr, Point((int)uvr[0], (int)uvr[1]), pthr, Scalar(tev.val*exp(-tev.nframes*decay)), -1);
 					}
 				}
 				else {
@@ -359,12 +431,10 @@ public:
 					//gaussian style inhibition -- place a delta at each projected point
 					if (uvl[0] > 0 && uvl[0] < pSalL->width() &&
 							uvl[1] > 0 && uvl[1] < pSalL->height()) {
-						//Sl.at<float>(Point((int)uvl[0],(int)uvl[1])) = 255*exp(-tev.nframes*decay);
 						Sl.at<float>((int)uvl[1],(int)uvl[0]) = 255*exp(-tev.nframes*decay);
 					}
 					if (uvr[0] > 0 && uvr[0] < pSalR->width() &&
 							uvr[1] > 0 && uvr[1] < pSalR->height()) {
-						//Sr.at<float>(Point((int)uvr[0],(int)uvr[1])) = 255*exp(-tev.nframes*decay);
 						Sr.at<float>((int)uvr[1],(int)uvr[0]) = 255*exp(-tev.nframes*decay);
 					}
 				}
