@@ -37,10 +37,13 @@
  *  	<camera parameters>		-- intrinsic calibration params for each camera under [CAMERA_CALIBRATION_LEFT/RIGHT].
  *										see iKinGazeCtrl docs for example of how to do this
  *		lpf						-- apply lpf to maps before choosing max pt. arg is kernel size, w/ var size/5
+ *		focus					-- apply gaussian focusing mask to images on secondary search. arg is var as fraction
+ *									of image size
  *		voffset					-- vertical offset from left to right image in pixels; this adjusts for
  *									vertical camera misalignment on the icub (ex -20 shifts the right image up by 20)
+ *		<x/y/zrange>			-- bounding box for allowable fixation points (in meters). ex: 'xrange 0.0 -10.0'
  *  	name					-- module port basename (D /stereoAttention)
- *  	verbose					-- setting flag makes the module shoot debug info to stdout
+ *  	debug					-- setting flag makes the module shoot debug info to stdout, and opens up debug image ports
  *
  *  outputs:
  *  	/stereoAttention/fxl:o	-- bottle containing fixation location in terms of image coordinates [ul vl ur vr].
@@ -133,15 +136,18 @@ protected:
 	Mat R, Rl, Rr;
 	Mat mpxL, mpyL, mpxR, mpyR;
 	Point * mxDxL, * mxDxR;
-	int wsize, nlags;
 	Mat CF;
 
+	//misc running params
+	int wsize, nlags;
 	double fT;
-	int state;
-	bool lpf;
+	bool lpf, focus;
 	int ksize;
+	double fsize;
+	bool debug;
+	double xlo, xhi, ylo, yhi, zlo, zhi;
 
-
+	int state;
 
 public:
 
@@ -166,6 +172,7 @@ public:
 		voffset = rf.check("voffset",Value(0)).asInt();
 		wsize = (int)rf.check("wsize",Value(25)).asInt()/2;
 		nlags = rf.check("nlags",Value(50)).asInt();
+		debug = rf.check("debug");
 
 		//get output map size
 		Bottle arng = rf.findGroup("azrange");
@@ -202,12 +209,27 @@ public:
 
 		}
 
-		//see if lpf is desired
-		lpf = rf.check("lpf");
-		if (lpf) {
+		//get salience filtering options
+		lpf = rf.check("lpf"); ksize = -1;
+		if (lpf)
 			ksize = rf.check("lpf", Value(25)).asInt();
-		} else {
-			ksize = -1;
+		focus = rf.check("focus"); fsize = -1;
+		if (focus)
+			fsize = rf.check("focus", Value(0.5)).asDouble();
+
+
+		//get allowable gaze locations if requested
+		Bottle xrng = rf.findGroup("xrange"); xlo = -1e+10; xhi = 1e+10;
+		Bottle yrng = rf.findGroup("yrange"); ylo = -1e+10; yhi = 1e+10;
+		Bottle zrng = rf.findGroup("zrange"); zlo = -1e+10; zhi = 1e+10;
+		if (xrng.size() == 3) {
+			xlo = xrng.get(1).asDouble(); xhi = xrng.get(2).asDouble();
+		}
+		if (yrng.size() == 3) {
+			ylo = yrng.get(1).asDouble(); yhi = yrng.get(2).asDouble();
+		}
+		if (zrng.size() == 3) {
+			zlo = zrng.get(1).asDouble(); zhi = zrng.get(2).asDouble();
 		}
 
 		//open up ports
@@ -227,24 +249,30 @@ public:
 		string portSalrName="/"+name+"/sal:r";
 		portSalR->open(portSalrName.c_str());
 
-		portSalLO=new BufferedPort<ImageOf<PixelFloat> >;
-		string portSalloName="/"+name+"/sal:lo";
-		portSalLO->open(portSalloName.c_str());
-
-		portSalRO=new BufferedPort<ImageOf<PixelFloat> >;
-		string portSalroName="/"+name+"/sal:ro";
-		portSalRO->open(portSalroName.c_str());
-
 		portFxlOut=new Port;
 		string portFxlName="/"+name+"/fxl:o";
 		portFxlOut->open(portFxlName.c_str());
 		portFxlOut->setTimeout(0.5);
 
+		if (debug) {
+
+			portSalLO=new BufferedPort<ImageOf<PixelFloat> >;
+			string portSalloName="/"+name+"/sal:lo";
+			portSalLO->open(portSalloName.c_str());
+
+			portSalRO=new BufferedPort<ImageOf<PixelFloat> >;
+			string portSalroName="/"+name+"/sal:ro";
+			portSalRO->open(portSalroName.c_str());
+
+		}
+
 		//build the center focusing map
-		CF = Mat::zeros(cyl*2, cxl*2, CV_32F);
-		CF.at<float>(cyl, cxl) = 255.0;
-		GaussianBlur(CF, CF, Size(cxl*2-1, cyl*2-1), cxl/2.0, cyl/2.0);
-		CF = CF/(CF.at<float>(cyl,cxl));
+		if (focus) {
+			CF = Mat::zeros(cyl*2, cxl*2, CV_32F);
+			CF.at<float>(cyl, cxl) = 255.0;
+			GaussianBlur(CF, CF, Size(cxl*2-1, cyl*2-1), cxl*fsize, cyl*fsize);
+			CF = CF/(CF.at<float>(cyl,cxl));
+		}
 
 		//start up gaze control client interface
 		Property option("(device gazecontrollerclient)");
@@ -313,24 +341,30 @@ public:
 					mxDxL->x = mxDxR->x; mxDxL->y = mxDxR->y;
 				}
 
-				//for debug purposes
-				ImageOf<PixelFloat> &loImg = portSalLO->prepare();
-				ImageOf<PixelFloat> &roImg = portSalRO->prepare();
-				(*Esl) = (*Esl)*2.0; (*Esr) = (*Esr)*2.0;
-				if (mxVal[1] > mxVal[0]) {
-					circle(*Esr, *mxDxL, 3, Scalar(255), -1);
-				} else {
-					circle(*Esl, *mxDxL, 3, Scalar(255), -1);
+				//publish annotated egomap if requested
+				if (debug) {
+
+					ImageOf<PixelFloat> &loImg = portSalLO->prepare();
+					ImageOf<PixelFloat> &roImg = portSalRO->prepare();
+					(*Esl) = (*Esl)*2.0; (*Esr) = (*Esr)*2.0;
+					if (mxVal[1] > mxVal[0]) {
+						circle(*Esr, *mxDxL, 3, Scalar(255), -1);
+					} else {
+						circle(*Esl, *mxDxL, 3, Scalar(255), -1);
+					}
+					loImg.copy(*pEgoL); roImg.copy(*pEgoR);
+					portSalLO->write();
+					portSalRO->write();
+
 				}
-				loImg.copy(*pEgoL); roImg.copy(*pEgoR);
-				portSalLO->write();
-				portSalRO->write();
 
 				//find the az/el location of the point
 				double az, el;
 				az = azlo + ((azhi-azlo)/(float)pEgoL->width())*(mxDxL->x);
 				el = elhi - ((elhi-ello)/(float)pEgoL->height())*(mxDxL->y);
-				printf("directing gaze to az: %f, el: %f\n", az, el);
+				if (debug) {
+					printf("directing gaze to az: %f, el: %f\n", az, el);
+				}
 
 				//move head to that az/el
 				yarp::sig::Vector tang(3);
@@ -401,15 +435,16 @@ public:
 				} else {
 					Scl->copyTo(*Sclm); Scr->copyTo(*Scrm);
 				}
-				multiply(*Sclm, CF, *Sclm);
-				multiply(*Scrm, CF, *Scrm);
+				if (focus) {
+					multiply(*Sclm, CF, *Sclm);
+					multiply(*Scrm, CF, *Scrm);
+				}
 				minMaxLoc(*Sclm, NULL, mxVal, NULL, mxDxL);
 				minMaxLoc(*Scrm, NULL, mxVal+1, NULL, mxDxR);
 				if (mxVal[1] > mxVal[0]) {
 					mxDxL->x = mxDxR->x; mxDxL->y = mxDxR->y;
 					winimg = true;
 				}
-
 
 				//adjust for vertical offset from left to right image
 				int vamin, vamax, vadj;
@@ -480,36 +515,54 @@ public:
 				b[2] = -Hr(0,3); b[3] = -Hr(1,3);
 				Xp = pinv(A)*b;
 
-				//generate signal for IOR
+				//publish annotated salience map if requested
+				if (debug) {
+
+					ImageOf<PixelFloat> &loImg = portSalLO->prepare();
+					ImageOf<PixelFloat> &roImg = portSalRO->prepare();
+					(*Sl) = (*Sl)*2.0; (*Sr) = (*Sr)*2.0;
+					if (!winimg) {
+						circle(*Sl, Point(ul,vl), 10, Scalar(255), 2);
+						circle(*Sr, Point(ur,vr-voffset), 5, Scalar(255), 2);
+					} else {
+						circle(*Sl, Point(ul,vl), 5, Scalar(255), 2);
+						circle(*Sr, Point(ur,vr-voffset), 10, Scalar(255), 2);
+					}
+					loImg.copy(*pSalL); roImg.copy(*pSalR);
+					portSalLO->write();
+					portSalRO->write();
+					printf("Fixating on point at x: %f, y: %f, z: %f\n", Xp[0], Xp[1], Xp[2]);
+					printf("Img Coords ul: %d, vl: %d, ur: %d, vr: %d\n", ul,vl,ur,vr);
+
+				}
+
 				Bottle fxloc;
 				fxloc.addInt(ul); fxloc.addInt(vl); fxloc.addInt(ur); fxloc.addInt(vr);
-				portFxlOut->write(fxloc);
 
-				//for debug purposes
-				ImageOf<PixelFloat> &loImg = portSalLO->prepare();
-				ImageOf<PixelFloat> &roImg = portSalRO->prepare();
-				(*Sl) = (*Sl)*2.0; (*Sr) = (*Sr)*2.0;
-				if (!winimg) {
-					circle(*Sl, Point(ul,vl), 10, Scalar(255), 2);
-					circle(*Sr, Point(ur,vr-voffset), 5, Scalar(255), 2);
+				//check if fixation point falls within allowable bounds
+				if (Xp[0] < xhi && Xp[0] > xlo && Xp[1] < yhi && Xp[1] > xlo &&
+						Xp[2] < zhi && Xp[2] > zlo) {
+
+					//direct gaze to fixation point an issue an IOR request there
+					igaze->lookAtFixationPoint(Xp);
+					igaze->waitMotionDone(0.1, 10.0); //wait a max of 10s for motion to finish
+					Time::delay(fT); //wait some additional time while looking at the object
+
+					//generate signal for IOR
+					fxloc.addInt(0); //final zero indicates that xyz projection is valid
+
 				} else {
-					circle(*Sl, Point(ul,vl), 5, Scalar(255), 2);
-					circle(*Sr, Point(ur,vr-voffset), 10, Scalar(255), 2);
+
+					//if outside, no gaze shift; publish only img coord of peak salience
+					Bottle fxloc;
+					if (!winimg) {
+						fxloc.addInt(-1); //-1 signals xyz invalid, apply only in left image
+					} else {
+						fxloc.addInt(1); //1 signals xyz invalid, use only in right image
+					}
+
 				}
-				loImg.copy(*pSalL); roImg.copy(*pSalR);
-				portSalLO->write();
-				portSalRO->write();
-
-				//direct gaze to fixate on point
-				printf("fixating on point at x: %f, y: %f, z: %f\n", Xp[0], Xp[1], Xp[2]);
-				printf("img coords ul: %d, vl: %d, ur: %d, vr: %d\n", ul,vl,ur,vr);
-
-				yarp::sig::Vector rperr = A*Xp - b;
-				printf("m.s. error: %f\n", norm2(rperr));
-
-				igaze->lookAtFixationPoint(Xp);
-				igaze->waitMotionDone(0.1, 10.0); //wait a max of 10s for motion to finish
-				Time::delay(fT); //wait some additional time while looking at the object
+				portFxlOut->write(fxloc);
 
 				state = 0;
 
@@ -534,20 +587,24 @@ public:
 		portEgoR->interrupt();
 		portSalL->interrupt();
 		portSalR->interrupt();
-		portSalLO->interrupt();
-		portSalRO->interrupt();
 		portFxlOut->interrupt();
 
 		portEgoL->close();
 		portEgoR->close();
 		portSalL->close();
 		portSalR->close();
-		portSalLO->close();
-		portSalRO->close();
 		portFxlOut->close();
 
 		delete portEgoL, portEgoR, portSalL, portSalR;
 		delete portFxlOut;
+
+		if (debug) {
+			portSalLO->interrupt();
+			portSalRO->interrupt();
+			portSalLO->close();
+			portSalRO->close();
+			delete portSalLO, portSalRO;
+		}
 
 	}
 
