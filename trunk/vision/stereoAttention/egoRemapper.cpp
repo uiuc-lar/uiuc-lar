@@ -137,6 +137,7 @@ protected:
 	Mat * whtBlk;
 	Mat * maggL, * maggR;
 	Mat * msagL, * msagR;
+	bool status;
 
 	//aggregate image parameters
 	yarp::sig::Vector weights;
@@ -418,6 +419,7 @@ public:
 		ImageOf<PixelFloat> *pImgL;
 		ImageOf<PixelFloat> *pImgR;
 		Mat * Iiml, * Iimr, *Oiml, *Oimr;
+		status = true;
 		for (int i = 0; i < nmaps; i++) {
 
 			pImgL = portImgL[i]->read(false);
@@ -464,7 +466,13 @@ public:
 				//write to port and cleanup
 				portImgLO[i]->write();
 				portImgRO[i]->write();
+				status &= true;
 				delete Iiml, Iimr, Oiml, Oimr;
+
+			}
+			else {
+
+				status &= false;
 
 			}
 
@@ -484,8 +492,13 @@ public:
 		threshold(*msagR, *msagR, 0, 0, CV_THRESH_TOZERO);
 
 		//write aggregated maps, clean
-		portSalLO->write();
-		portSalRO->write();
+		if (status) {
+			portSalLO->write();
+			portSalRO->write();
+		} else {
+			portSalLO->unprepare();
+			portSalRO->unprepare();
+		}
 		portAggL->write();
 		portAggR->write();
 		delete maggL, maggR, msagL, msagR;
