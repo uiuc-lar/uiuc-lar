@@ -27,8 +27,10 @@
  *
  *  params: ([R]equired/[D]efault <Value>/[O]ptional)
  *
- *		azrange					-- total range of azimuth angles on incoming maps (R, ex: 0 180)
+ *		azrange					-- total range of azimuth angles on incoming maps as first two args.
+ *									optionally, may specify allowable search ranges as next args (R, ex: -60 60 -30 30)
  *		elrange					-- total range of elevation angles on incoming maps(R, ex: -90 90)
+ *									allowable search ranges may also be specified
  *  	tol						-- stereo convergence tolerance (D 5.0)
  *  	nt, et					-- solver trajectory times; lower values -> faster head movement (D 1.0, 0.5 for icub)
  *  	wsize					-- scanning window size for stereo matching (D 25)
@@ -121,8 +123,8 @@ protected:
 	double neckTT, eyeTT;
 
 	//ego map params
-	double azlo, azhi;
-	double ello, elhi;
+	double azlo, azhi, azalo, azahi;
+	double ello, elhi, elalo, elahi;
 
 	//camera projection matrix/params
 	Mat Pl;
@@ -177,11 +179,23 @@ public:
 		//get output map size
 		Bottle arng = rf.findGroup("azrange");
 		Bottle erng = rf.findGroup("elrange");
-		if (arng.isNull() || arng.size() < 3 || erng.isNull() || erng.size() < 3) {
-			return false;
-		} else {
+		if (arng.size() >= 3) {
 			azlo = arng.get(1).asDouble(); azhi = arng.get(2).asDouble();
+			azalo = azlo; azahi = azhi;
+			if (arng.size() == 5) {
+				azalo = arng.get(3).asDouble(); azahi = arng.get(4).asDouble();
+			}
+		} else {
+			return false;
+		}
+		if (erng.size() >= 3) {
 			ello = erng.get(1).asDouble(); elhi = erng.get(2).asDouble();
+			elalo = ello; elahi = elhi;
+			if (erng.size() == 5) {
+				elalo = erng.get(3).asDouble(); elahi = erng.get(4).asDouble();
+			}
+		} else {
+			return false;
 		}
 
 		//get camera calibration parameters
@@ -335,10 +349,19 @@ public:
 				} else {
 					Esl->copyTo(*Eslm); Esr->copyTo(*Esrm);
 				}
-				minMaxLoc(*Eslm, NULL, mxVal, NULL, mxDxL);
-				minMaxLoc(*Esrm, NULL, mxVal+1, NULL, mxDxR);
+
+				//find the max pt locations in allowable region
+				Rect alReg;
+				alReg.x = std::max((int)((azalo-azlo)*(float)pEgoL->width()/(azhi-azlo)),0);
+				alReg.width = std::min((int)((azahi-azlo)*(float)pEgoL->width()/(azhi-azlo)-alReg.x), pEgoL->width());
+				alReg.y = std::max((int)((elhi-elahi)*(float)pEgoL->height()/(elhi-ello)),0);
+				alReg.height = std::min((int)((elhi-elalo)*(float)pEgoL->height()/(elhi-ello)-alReg.y), pEgoL->height());
+				minMaxLoc((*Eslm)(alReg), NULL, mxVal, NULL, mxDxL);
+				minMaxLoc((*Esrm)(alReg), NULL, mxVal+1, NULL, mxDxR);
 				if (mxVal[1] > mxVal[0]) {
-					mxDxL->x = mxDxR->x; mxDxL->y = mxDxR->y;
+					mxDxL->x = mxDxR->x+alReg.x; mxDxL->y = mxDxR->y+alReg.y;
+				} else {
+					mxDxL->x = mxDxL->x+alReg.x; mxDxL->y = mxDxL->y+alReg.y;
 				}
 
 				//publish annotated egomap if requested
