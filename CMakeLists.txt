@@ -1,5 +1,7 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
 
+FILE(MAKE_DIRECTORY bin)
+
 add_subdirectory(speech)
 add_subdirectory(imatlib)
 add_subdirectory(RMLE)
