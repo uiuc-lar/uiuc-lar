@@ -2,16 +2,16 @@
  *  objectSegmentation.cpp
  *
  * 	Logan Niehaus
- * 	6/12/11
- * 	module that segments a particular kind of image, namely a color image taken
- *  from the robot with the expectation of a white background with dark or colorful
- *  objects sitting on a table. uses the watershed algorithm provided by opencv
- *  to do the segmentation. publishes a binary image from which contours of segmented objects
- *  can be easily extracted.
+ * 	6/12/11 (overhaul 7/30/11)
+ * 	module that segments best on color image taken from the robot with the
+ *  expectation of a white background with dark or colorful objects sitting on a table.
+ *  salience maps are used to pre-label watershed basins, after which opencv's watershed
+ *  algorithm is used to segment. publishes a binary image from which contours
+ *  of segmented objects can be easily extracted.
  *
- *  segmentation desc: pixelwise OR taken between thresholded color and (inverted) intensity
- *  	salience maps, responding to colorful or dark objects. canny edge detection is applied
- *  	to these maps as well, and the pixelwise OR of the edge maps is inverted and used as a
+ *  segmentation desc: pixelwise OR taken between thresholded the provided
+ *  	salience maps. canny edge detection is applied to these maps as well,
+ *  	and the pixelwise OR of the edge maps is inverted and used as a
  *  	mask for the combined thresholded image, in order to further separate occluded objects.
  *  	specks are filtered out and all proper object contours are given markers for the
  *  	watershed algorithm. all non-salient pixels in top half of image are marked as backdrop,
@@ -22,11 +22,13 @@
  *
  *
  *  inputs:
- *  	/objectSeg/img:i	-- RGB input image as described above
+ *  	/objectSeg/img:i		-- RGB input image as described above
+ *  	/objectSeg/map<0-N>:i 	-- saliency maps to use in labeling of basins
  *
  *  params:
- *  	colthresh	-- color salience threshold (D 50.0)
- *  	inthresh	-- intensity salience threshold (D 130.0)
+ *  	nmaps		-- number of map ports to open. maps are labeled /objectSeg/mapN:l, with
+ *							N ranging from 0 to nmaps-1 (D 1)
+ *  	thresh		-- vector of threshold values to apply to salience maps. must be length = nmaps
  *  	minobjsize	-- minimum segmented obj size; smaller objects not chosen (D 100.0)
  *  	maxobjsize	-- maximum segmented obj size; larger objects not chosen (D 5000.0)
  *  	tableloc	-- number of pixels above the horizontal center line the workspace extends. only
@@ -55,10 +57,6 @@
 #include <yarp/sig/ImageFile.h>
 #include <yarp/math/Math.h>
 
-#include <iCub/vis/Salience.h>
-#include <iCub/vis/IntensitySalience.h>
-#include "colorTransform.h"
-
 #include <cv.h>
 
 #include <string>
@@ -73,7 +71,6 @@ using namespace yarp;
 using namespace yarp::os;
 using namespace yarp::sig;
 using namespace yarp::math;
-using namespace iCub::vis;
 
 #define PI 3.14159
 
@@ -85,11 +82,12 @@ protected:
 	string name;
 
 	BufferedPort<ImageOf<PixelRgb> > *portImgIn;
+	BufferedPort<ImageOf<PixelFloat> > **portMapIn;
 	BufferedPort<ImageOf<PixelFloat> > *portImgOut;
 
-	IntensitySalience * ifilter;
+	yarp::sig::Vector threshs;
 
-	double colthresh, inthresh;
+	int nmaps;
 	int minobjsize, maxobjsize, tableloc;
 	double cplow, cphi;
 
@@ -102,14 +100,35 @@ public:
 	{
 
 		name=rf.check("name",Value("objectSeg")).asString().c_str();
-		colthresh = rf.check("colthresh",Value(50.0)).asDouble();
-		inthresh = rf.check("inthresh",Value(130.0)).asDouble();
+		nmaps = rf.check("nmaps",Value(1)).asInt();
 		cplow = rf.check("cplow",Value(140.0)).asDouble();
 		cphi = rf.check("cphi",Value(150.0)).asDouble();
 		minobjsize = rf.check("minobjsize",Value(100)).asInt();
 		maxobjsize = rf.check("maxobjsize",Value(5000)).asInt();
 		tableloc = rf.check("tableloc",Value(10)).asInt();
 
+		Bottle tvs = rf.findGroup("thresh");
+		threshs.resize(nmaps);
+		if (tvs.size() != nmaps+1) {
+			fprintf(stderr,"please specify threshold vector with length equal to nmaps\n");
+			return false;
+		} else {
+			 for (int i = 0; i < nmaps; i++) {
+				 threshs[i] = tvs.get(i+1).asDouble();
+			 }
+		}
+
+		//open up ports
+		string tmpName;
+		char mpnStr[10];
+		portMapIn = new BufferedPort<ImageOf<PixelFloat> > * [nmaps];
+		for (int i = 0; i < nmaps; i++) {
+			sprintf(mpnStr, "map%d", i);
+			portMapIn[i] = new BufferedPort<ImageOf<PixelFloat> >;
+			tmpName = "/" + name + "/" + mpnStr + ":i";
+			portMapIn[i]->open(tmpName.c_str());
+
+		}
 
 		portImgIn=new BufferedPort<ImageOf<PixelRgb> >;
 		string portInName="/"+name+"/img:i";
@@ -118,9 +137,6 @@ public:
 		portImgOut=new BufferedPort<ImageOf<PixelFloat> >;
 		string portOutName="/"+name+"/img:o";
 		portImgOut->open(portOutName.c_str());
-
-		ifilter = new IntensitySalience;
-		ifilter->open(rf);
 
 		return true;
 
@@ -131,54 +147,47 @@ public:
 
 		// get inputs
 		ImageOf<PixelRgb> *pImgIn=portImgIn->read(false);
-		ImageOf<PixelRgb> *cDest = NULL;
-		ImageOf<PixelFloat> *cSal = NULL;
-		ImageOf<PixelFloat> *iSal = NULL;
-
 
 		//if there is a camera image, use that
 		if (pImgIn)
 		{
 
-			cDest = new ImageOf<PixelRgb>;
-			cSal = new ImageOf<PixelFloat>;
-			iSal = new ImageOf<PixelFloat>;
-			ifilter->apply(*pImgIn, *cDest, *iSal);
-
-			//apply color normalization and invert to get color based salience
-			normalizeColor(*pImgIn, *cDest, *cSal);
-
 			ImageOf<PixelFloat> &imgOut= portImgOut->prepare();
+			imgOut.resize(*pImgIn); imgOut.zero();
 
-			Mat Y,Z,Tmp;
-			Mat * M = new Mat(cSal->height(), cSal->width(), CV_32F, (void *)cSal->getRawImage());
-			Mat * N = new Mat(iSal->height(), iSal->width(), CV_32F, (void *)iSal->getRawImage());
-			Mat * Mt = new Mat(cSal->height(), cSal->width(), CV_32F);
-			Mat * Nt = new Mat(iSal->height(), iSal->width(), CV_32F);
-			Mat * mark = new Mat(cSal->height(), cSal->width(), CV_32S);
+			Mat Y = Mat::zeros(pImgIn->height(), pImgIn->width(), CV_8UC1);
+			Mat T = Mat(pImgIn->height(), pImgIn->width(), CV_32F, (void *)imgOut.getRawImage());
+			Mat Z, Tmp;
+			Mat * M, * N;
+			Mat * mark = new Mat(pImgIn->height(), pImgIn->width(), CV_32S);
 
-			//do a rough canny edge detection
-			M->convertTo(Tmp, CV_8UC1);
-			Canny(Tmp, Y, cplow, cphi);
-			N->convertTo(Tmp, CV_8UC1);
-			Canny(Tmp, Z, cplow, cphi);
-			max(Y,Z,Y);
+			for (int i = 0; i < nmaps; i++) {
 
-			//get the binary image of salient areas (high color and dark areas)
-			threshold(*M, *Mt, colthresh, 255.0, CV_THRESH_BINARY);
-			threshold(*N, *Nt, inthresh, 255.0, CV_THRESH_BINARY_INV);
-			max(*Mt,*Nt,*Mt);
+				ImageOf<PixelFloat> *pMapIn=portMapIn[i]->read(true);
+
+				M = new Mat(pMapIn->height(), pMapIn->width(), CV_32F, (void *)pMapIn->getRawImage());
+
+				//do a rough canny edge detection
+				M->convertTo(Tmp, CV_8UC1);
+				Canny(Tmp, Z, cplow, cphi);
+				max(Y,Z,Y);
+
+				//get the binary image of salient areas (high color and dark areas)
+				threshold(*M, Tmp, threshs[i], 255.0, CV_THRESH_BINARY);
+				max(T,Tmp,T);
+
+				delete M;
+
+			}
+
 
 			//clear away some of the flecks inside of the blobs
-			dilate(*Mt, *M, Mat());
-			dilate(*M, *M, Mat());
-			erode(*M, *M, Mat());
-			erode(*M, *M, Mat());
-			erode(*M, *M, Mat());
+			dilate(T, T, Mat());
+			erode(T, T, Mat());
+			erode(T, T, Mat());
 
 			//use canny boundaries to cut some lines b/w different objects
-			M->setTo(Scalar(0),Y);
-
+			T.setTo(Scalar(0),Y);
 
 			//get list of blobs, do rough marking for watershed algorithm
 			vector<vector<Point> > contours;
@@ -186,7 +195,7 @@ public:
 			Mat X;
 			int nblobs = 3;
 			double mv;
-			M->convertTo(X,CV_8UC1);
+			T.convertTo(X,CV_8UC1);
 			findContours(X, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
 			mark->setTo(Scalar(0));
 
@@ -212,18 +221,21 @@ public:
 				}
 			}
 
+			//mark->convertTo(Z, CV_32F);
+			//Z = Z*(255.0/(float)nblobs);
+
 			//mark pixels which are definitely in the background
 			//assume a bit of structure here - namely there is a table and background
 			for (int i = 0; i < 10; i++) {
-				dilate(*M,*M,Mat());
+				dilate(T,T,Mat());
 			}
-			for (int i = 0; i < M->rows; i++) {
-				for (int j = 0; j < M->cols; j++) {
-					if (M->at<float>(i,j) == 0) {
-						if (i > cSal->height()/2+50) {
+			for (int i = 0; i < T.rows; i++) {
+				for (int j = 0; j < T.cols; j++) {
+					if (T.at<float>(i,j) == 0) {
+						if (i > imgOut.height()/2+50) {
 							mark->at<float>(i,j) = 1; //table
 						}
-						if (i < cSal->height()/2-50) {
+						if (i < imgOut.height()/2-50) {
 							mark->at<float>(i,j) = 2; //backdrop
 						}
 					}
@@ -235,23 +247,22 @@ public:
 			watershed(I, *mark);
 
 			//zero out all marked background pixels
-			mark->convertTo(*M, CV_32F);
-			for (int i = 0; i < M->rows; i++) {
-				for (int j = 0; j < M->cols; j++) {
-					if (M->at<float>(i,j) <= 2) {
-						M->at<float>(i,j) = 0;
+			mark->convertTo(T, CV_32F);
+			for (int i = 0; i < T.rows; i++) {
+				for (int j = 0; j < T.cols; j++) {
+					if (T.at<float>(i,j) <= 2) {
+						T.at<float>(i,j) = 0;
 					} else {
-						M->at<float>(i,j) *= 255.0/(float)nblobs;
+						T.at<float>(i,j) *= 255.0/(float)nblobs;
 					}
 				}
 			}
 
 			contours.clear();
-			M->convertTo(X,CV_8UC1);
+			T.convertTo(X,CV_8UC1);
 			findContours(X, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
 
 			//filter out certain unwanted objects and publish the binary image
-			cSal->zero();
 			for (int i = 0; i < contours.size(); i++) {
 				if (contourArea(Mat(contours[i])) > minobjsize &&
 						contourArea(Mat(contours[i])) < maxobjsize) {
@@ -265,23 +276,17 @@ public:
 					} else {
 						arat = RR.size.height/RR.size.width;
 					}
-					if (m.m01/m.m00 > (cSal->height()/2 - tableloc) &&
+					if (m.m01/m.m00 > (pImgIn->height()/2 - tableloc) &&
 							arat < 10.0) {
-						drawContours(*M, contours, i, Scalar(255.0), -1);
+						drawContours(T, contours, i, Scalar(255.0), -1);
 					}
 				}
 			}
 
-			imgOut.copy(*cSal);
+			//Z.copyTo(T);
 			portImgOut->write();
 
-
-			delete Mt;
-			delete Nt;
 			delete mark;
-			delete cDest;
-			delete iSal;
-			delete cSal;
 
 		}
 
@@ -290,11 +295,23 @@ public:
 	virtual void threadRelease()
 	{
 
+		for (int i = 0; i < nmaps; i++) {
+
+			portMapIn[i]->interrupt();
+			portMapIn[i]->close();
+			delete portMapIn[i];
+
+		}
+
 		portImgIn->interrupt();
 		portImgOut->interrupt();
 
+		portImgIn->close();
+		portImgOut->close();
+
 		delete portImgIn;
 		delete portImgOut;
+		delete portMapIn;
 
 	}
 

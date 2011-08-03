@@ -23,6 +23,7 @@ ADD_EXECUTABLE(objectFeatures  objectFeatures.cpp)
 ADD_EXECUTABLE(randObjSeg  randObjSeg.cpp)
 ADD_EXECUTABLE(objectSegmentation  objectSegmentation.cpp)
 ADD_EXECUTABLE(topDownObjectMap  topDownObjectMap.cpp)
+ADD_EXECUTABLE(csSalience  csSalience.cpp)
 
 TARGET_LINK_LIBRARIES(faceDetector ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(shakeSalience ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
@@ -32,3 +33,6 @@ TARGET_LINK_LIBRARIES(objectFeatures ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICU
 TARGET_LINK_LIBRARIES(randObjSeg ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(objectSegmentation ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(topDownObjectMap ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(csSalience ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+
+INSTALL(TARGETS faceDetector shakeSalience jointAttention objectSalience objectFeatures randObjSeg objectSegmentation topDownObjectMap csSalience DESTINATION bin)
