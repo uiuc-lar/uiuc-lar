@@ -16,6 +16,7 @@ ADD_EXECUTABLE(dataPumper dataPumper.cpp)
 ADD_EXECUTABLE(bottleLogger bottleLogger.cpp)
 ADD_EXECUTABLE(floatToRgb floatToRgb.cpp)
 ADD_EXECUTABLE(portToScreen portToScreen.cpp)
+ADD_EXECUTABLE(vecWriter conVecWriter.cpp)
 
 # we now add the YARP and iCub libraries to our project.
 TARGET_LINK_LIBRARIES(performAction ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
@@ -23,6 +24,7 @@ TARGET_LINK_LIBRARIES(dataPumper ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(bottleLogger ${YARP_LIBRARIES} ${ICUB_LIBRARIES} imatlib torch blas lapack)
 TARGET_LINK_LIBRARIES(floatToRgb ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(portToScreen ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(vecWriter ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 
-INSTALL(TARGETS performAction dataPumper bottleLogger floatToRgb portToScreen DESTINATION bin)
+INSTALL(TARGETS performAction dataPumper bottleLogger floatToRgb portToScreen vecWriter DESTINATION bin)
 
