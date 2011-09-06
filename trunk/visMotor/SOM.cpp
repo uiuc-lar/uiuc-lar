@@ -1,5 +1,6 @@
 /*
  * SOM.cpp
+ * Lydia Majure
  */
 
 #include "SOM.h"
