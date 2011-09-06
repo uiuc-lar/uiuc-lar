@@ -1,5 +1,7 @@
 /*
  * dummyTrack.cpp
+ * Lydia Majure
+ * Utility for testing visuomotor map learning
  */
 
 //yarp

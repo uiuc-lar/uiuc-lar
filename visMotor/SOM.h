@@ -1,5 +1,6 @@
 /*
  * SOM.h
+ * Lydia Majure
  */
 
 #ifndef SOM_H_

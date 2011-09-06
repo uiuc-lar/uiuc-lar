@@ -1,8 +1,6 @@
 /*
  * visMotorMapModule.cpp
- *
- *  Created on: Aug 24, 2011
- *      Author: lydia
+ * Lydia Majure
  */
 
 //system
