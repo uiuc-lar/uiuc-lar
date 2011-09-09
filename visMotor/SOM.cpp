@@ -28,7 +28,7 @@ using namespace yarp;
 using namespace yarp::os;
 using namespace yarp::sig;
 
-SOM::SOM(int n, int k) {
+SOM::SOM(int k, int n) {
 	N = n;
 	K = k;
 	const gsl_rng_type *T;
