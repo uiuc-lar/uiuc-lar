@@ -18,7 +18,7 @@ private:
  int K; //number of neurons in map
 
 public:
- SOM(int n,int k);
+ SOM(int k,int n);
  ~SOM();
  double **weights; //2D array of weights
  int getState();
