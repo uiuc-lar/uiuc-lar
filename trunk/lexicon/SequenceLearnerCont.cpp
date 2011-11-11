@@ -1,3 +1,5 @@
+#define RL_E 1.0e-10
+
 #include "SequenceLearnerCont.h"
 
 SequenceLearnerCont::SequenceLearnerCont(int r_, int d_, int b_, int epochs_, double thresh_, double prior_, double eps_, double alpha_, double xi_, bool makeLR_)
@@ -16,6 +18,8 @@ SequenceLearnerCont::SequenceLearnerCont(int r_, int d_, int b_, int epochs_, do
 
 	//hyperparameter defaults
 	stent = true;
+	upobs = true;
+	scm = 0; ascf = alpha; xscf = xi;
 
 	//initialize classifiers
 	init();
@@ -38,6 +42,8 @@ SequenceLearnerCont::SequenceLearnerCont(int r_, int d_, int b_, int epochs_, do
 
 	//hyperparameter defaults
 	stent = false;
+	upobs = true;
+	scm = 0;
 
 	//initialize classifiers
 	init();
@@ -66,7 +72,25 @@ void SequenceLearnerCont::init() {
 		p[i]->eps0 = eps;
 	}
 
+	kv = 0.08; kp = 0.5;
+
 }
+
+void SequenceLearnerCont::scale(real ** samples, int length) {
+
+	if (scm != 0) {
+		for (int i = 0; i < length; i++) {
+			for (int j = 0; j < d; j++) {
+				if (scm == 1)
+					samples[i][j] *= scv.ptr[j];
+				else
+					samples[i][j] *= scf;
+			}
+		}
+	}
+
+}
+
 
 int SequenceLearnerCont::train(real ** samples, int length) {
 
@@ -94,13 +118,16 @@ int SequenceLearnerCont::train(real ** samples, int length) {
 		for (int i = 0; i < epochs; i++) {
 			for (int j = 0; j < z; j++) {
 				p[lMaxIdx]->Classify(samples[j]);
-				if (makeLR) {
-					p[lMaxIdx]->RMLEUpdate(false);
-				} else {
+				if (upobs) {
 					p[lMaxIdx]->RMLEUpdate(true);
+				} else {
+					p[lMaxIdx]->RMLEUpdate(false);
 				}
 				if (stent) {
-					obs_dist[lMaxIdx]->covReg(alpha,xi);
+					if (scm <= 0)
+						obs_dist[lMaxIdx]->covReg(ascf,xscf);
+					else
+						obs_dist[lMaxIdx]->covReg(alvec,xivec);
 				}
 			}
 		}
@@ -140,15 +167,56 @@ double SequenceLearnerCont::evaluate(real ** samples, int length, int n) {
 	int z = length;
 	double likelihood;
 
+
 	//reset the initial internal probabilities
 	likelihood = 0;
+
+	/* OLD STYLE (RMLE)
 	VecCopy(pi[n],p[n]->prob);
+	obs_dist[n]->Classify(samples[0]);
+	likelihood += log10(VecDot(obs_dist[n]->prob,pi[n]))*(double)(1.0/(z+1));
 
 	//make an ML classification
-	for (int j = 0; j < z; j++) {
+	for (int j = 1; j < z; j++) {
 		p[n]->Classify(samples[j]);
 		likelihood +=log10(1.0/p[n]->scale)*(double)(1.0/(z+1));
 	}
+	*/
+
+	/* NEW STYLE (FWD-BWD) */
+	IMat *alpha = new IMat(z, p[n]->r);
+	IMat *beta = new IMat(z, p[n]->r);
+	IVec *scal = new IVec(z);
+
+	IVec tmp(p[n]->r);
+	alpha->getRow(0,&tmp,false);
+	obs_dist[n]->Classify(samples[0]);
+	VecCopy(pi[n], &tmp);
+	scal->ptr[0] = VecDot(&tmp, obs_dist[n]->prob);
+	VecDotTimes(1.0/scal->ptr[0], obs_dist[n]->prob, &tmp);
+	likelihood += log10(scal->ptr[0])*(double)(1.0/(z+1));
+
+	for (int j = 1; j < z; j++) {
+
+	    IVec t(p[n]->r), tm1(p[n]->r);
+	    alpha->getRow(j-1,&tm1,false);
+	    alpha->getRow(j,&t,false);
+
+	    MatVecMult(p[n]->A,CblasTrans,&tm1,&t);
+	    obs_dist[n]->Classify(samples[j]);
+	    VecDotTimes(1.0, obs_dist[n]->prob, &t);
+
+	    if (makeLR && j == z-1) {
+	    	likelihood += log10(obs_dist[n]->prob->ptr[p[n]->r-1])*(double)(1.0/(z+1));
+	    }
+
+	    scal->ptr[j] = t.sum();
+	    VecScale(1.0/scal->ptr[j],&t);
+	    likelihood += log10(scal->ptr[j])*(double)(1.0/(z+1));
+
+	}
+
+	delete alpha, beta, scal;
 
 	return likelihood;
 
@@ -198,7 +266,10 @@ int SequenceLearnerCont::initialize(real ** samples, int length, int n) {
 		}
 
 		if (stent) {
-			obs_dist[n]->covReg(alpha,xi);
+			if (scm <= 0)
+				obs_dist[n]->covReg(ascf,xscf);
+			else
+				obs_dist[n]->covReg(alvec,xivec);
 		}
 
 		p[n]->reset();
@@ -209,10 +280,10 @@ int SequenceLearnerCont::initialize(real ** samples, int length, int n) {
 			for (int i = 0; i < r; i++) {
 				for (int j = 0; j < r; j++) {
 					if (i == j) {
-						p[n]->A->ptr[i][j] = 0.9;
+						p[n]->A->ptr[i][j] = 0.95;
 					}
 					else if (j == i+1) {
-						p[n]->A->ptr[i][j] = 0.1;
+						p[n]->A->ptr[i][j] = 0.05;
 					}
 					else {
 						p[n]->A->ptr[i][j] = 0.0;
@@ -220,20 +291,34 @@ int SequenceLearnerCont::initialize(real ** samples, int length, int n) {
 				}
 			}
 			p[n]->ProbProject(p[n]->A, prior, 2);
+
+			pi[n]->ptr[0] = 1-(r-1)*prior;
+			for (int i = 1; i < r; i++) {
+				pi[n]->ptr[i] = prior;
+			}
+
 		}
 
 		//reset the initial internal probabilities and train
-		p[n]->prob->fill(1.0/(float)r);
+		p[n]->prob->fill(1.0/(double)r);
 		for (int i = 0; i < epochs; i++) {
-			for (int j = 0; j < z; j++) {
+			obs_dist[n]->Classify(samples[0]);
+			VecCopy(pi[n],p[n]->prob);
+			VecCopy(pi[n],p[n]->u);
+			VecCopy(obs_dist[n]->prob, p[n]->f);
+			p[n]->scale = 1.0/VecDot(p[n]->f, p[n]->prob);
+			for (int j = 1; j < z; j++) {
 				p[n]->Classify(samples[j]);
-				if (makeLR) {
-					p[n]->RMLEUpdate(false);
-				} else {
+				if (upobs) {
 					p[n]->RMLEUpdate(true);
+				} else {
+					p[n]->RMLEUpdate(false);
 				}
 				if (stent) {
-					obs_dist[n]->covReg(alpha,xi);
+					if (scm <= 0)
+						obs_dist[n]->covReg(ascf,xscf);
+					else
+						obs_dist[n]->covReg(alvec,xivec);
 				}
 			}
 		}
@@ -254,12 +339,71 @@ int SequenceLearnerCont::initialize(real ** samples, int length, int n) {
 		//make an ML classification
 		thisLikelihood = evaluate(samples, z, n);
 
+		if (thisLikelihood <= lThresh) {
+			printf("unable to get lower prob than %f\n", thisLikelihood);
+		}
+
 	}
 
 	exemplar_length[n] = length;
 	exemplar_initPos[n]->set(samples[0],d,1,true);
 
 	return 1;
+
+}
+
+void SequenceLearnerCont::printToFile(string baseName, int n) {
+
+	FILE * params;
+
+	string aFile(baseName);
+	string muFile(baseName);
+	string uFile(baseName);
+
+	//A
+	aFile += ".A";
+	params = fopen(aFile.c_str(),"w");
+	for (int j = 0; j < p[n]->A->m; j++) {
+		for (int k = 0; k < p[n]->A->n-1; k++) {
+			fprintf(params,"%f,",p[n]->A->ptr[j][k]);
+		}
+		fprintf(params,"%f\n",p[n]->A->ptr[j][p[n]->A->n-1]);
+	}
+	fclose(params);
+
+	//mu
+	muFile += ".MU";
+	params = fopen(muFile.c_str(),"w");
+	for (int j = 0; j < obs_dist[n]->MU->m; j++) {
+		for (int k = 0; k < obs_dist[n]->MU->n-1; k++) {
+			fprintf(params,"%f,",obs_dist[n]->MU->ptr[j][k]);
+		}
+		fprintf(params,"%f\n", obs_dist[n]->MU->ptr[j][obs_dist[n]->MU->n-1]);
+	}
+	fclose(params);
+
+	//U
+	IMat U(r,d*d);
+
+	IMat Rtmp;
+	IMat Utmp;
+
+	for (int l = 0; l < r; l++)
+	{
+		obs_dist[n]->R->getRow(l, 0, d, d, &Rtmp);
+		U.getRow(l, 0, d, d, &Utmp);
+		MatMatMult(&Rtmp, CblasTrans, &Rtmp, CblasNoTrans, &Utmp);
+	}
+
+	uFile += ".U";
+	params = fopen(uFile.c_str(),"w");
+	for (int j = 0; j < U.m; j++) {
+		for (int k = 0; k < U.n-1; k++) {
+			fprintf(params,"%f,",U.ptr[j][k]);
+		}
+		fprintf(params,"%f\n", U.ptr[j][U.n-1]);
+	}
+	fclose(params);
 
 }
 
@@ -270,60 +414,39 @@ void SequenceLearnerCont::printToFile(string baseName) {
 	for (int i = 0; i < nInitialized; i++) {
 
 		char tnum[10];
-		string aFile(baseName);
-		string muFile(baseName);
-		string uFile(baseName);
+		string bFile(baseName);
 
 		sprintf(tnum,"%d",i+1);
+		bFile += tnum;
 
-		//A
-		aFile += tnum;
-		aFile += ".A";
-		params = fopen(aFile.c_str(),"w");
-		for (int j = 0; j < p[i]->A->m; j++) {
-			for (int k = 0; k < p[i]->A->n; k++) {
-				fprintf(params,"%f,",p[i]->A->ptr[j][k]);
-			}
-			fprintf(params,"\n");
-		}
-		fclose(params);
+		printToFile(bFile, i);
 
-		//mu
-		muFile += tnum;
-		muFile += ".MU";
-		params = fopen(muFile.c_str(),"w");
-		for (int j = 0; j < obs_dist[i]->MU->m; j++) {
-			for (int k = 0; k < obs_dist[i]->MU->n; k++) {
-				fprintf(params,"%f,",obs_dist[i]->MU->ptr[j][k]);
-			}
-			fprintf(params,"\n");
-		}
-		fclose(params);
-
-		//U
-		IMat U(r,d*d);
-
-		IMat Rtmp;
-		IMat Utmp;
-
-		for (int l = 0; l < r; l++)
-		{
-			obs_dist[i]->R->getRow(l, 0, d, d, &Rtmp);
-			U.getRow(l, 0, d, d, &Utmp);
-			MatMatMult(&Rtmp, CblasTrans, &Rtmp, CblasNoTrans, &Utmp);
-		}
-
-		uFile += tnum;
-		uFile += ".U";
-		params = fopen(uFile.c_str(),"w");
-		for (int j = 0; j < U.m; j++) {
-			for (int k = 0; k < U.n; k++) {
-				fprintf(params,"%f,",U.ptr[j][k]);
-			}
-			fprintf(params,"\n");
-		}
-		fclose(params);
 	}
+}
+
+void SequenceLearnerCont::setScaling(int mode, double scc, IVec * scalevec) {
+
+	if (mode < 0) {
+		scm = -1;
+		scf = scc;
+		ascf = scf*alpha;
+		xscf = scf*xi;
+	}
+	else if (mode > 0) {
+		scm = 1;
+		scv.resize(scalevec->n);
+		alvec.resize(d); xivec.resize(d);
+		alvec.fill(0.0); xivec.fill(0.0);
+		VecCopy(scalevec, &scv);
+		VecAddScaled(alpha,scalevec,&alvec);
+		VecAddScaled(xi,scalevec,&xivec);
+	}
+	else {
+		scm = 0;
+		ascf = alpha;
+		xscf = xi;
+	}
+
 }
 
 void SequenceLearnerCont::packObs(Bottle &dst, int n) {
@@ -372,11 +495,14 @@ void SequenceLearnerCont::packObs(Bottle &dst, int n) {
  */
 bool SequenceLearnerCont::generateSequence(IMat &data, int n, double dscale) {
 
-	IVec cpos, mx, mxd, temp;
+	IVec cpos, cvel, mx, mxd, temp, xdd;
 	IMat U(r,d*d);
 	IMat ** Sx = new IMat *[r];
+	IMat ** Sxd = new IMat *[r];
 	IMat ** Sxi = new IMat *[r];
+	IMat ** Sxdi = new IMat *[r];
 	IMat ** Sxdx = new IMat *[r];
+	IMat ** Sdxx = new IMat *[r];
 
 	//sanity check
 	if (n > nInitialized-1) {
@@ -406,16 +532,25 @@ bool SequenceLearnerCont::generateSequence(IMat &data, int n, double dscale) {
 		MatMatMult(&Rtmp, CblasTrans, &Rtmp, CblasNoTrans, &Utmp);
 
 		Sx[i] = new IMat;
+		Sxd[i] = new IMat;
 		Sxi[i] = new IMat;
+		Sxdi[i] = new IMat;
 		Sxdx[i] = new IMat;
+		Sdxx[i] = new IMat;
 
 		U.getRow(i, 0, d, d, &Stmp);
 		Stmp.getSubMat(0,0,d/2-1,d/2-1,Sx[i],true);
+		Stmp.getSubMat(d/2,d/2,d-1,d-1,Sxd[i],true);
 		Stmp.getSubMat(d/2,0,d-1,d/2-1,Sxdx[i],true);
+		Stmp.getSubMat(0,d/2,d/2-1,d-1,Sdxx[i],true);
 		SymMatCholFact(Sx[i]);
+		SymMatCholFact(Sxd[i]);
 		Sxi[i]->resize(Sx[i]->m,Sx[i]->n);
+		Sxdi[i]->resize(Sxd[i]->m,Sxd[i]->n);
 		MatCopy(Sx[i],Sxi[i]);
+		MatCopy(Sxd[i],Sxdi[i]);
 		MatCholInv(Sxi[i]);
+		MatCholInv(Sxdi[i]);
 
 	}
 
@@ -423,32 +558,58 @@ bool SequenceLearnerCont::generateSequence(IMat &data, int n, double dscale) {
 	IVec initPos(d/2);
 	initPos.set(exemplar_initPos[n]->ptr,d/2,1,true);
 	data.setRow(0,&initPos);
+	initPos.set(exemplar_initPos[n]->ptr+3,d/2,1,true);
+	Xd.setRow(0,&initPos);
 	H.setRow(0,pi[n]);
 
 	//recursively generate
 	for (int i = 0; i < exemplar_length[n]-1; i++) {
 
 		//calculate Xd
-		IVec cvel(d/2);
-		cvel.zero();
+		IVec nvel(d/2), npos(d/2), tvel(d/2), tpos(d/2);
+		nvel.zero();
+		npos.zero();
+
+		data.getRow(i,&cpos,true);
+		Xd.getRow(i,&cvel,true);
 
 		for (int j = 0; j < r; j++) {
 
-			data.getRow(i,&cpos,true);
+			VecCopy(&cpos, &tpos);
+			VecCopy(&cvel, &tvel);
 			obs_dist[n]->MU->getRow(j,0,d/2,&mx,true);
 			obs_dist[n]->MU->getRow(j,d/2,d/2,&mxd,true);
-			VecSub(&mx,&cpos);
+			VecSub(&mx,&tpos);
+			VecSub(&mxd,&tvel);
+
 			temp.resize(d/2);
-			SymMatVecMult(1.0,Sxi[j],&cpos,0.0,&temp);
-			MatVecMult(Sxdx[j],CblasNoTrans,&temp,&cpos);
-			VecAdd(&mxd,&cpos);
-			VecAddScaled(H(i,j),&cpos,&cvel);
+			SymMatVecMult(1.0,Sxi[j],&tpos,0.0,&temp);
+			MatVecMult(Sxdx[j],CblasNoTrans,&temp,&tpos);
+			VecAdd(&mxd,&tpos);
+			VecAddScaled(H(i,j),&tpos,&nvel);
+
+			SymMatVecMult(1.0,Sxdi[j],&tvel,0.0,&temp);
+			MatVecMult(Sdxx[j],CblasNoTrans,&temp,&tvel);
+			VecAdd(&mx,&tvel);
+			VecAddScaled(H(i,j),&tvel,&npos);
 
 		}
 
+		//update second order tracker
+		xdd.resize(d/2); xdd.zero();
+		VecCopy(&nvel, &tvel);
+		VecScale(dscale, &tvel);
+		VecSub(&cvel, &tvel);
+		VecCopy(&npos, &tpos);
+		VecSub(&cpos, &tpos);
+		VecAddScaled(kv, &tvel, &xdd);
+		VecAddScaled(kp, &tpos, &xdd);
+
 		//update position
-		data.getRow(i,&cpos,true);
-		VecAddScaled(dscale,&cvel,&cpos);
+		VecAdd(&xdd, &nvel);
+		VecScale(dscale, &nvel);
+		Xd.setRow(i+1,&nvel);
+		VecAdd(&nvel,&cpos);
 		data.setRow(i+1,&cpos);
 
 		//update pmf
@@ -468,12 +629,18 @@ bool SequenceLearnerCont::generateSequence(IMat &data, int n, double dscale) {
 	//cleanup
 	for (int i = 0; i < r; i++) {
 		delete Sx[i];
+		delete Sxd[i];
 		delete Sxi[i];
+		delete Sxdi[i];
 		delete Sxdx[i];
+		delete Sdxx[i];
 	}
 	delete Sx;
 	delete Sxi;
 	delete Sxdx;
+	delete Sxd;
+	delete Sxdi;
+	delete Sdxx;
 
 	return true;
 

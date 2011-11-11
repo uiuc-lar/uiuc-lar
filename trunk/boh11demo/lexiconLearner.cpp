@@ -27,10 +27,12 @@
 	alpha	--  cov eigenvalue minimum (O)
 	xi		--  cov eigenvalue maximum (O)
 	constrain	--  flag if neither of these get set
+	updateobs	--  0 to turn of observation dist updating after init (D 1)
 	dt		--  sampling rate, used for scaling derivs in generation (D 0.01)
+	scale	--  scaling coeff to apply to each dimension. can be single or vector valued
 
 	[parameters for discrete dists]
-	lr	--  left-to-right model flag (O)
+	lefttoright	--  left-to-right model flag (O)
 
 	[module parameters]
 	input	-- input port name (O, D /lex:i)
@@ -89,6 +91,8 @@ protected:
 
 	/* actual data: ports, objects, etc... */
 	SequenceLearner * S;
+	SequenceLearnerCont * C;
+	SequenceLearnerDisc * D;
 	BufferedPort<Bottle> * inPort;
 	Port *outPort;
 	Port * generated;
@@ -100,8 +104,9 @@ protected:
 public:
 
 
-	LexiconThread(SequenceLearner *& S_, string recvPort_, string sendPort_, string genPort_)
-	: S(S_), recvPort(recvPort_), sendPort(sendPort_), genPort(genPort_) {
+	LexiconThread(SequenceLearner *& S_, SequenceLearnerCont *& C_, SequenceLearnerDisc *& D_,
+			string recvPort_, string sendPort_, string genPort_)
+	: S(S_), C(C_), D(D_), recvPort(recvPort_), sendPort(sendPort_), genPort(genPort_) {
 
 		//and the ports
 		inPort = new BufferedPort<Bottle>;
@@ -184,14 +189,17 @@ public:
 
 				printf("sequence received,... ");
 
+				int nprev = S->nInitialized;
+
 				//continuous
 				if (S->getType()) {
 
 					//unpack
 					real ** samplesC;
+					Bottle * c;
 					samplesC = new real * [b->size()];
 					for (int i = 0; i < b->size(); i++) {
-						Bottle * c = b->get(i).asList();
+						c = b->get(i).asList();
 						samplesC[i] = new real[c->size()];
 						for (int j = 0; j < c->size(); j++) {
 							samplesC[i][j] = c->get(j).asDouble();
@@ -199,12 +207,9 @@ public:
 					}
 
 					//train or classify
-					lex = S->classify(samplesC, b->size());
-					if (lex != -1)
-						val = S->evaluate(samplesC, b->size(),lex);
-					else
-						val = -1.0e+300;
+					C->scale(samplesC, b->size());
 					lex = S->train(samplesC, b->size());
+					val = S->evaluate(samplesC, b->size(),lex);
 
 				}
 
@@ -221,22 +226,28 @@ public:
 					}
 
 					//train or classify
-					lex = S->classify(samplesD, b->size());
-					if (lex != -1)
-						val = S->evaluate(samplesD, b->size(),lex);
-					else
-						val = -1.0e+300;
 					lex = S->train(samplesD, b->size());
+					val = S->evaluate(samplesD, b->size(),lex);
 
 				}
 
 				//report result to console (but don't gum it up)
-				printf("classified as %d\t log likelihood: ",lex);
-				if (val < -1e+100) {
-					printf("-inf\n");
+				if (nprev < S->nInitialized) {
+					printf("new element %d initialized, trained log likelihood: ",lex);
+					if (val < -1e+100) {
+						printf("-inf\n");
+					} else {
+						printf("%f\n",val);
+					}
 				} else {
-					printf("%f\n",val);
+					printf("classified as %d\t log likelihood: ",lex);
+					if (val < -1e+100) {
+						printf("-inf\n");
+					} else {
+						printf("%f\n",val);
+					}
 				}
+
 
 				//bottle up the result, pass along timestamps, and publish
 				Bottle result;
@@ -309,6 +320,10 @@ protected:
 	double xi;		//cov eigenvalue maximum (O)
 	bool constrain;	//flag if neither of these get set
 	double dt;		//sampling rate, used for scaling derivs
+	bool upobs;		//flag for turning obs dist updating on/off
+	int scm;		//scaling mode (-1 single coeff, 0 off, 1 vector)
+	double scs;		//single scaling coeff
+	IVec scv;		//scaling vector
 
 	//parameters to use a LR model (different behavior for disc. and cont.)
 	bool lr;		//left-to-right model flag (O)
@@ -319,6 +334,8 @@ protected:
 
 	/* actual data: ports, objects, etc... */
 	SequenceLearner * S;
+	SequenceLearnerCont * C;
+	SequenceLearnerDisc * D;
 	string recvPort;
 	string sendPort;
 	string rpcName;
@@ -384,6 +401,32 @@ public:
 				alpha = rf.check("alpha",Value(0.0),"cov. lower bound").asDouble();
 				xi = rf.check("xi",Value(1.0e+300),"cov. upper bound").asDouble();
 			}
+			if ((bool)rf.check("updateobs",Value(1)).asInt()) {
+				upobs = true;
+			} else {
+				upobs = false;
+			}
+			if (!rf.check("scale")) {
+				scm = 0;
+			} else {
+				Bottle scalc;
+				scalc = rf.findGroup("scale");
+				if (scalc.size() == 2) {
+					scm = -1;
+					scs = scalc.get(1).asDouble();
+				}
+				else if (scalc.size() == d+1) {
+					scm = 1;
+					scv.resize(d);
+					for (int i = 0; i < d; i++) {
+						scv.ptr[i] = scalc.get(i+1).asDouble();
+					}
+				}
+				else {
+					printf("tried to set improper scaling factor\n");
+					scm = 0;
+				}
+			}
 		} else {
 			//discrete specific params
 
@@ -433,6 +476,13 @@ public:
 						S->packA(reply,command.get(2).asInt());
 					}
 				}
+				else if (arg == "pi") {
+					if (command.size() < 3) {
+						reply.add(-1);
+					} else {
+						S->packPi(reply,command.get(2).asInt());
+					}
+				}
 				else if (arg == "b" || arg == "mu" || arg == "u") {
 					if (command.size() < 3) {
 						reply.add(-1);
@@ -445,6 +495,22 @@ public:
 				}
 			}
 
+		}
+		else if (msg == "save") {
+			if (command.size() < 3) {
+				reply.add(-1);
+			}
+			else {
+				string bname(command.get(1).asString().c_str());
+				int tle = command.get(2).asInt();
+				if (tle >= 0 && tle < S->nInitialized) {
+					S->printToFile(bname, tle);
+					reply.add(1);
+				}
+				else {
+					reply.add(-1);
+				}
+			}
 		}
 		//allow certain running parameters to be set here
 		else if (msg == "set") {
@@ -481,6 +547,36 @@ public:
 			reply.add("decay");
 			reply.add("thresh");
 		}
+		else if (msg == "eval") {
+			if (command.size() < 2) {
+				reply.add(-1);
+			} else {
+				double val;
+				int ldx = command.get(1).asInt();
+				if (ldx > S->nInitialized) {
+					reply.add(-1);
+				} else {
+					int n = command.size()-2;
+					int ** samplesD;
+					samplesD = new int * [n];
+					for (int i = 0; i < n; i++) {
+						samplesD[i] = new int;
+						samplesD[i][0] = command.get(i+2).asInt();
+					}
+					reply.add("log likelihood: ");
+					if (ldx < 0) {
+						for (int i = 0; i < S->nInitialized; i++) {
+							val = S->evaluate(samplesD, n, i);
+							reply.add(val);
+						}
+					} else {
+						val = S->evaluate(samplesD, n, ldx);
+						reply.add(val);
+					}
+					delete samplesD;
+				}
+			}
+		}
 		else if (msg == "gen") {
 			if (command.size() < 2) {
 				reply.add(-1);
@@ -510,16 +606,26 @@ public:
 		if (mode) {
 			//continuous
 			if (constrain) {
-				S = new SequenceLearnerCont(r, d, b, epochs, thresh, prior, eps, alpha, xi, lr);
+				C = new SequenceLearnerCont(r, d, b, epochs, thresh, prior, eps, alpha, xi, lr);
+				S = C;
 				S->eps_decay = decay;
 			} else {
-				S = new SequenceLearnerCont(r, d, b, epochs, thresh, prior, eps, lr);
+				C = new SequenceLearnerCont(r, d, b, epochs, thresh, prior, eps, lr);
+				S = C;
 				S->eps_decay = decay;
 			}
+			S->upobs = upobs;
+			C->setScaling(scm, scs, &scv);
+			D = NULL;
+
 		} else {
+
 			//discrete (fixed at one output obs for disc at this time
-			S = new SequenceLearnerDisc(r, &d, 1, b, epochs, thresh, prior, eps, lr);
+			D = new SequenceLearnerDisc(r, &d, 1, b, epochs, thresh, prior, eps, lr);
+			S = D;
 			S->eps_decay = decay;
+			C = NULL;
+
 		}
 
 		//set up the rpc/observer port
@@ -527,7 +633,8 @@ public:
 		attach(rpcPort);
 
 		//pass everything off to the execution thread
-		L = new LexiconThread(S, recvPort, sendPort, genPort);
+		L = new LexiconThread(S, C, D, recvPort, sendPort, genPort);
+
 
 		//set up the request port
 		greqPort = new GenReqPort(L, dt);

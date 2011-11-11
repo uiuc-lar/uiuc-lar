@@ -21,6 +21,14 @@ void SequenceLearner::packA(Bottle &dst, int n) {
 
 }
 
+void SequenceLearner::packPi(Bottle &dst, int n) {
+
+	for (int i = 0; i < r; i++) {
+		dst.add(pi[n]->ptr[i]);
+	}
+
+}
+
 //don't define this, it will be different for all derived classes
 void SequenceLearner::packObs(Bottle &dst, int n) {
 
@@ -39,13 +47,18 @@ void SequenceLearner::printToFile(string baseName) {
 
 }
 
+void SequenceLearner::printToFile(string baseName, int n) {
+
+
+}
+
 bool SequenceLearner::generateSequence(IMat &data, int n, double dscale) {
 
 	return false;
 
 }
 
-bool SequenceLearner::generateSequence(IVecInt &data, int initPos, int length, int n) {
+bool SequenceLearner::generateSequence(IVecInt &data, int length, int n) {
 
 	return false;
 
