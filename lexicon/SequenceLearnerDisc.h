@@ -55,6 +55,7 @@ public:
 	void printToFile(string);
 	//void packA(Bottle &, int);
 	void packObs(Bottle &, int);
+	bool generateSequence(IVecInt &data, int length, int n);
 
 	//int nInitialized;
 

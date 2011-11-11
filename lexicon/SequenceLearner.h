@@ -51,10 +51,10 @@ public:
 
     //training
     virtual int train(int**, int) { return -1; }
-    virtual int train(float**, int) { return -1; }
-    virtual int initialize(float**, int, int) { return -1; }
-    virtual int classify(float**, int) { return -1; }
-    virtual double evaluate(float**, int, int) { return -1.0; }
+    virtual int train(real**, int) { return -1; }
+    virtual int initialize(real**, int, int) { return -1; }
+    virtual int classify(real**, int) { return -1; }
+    virtual double evaluate(real**, int, int) { return -1.0; }
     virtual int initialize(int**, int, int) { return -1; }
     virtual int classify(int**, int) { return -1; }
     virtual double evaluate(int**, int, int) { return -1.0; }
@@ -63,10 +63,12 @@ public:
     virtual bool getType() { return true; }
     virtual void printAll();
     virtual void printToFile(string);
+    virtual void printToFile(string, int);
     virtual void packA(Bottle& , int);
     virtual void packObs(Bottle& , int);
+    virtual void packPi(Bottle& , int);
     virtual bool generateSequence(IMat &data, int n, double dscale = 1.0);
-    virtual bool generateSequence(IVecInt &data, int initPos, int length, int n);
+    virtual bool generateSequence(IVecInt &data, int length, int n);
 
     //getters/setters
     int getEpochs() const { return epochs; }
@@ -84,12 +86,14 @@ public:
     double eps_decay;
     int r;
     int b;
+	bool upobs;
 
 protected:
 
     Allocator *allocator;
     HMM **p;
     IVec **pi;
+    IVec *** cvex;
     double lThresh;
     int epochs;
     double prior;

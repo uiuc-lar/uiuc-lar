@@ -18,6 +18,8 @@
  *  	decay	-- learning rate decay; 1 = no decay (D 1.0)
  *  	initsamples	-- number of initialization samples to gather at beginning to use for kmeans initialization (O 0.0)
  *  	nkmiter -- number of iterations to run for k-means initialization (D 20)
+ *  	initrng	-- range of values that entries in A or B matrices should rando inited to [disc only] (ex: initrng 0.1 0.3)
+ *  	dsto	-- mark one of the obs matrices as double stochastic [0-n, disc only] (ex: dsto 2)
  *  	nomark	-- flag to turn markov behavior off; all elements of trans. matrix are set equal (O)
  *  	lr		-- flag to enforce left-to-right condition on model (O)
  *  	afile	-- csv file containing A matrix data to be loaded
@@ -31,6 +33,7 @@
  *
  *  outputs:
  *  	/hmmRMLE/state:o	-- estimated (ML) internal state value; vector with one element
+ *  	/hmmRMLE/prob:o		-- internal state PMF; 0th element of the vector is the log likelihood of normalizing coeff
  *  	/hmmRMLE/gen:o		-- randomly generated observations; produced only when requested on /hmmRMLE/gen:i
  *  	/hmmRMLE/log:o		-- stream of all parameters values as a vector in form of [A B1 B2...] for disc and [A MU R] for gaussian
  *  	/hmmRMLE/rpc		-- rpc port for run-time access to model parameters/data
@@ -135,6 +138,7 @@ protected:
 	QueuerPort * portObsIn;
 	QueuerPort * portGenIn;
 	BufferedPort<yarp::sig::Vector> * portStateOut;
+	BufferedPort<yarp::sig::Vector> * portProbOut;
 	BufferedPort<yarp::sig::Vector> * portGenOut;
 	BufferedPort<yarp::sig::Vector> * portLogOut;
 
@@ -159,9 +163,11 @@ protected:
 	bool nomark, ltr;
 	int * d;
 	int nmos;	//for discrete only
+	double initrlo, initrhi;
+	bool useinitrng;
+	int * dsto;
 
 	//aux. model runtime params
-	bool training;
 	bool logparams;
 	int initsamples;
 	int nkmiter;
@@ -174,6 +180,8 @@ protected:
 
 public:
 
+	//publically accessible parameters
+	bool training;
 
 	HmmRmleThread(ResourceFinder &_rf) : rf(_rf) { }
 
@@ -349,6 +357,32 @@ public:
 			}
 		}
 
+
+		dsto = new int[nmos];
+		for (int i = 0; i < nmos; i++) {
+			dsto[i] = 0;
+		}
+		Bottle dstd = rf.findGroup("dsto");
+		for (int i = 1; i < dstd.size(); i++) {
+			if (dstd.get(i).asInt() >= 0 && dstd.get(i).asInt() < nmos) {
+				dsto[dstd.get(i).asInt()] = 1;
+			}
+		}
+		printf("dsto: ");
+		for (int i = 0; i < nmos; i++) {
+			printf("%d, ",dsto[i]);
+		}
+		printf("\n");
+
+		Bottle irng = rf.findGroup("initrng");
+		if (!irng.isNull() && irng.size() == 3 && type) {
+			useinitrng = true;
+			initrlo = irng.get(1).asDouble();
+			initrhi = irng.get(2).asDouble();
+		} else {
+			useinitrng = false;
+		}
+
 		return true;
 
 	}
@@ -376,6 +410,10 @@ public:
 		string portStateOName="/"+name+"/state:o";
 		portStateOut->open(portStateOName.c_str());
 
+		portProbOut=new BufferedPort<yarp::sig::Vector>;
+		string portProbOName="/"+name+"/prob:o";
+		portProbOut->open(portProbOName.c_str());
+
 		portGenOut=new BufferedPort<yarp::sig::Vector>;
 		string portGenOName="/"+name+"/gen:o";
 		portGenOut->open(portGenOName.c_str());
@@ -398,6 +436,15 @@ public:
 			d_dist = new(allocator) IndepPMF(r, nmos, d, prior, true);
 			obs_dist = d_dist;
 			g_dist = NULL;
+
+			if (useinitrng) {
+
+				for (int i = 0; i < nmos; i++) {
+					d_dist->b[i]->rand(initrlo,initrhi);
+					d_dist->ProbProject(d_dist->b[i], prior, 1);
+				}
+
+			}
 
 		} else {
 
@@ -465,10 +512,18 @@ public:
 		portGenIn->interrupt();
 		portStateOut->interrupt();
 		portGenOut->interrupt();
+		portProbOut->interrupt();
+
+		portObsIn->close();
+		portGenIn->close();
+		portStateOut->close();
+		portGenOut->close();
+		portProbOut->close();
 
 		delete portObsIn;
 		delete portGenIn;
 		delete portStateOut;
+		delete portProbOut;
 		delete portGenOut;
 
 		//delete obs_dist;
@@ -581,33 +636,52 @@ public:
 						portLogOut->unprepare();
 					}
 
+					//write out state and state pmf
+					yarp::sig::Vector &cs = portStateOut->prepare();
+					yarp::sig::Vector &ps = portProbOut->prepare();
+					cs.clear(); ps.clear();
+					cs.push_back(cstate);
+					ps.push_back(p->scale);
+					for (int i = 0; i < r; i++) {
+						ps.push_back(p->prob->ptr[i]);
+					}
+					portStateOut->write();
+					portProbOut->write();
+
 					//train if it currently enabled, enforcing model constraints
 					if (training) {
-						p->RMLEUpdate();
-					}
-					if (nomark) {
-						p->A->fill((real)1.0/r);
-						p->reset();
-					}
-					if (ltr) {
-						for (int i = 0; i < r; i++) {
-							for (int j = 0; j < r; j++) {
-								if (j != i && j != (i+1)) {
-									p->A->ptr[i][j] = 0;
+
+						if (nomark) {
+							p->Updatew();
+							p->UpdateR();
+							p->UpdateGradient();
+							obs_dist->UpdateParms();
+							p->A->fill((real)1.0/r);
+							//p->reset();
+						} else {
+							p->RMLEUpdate();
+						}
+						if (ltr) {
+							for (int i = 0; i < r; i++) {
+								for (int j = 0; j < r; j++) {
+									if (j != i && j != (i+1)) {
+										p->A->ptr[i][j] = 0;
+									}
 								}
 							}
+							p->ProbProject(p->A, prior, 2);
 						}
-						p->ProbProject(p->A, prior, 2);
-					}
+						for (int i = 0; i < nmos; i++) {
+							if (type && dsto[i] == 1) {
+								p->ProbProject(d_dist->b[i],prior,2);
+								p->ProbProject(d_dist->b[i],prior,1);
+							}
+						}
 
-					//write out state
-					yarp::sig::Vector &cs = portStateOut->prepare();
-					cs.clear();
-					cs.push_back(cstate);
+					}
 					if (verbose) {
 						printf("current model state: %d\n", cstate);
 					}
-					portStateOut->write();
 
 				}
 			}
@@ -759,6 +833,17 @@ public:
 				for (int i = 0; i < gendSamp.size(); i++) {
 					reply.addDouble(gendSamp[i]);
 				}
+			}
+		}
+		else if (msg == "train") {
+			if (command.size() != 2) {
+				reply.add(-1);
+			}
+			else {
+				int arg = command.get(1).asInt();
+				thr->training = (bool)arg;
+				printf("training set to: %d\n", arg);
+				reply.add(1);
 			}
 		}
 		else if (msg == "reset") {

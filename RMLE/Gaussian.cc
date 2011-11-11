@@ -1099,9 +1099,20 @@ void Gaussian::loadXFile(XFile *file)
 
 int Gaussian::covReg(real lambda_, real xi_) {
 
+	IVec lam, xi;
+	lam.resize(d); xi.resize(d);
+	lam.fill(lambda_); xi.fill(xi_);
+
+	return covReg(lam, xi);
+
+}
+
+int Gaussian::covReg(IVec lambda_, IVec xi_) {
+
 	//unpacking
 	IMat rr;
 	IMat L,C1,C2;
+	IVec ll(d), xx(d);
 
 	//gsl things
 	gsl_matrix * U = gsl_matrix_alloc(d,d);
@@ -1126,26 +1137,30 @@ int Gaussian::covReg(real lambda_, real xi_) {
 
 		//find the eigendecomposition
 		gsl_eigen_symmv(U, eigs, V, uwk);
-
+		C1.resize(d,d);
+		for (int j = 0; j < d; j++) {
+			for (int k = 0; k < d; k++) {
+				C1(j,k) = V->data[j * U->tda + k];
+			}
+		}
+		//MatVecMult(&C1,CblasNoTrans,&lambda_,&ll);
+		//MatVecMult(&C1,CblasNoTrans,&xi_,&xx);
+		VecCopy(&lambda_,&ll);
+		VecCopy(&xi_, &xx);
 
 		//add lambda*eye(d) to the eigenvalue matrix
 		L.resize(d,d);
 		L.eye();
 		for (int j = 0; j < d; j++) {
-			if (eigs->data[j*eigs->stride] > lambda_ && eigs->data[j*eigs->stride] < xi_) {
+			if (eigs->data[j*eigs->stride] > ll.ptr[j] &&
+					eigs->data[j*eigs->stride] < xx.ptr[j]) {
 				L(j,j) = eigs->data[j*eigs->stride];
 			}
-			else if (eigs->data[j*eigs->stride] > xi_) {
-				L(j,j) = xi_;
+			else if (eigs->data[j*eigs->stride] > xx.ptr[j]) {
+				L(j,j) = xx.ptr[j];
 			}
 			else {
-				L(j,j) = lambda_;
-			}
-		}
-		C1.resize(d,d);
-		for (int j = 0; j < d; j++) {
-			for (int k = 0; k < d; k++) {
-				C1(j,k) = V->data[j * U->tda + k];
+				L(j,j) = ll.ptr[j];
 			}
 		}
 		C2.resize(d,d);

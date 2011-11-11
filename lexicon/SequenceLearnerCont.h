@@ -54,9 +54,12 @@ public:
 	bool getType() { return true; }	//identifies as continuous
 	void printAll();
 	void printToFile(string);
+	void printToFile(string, int);
 	//void packA(Bottle &, int);
 	void packObs(Bottle &, int);
 	bool generateSequence(IMat &data, int n, double dscale = 1.0);
+	void setScaling(int, double, IVec *);
+	void scale(real **, int);
 
 	//int nInitialized;
 
@@ -80,6 +83,11 @@ private:
 	double alpha; 		//controls covariance matrix regularization
 	double xi;			//upper bound of covariance
 	bool stent;
+	int scm;			//scale mode
+	double scf, ascf, xscf;		//single scaling coeff
+	IVec scv, alvec, xivec;			//scaling vector
+	double kv, kp;
+
 
 };
 

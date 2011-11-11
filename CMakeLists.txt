@@ -6,6 +6,8 @@ SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+ADD_DEFINITIONS(-DUSE_DOUBLE)
+SET(CMAKE_C_FLAGS "-w")
 
 add_subdirectory(speech)
 add_subdirectory(imatlib)
