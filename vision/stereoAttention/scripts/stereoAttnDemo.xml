@@ -2,8 +2,8 @@
 <name>Joint Attention System Demo</name>
 <dependencies>
       <port>/root</port>
-      <port>/icub/camcalib/left</port>
-      <port>/icub/camcalib/right</port>
+      <port>/icub/camcalib/left/out</port>
+      <port>/icub/camcalib/right/out</port>
       <port>/icub/head/state:o</port>
 </dependencies>
    <module>
@@ -21,19 +21,22 @@
    <module>
       <name>egoRemapper</name>
       <parameters>--from /home/niehaus4/uiuc-lar/vision/stereoAttention/conf/bertwarp.ini</parameters>
-      <node>johnny5</node>
+      <node>gort</node>
+	<stdio>johnny5</stdio>
 	<tag>egomap</tag>
    </module>
    <module>
       <name>stereoAttention</name>
       <parameters>--from /home/niehaus4/uiuc-lar/vision/stereoAttention/conf/bertwarp.ini --voffset -20</parameters>
-	  <node>johnny5</node>
+	  <node>gort</node>
+	<stdio>johnny5</stdio>
 	<tag>stereoattn</tag>
    </module>
    <module>
       <name>stereoIOR</name>
       <parameters>--from /home/niehaus4/uiuc-lar/vision/stereoAttention/conf/iorbert.ini</parameters>
-      <node>johnny5</node>
+      <node>gort</node>
+	<stdio>johnny5</stdio>
 	<tag>stereoior</tag>
    </module>
 <connection>
@@ -82,12 +85,12 @@
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <from>/egoRemapper/sal:lo</from>
+  <from>/salleft/map</from>
   <to>/stereoIOR/sal:l</to>
   <protocol>tcp</protocol>
 </connection>
 <connection>
-  <from>/egoRemapper/sal:ro</from>
+  <from>/salright/map</from>
   <to>/stereoIOR/sal:r</to>
   <protocol>tcp</protocol>
 </connection>
