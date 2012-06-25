@@ -1,0 +1,44 @@
+<application
+
+<name>Fine Motor Learning</name>
+
+<dependencies>
+	<port>/root</port>
+</dependencies>
+
+	<module>
+		<name>./fwdConv</name>
+		<parameters>--input /fwdConv:i --output /fwdConv:o --arm left</parameters>
+		<node>escher</node>
+		<tag>fwdConv</tag>
+	</module>
+	<module>
+		<name>./handOptFlow</name>
+		<parameters>--robot icubSim</robot>
+		<node>escher</node>
+		<tag>handOptFlow</tag>
+	</module>
+	<module>
+		<name>./babbleFine</name>
+		<parameters>--robot icubSim --from icubSimEyes.ini</parameters>
+		<node>escher</node>
+		<tag>babbleFine</tag>
+	</module>
+	<connection>
+		<from>/icubSim/cam/left</from>
+		<to>/handLoc/eye:l</to>
+	</connection>
+	<connection>
+		<from>/icubSim/cam/right</from>
+		<to>/handLoc/eye:r</to>
+	</connection>
+	<connection>
+		<from>/handLoc/sal:l</from>
+		<to>/fineMotor/sal:l</to>
+	</connection>
+	<connection>
+		<from>/handLoc/sal:r</from>
+		<to>/fineMotor/sal:r</to>
+	</connection>
+
+</application>
