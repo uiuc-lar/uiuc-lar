@@ -47,7 +47,7 @@ using namespace iCub::iKin;
 
 YARP_DECLARE_DEVICES(icubmod)
 
-class fineMotorThread : public RateThread{
+class fineMotorThread : public Thread{
 protected:
 	ResourceFinder &rf;
 
@@ -125,7 +125,7 @@ protected:
 	ImageOf<PixelFloat> *pSalR;
 
 public:
-	fineMotorThread(int period, ResourceFinder &_rf) : RateThread(period), rf(_rf){}
+	fineMotorThread(ResourceFinder &_rf) : Thread(), rf(_rf){}
 
 	virtual bool handleParams(){
 		if(rf.check("robot")){
@@ -394,234 +394,237 @@ public:
 
 	virtual void run(){
 
-		tmp = command;
-		(*command)[0] = (*command)[0] + 10*(2*gsl_rng_uniform(r)-1);
-		(*command)[1] = (*command)[1] + 10*(2*gsl_rng_uniform(r)-1);
-		(*command)[2] = (*command)[2] + 10*(2*gsl_rng_uniform(r)-1);
-		(*command)[3] = (*command)[3] + 10*(2*gsl_rng_uniform(r)-1);
+		while(isStopping() != true){
 
-		if ((*command)[0] > 0 || (*command)[0] < -60){
-			(*command)[0] = (*tmp)[0];
-		}
-		if ((*command)[1] > 100 || (*command)[1] < -0){
-			(*command)[1] = (*tmp)[1];
-		}
-		if ((*command)[2] > 60 || (*command)[2] < -35){
-			(*command)[2] = (*tmp)[2];
-		}
-		if ((*command)[3] > 100 || (*command)[3] < 10){
-			(*command)[3] = (*tmp)[3];
-		}
+			tmp = command;
+			(*command)[0] = (*command)[0] + 10*(2*gsl_rng_uniform(r)-1);
+			(*command)[1] = (*command)[1] + 10*(2*gsl_rng_uniform(r)-1);
+			(*command)[2] = (*command)[2] + 10*(2*gsl_rng_uniform(r)-1);
+			(*command)[3] = (*command)[3] + 10*(2*gsl_rng_uniform(r)-1);
 
-		//use fwd kin to find end effector position
-		Bottle plan, pred;
-		plan.clear();
-		pred.clear();
-		for (int i = 0; i < nj; i++){
-			plan.add((*command)[i]);
-		}
-		armPlan->write(plan);
-		armPred->read(pred);
-		yarp::sig::Vector commandCart(3);
-		for (int i = 0; i < 3; i++){
-			commandCart[i] = pred.get(i).asDouble();
-		}
-		double rad = sqrt(commandCart[0]*commandCart[0]+commandCart[1]*commandCart[1]);
+			if ((*command)[0] > 0 || (*command)[0] < -60){
+				(*command)[0] = (*tmp)[0];
+			}
+			if ((*command)[1] > 100 || (*command)[1] < -0){
+				(*command)[1] = (*tmp)[1];
+			}
+			if ((*command)[2] > 60 || (*command)[2] < -35){
+				(*command)[2] = (*tmp)[2];
+			}
+			if ((*command)[3] > 100 || (*command)[3] < 10){
+				(*command)[3] = (*tmp)[3];
+			}
 
-		if(rad > 0.3){
-	        Mat * Sl, * Sr, * Scl, * Scr;
-	        Mat * Sclm, * Scrm;
+			//use fwd kin to find end effector position
+			Bottle plan, pred;
+			plan.clear();
+			pred.clear();
+			for (int i = 0; i < nj; i++){
+				plan.add((*command)[i]);
+			}
+			armPlan->write(plan);
+			armPred->read(pred);
+			yarp::sig::Vector commandCart(3);
+			for (int i = 0; i < 3; i++){
+				commandCart[i] = pred.get(i).asDouble();
+			}
+			double rad = sqrt(commandCart[0]*commandCart[0]+commandCart[1]*commandCart[1]);
 
-			printf("Moving to new position\n");
-			pos->positionMove(command->data());
-			Time::delay(1);
-			bool done = false;
-			while(!done){
-				pos->checkMotionDone(&done);
+			if(rad > 0.3){
+				Mat * Sl, * Sr, * Scl, * Scr;
+				Mat * Sclm, * Scrm;
+
+				printf("Moving to new position\n");
+				pos->positionMove(command->data());
 				Time::delay(1);
-			}
-
-			//logan's code
-
-			//get salience images
-			pSalL = portSalL->read(true);
-			pSalR = portSalR->read(true);
-			Sl = new Mat(pSalL->height(), pSalL->width(), CV_32F, (void *)pSalL->getRawImage());
-			Sr = new Mat(pSalR->height(), pSalR->width(), CV_32F, (void *)pSalR->getRawImage());
-			Scl = new Mat(pSalL->height(), pSalL->width(), CV_32F);
-			Scr = new Mat(pSalR->height(), pSalR->width(), CV_32F);
-			Sclm = new Mat(pSalL->height(), pSalL->width(), CV_32F);
-			Scrm = new Mat(pSalR->height(), pSalR->width(), CV_32F);
-
-			//get head and l/r eye matrices, assuming fixed torso
-			Matrix Hl, Hr, H;
-			Mat R(3,3, CV_64F);
-			vector<double> T(3);
-			yarp::sig::Vector eo, ep;
-			igaze->getLeftEyePose(eo, ep);
-			Hl = axis2dcm(ep);
-			Hl(0,3) = eo[0]; Hl(1,3) = eo[1]; Hl(2,3) = eo[2];
-			igaze->getRightEyePose(eo, ep);
-			Hr = axis2dcm(ep);
-			Hr(0,3) = eo[0]; Hr(1,3) = eo[1]; Hr(2,3) = eo[2];
-
-			//get the transform matrix from the left image to the right image
-			H = SE3inv(Hr)*Hl;
-			for (int i = 0; i < 3; i++) {
-				for (int j = 0; j < 3; j++) {
-					R.at<double>(i,j) = H(i,j);
-				}
-				T.at(i) = H(i,3);
-			}
-
-
-
-			//rectify the images
-			stereoRectify(Pl, Mat::zeros(4,1,CV_64F), Pr, Mat::zeros(4,1,CV_64F), Size(cxl*2, cyl*2), R, Mat(T), R1, R2, P1, P2, Q);
-			initUndistortRectifyMap(Pl, Mat(), R1, P1, Size(cxl*2, cyl*2), CV_32FC1, mpxL, mpyL);
-			initUndistortRectifyMap(Pr, Mat(), R2, P2, Size(cxr*2, cyr*2), CV_32FC1, mpxR, mpyR);
-			remap(*Sl, *Scl, mpxL, mpyL, INTER_LINEAR);
-			remap(*Sr, *Scr, mpxR, mpyR, INTER_LINEAR);
-
-			//end logan's image rectification
-
-
-			//locate the most salient point again (with center focusing)
-			mxDxL = new Point;
-			mxDxR = new Point;
-			bool winimg = false;
-			double * mxVal = new double[2];
-			Scl->copyTo(*Sclm); Scr->copyTo(*Scrm);
-			minMaxLoc(*Sclm, NULL, mxVal, NULL, mxDxL);
-			minMaxLoc(*Scrm, NULL, mxVal+1, NULL, mxDxR);
-			if (mxVal[1] > mxVal[0]) {
-				mxDxL->x = mxDxR->x; mxDxL->y = mxDxR->y;
-				winimg = true;
-			}
-
-			//adjust for vertical offset from left to right image
-			int vamin, vamax, vadj;
-			if (voffset < 0) {
-				vamin = -voffset; vamax = Scr->rows-1; vadj = 0;
-			} else if (voffset > 0) {
-				vamin = 0; vamax = Scr->rows-1-voffset; vadj = voffset;
-			} else {
-				vamin = 0; vamax = Scr->rows-1; vadj = 0;
-			}
-
-
-			//calc the xcorr b/w left/right for various shifts of window around object
-			Mat salImg, srcImg, corr;
-			Rect salWin, srcWin;
-			if (!winimg) {
-				copyMakeBorder(*Scl, salImg, wsize, wsize, wsize, wsize, BORDER_CONSTANT, Scalar(0));
-				copyMakeBorder(Scr->rowRange(vamin,vamax), srcImg, wsize+vadj, wsize+vamin+1, wsize+nlags, wsize+nlags, BORDER_CONSTANT, Scalar(0));
-			} else {
-				copyMakeBorder(Scr->rowRange(vamin,vamax), salImg, wsize+vadj, wsize+vamin+1, wsize, wsize, BORDER_CONSTANT, Scalar(0));
-				copyMakeBorder(*Scl, srcImg, wsize, wsize, wsize+nlags, wsize+nlags, BORDER_CONSTANT, Scalar(0));
-				mxDxL->y = mxDxL->y + voffset;
-			}
-			salWin = Rect(mxDxL->x, mxDxL->y, 2*wsize+1, 2*wsize+1);
-			srcWin = Rect(mxDxL->x, mxDxL->y, 2*nlags+1, 2*wsize+1);
-			matchTemplate(srcImg(srcWin), salImg(salWin), corr, CV_TM_CCORR_NORMED);
-
-
-			//find max of xcorr and calculate disparity at interest point
-			int mCorr; double mxCrVal = 0;
-			for (int i = 0; i < corr.cols; i++) {
-				if (corr.at<float>(0,i) > mxCrVal) {
-					mxCrVal = corr.at<float>(0,i);
-					mCorr = i;
-				}
-			}
-
-			printf("Max corr: %.2lf\n", mxCrVal);
-
-
-			//remap corresponding point onto the unrectified image
-			if (!winimg) {
-				mxDxR->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2), 0);
-				mxDxR->y = mxDxL->y - voffset;
-			} else {
-				mxDxR->x = mxDxL->x; mxDxR->y = mxDxL->y - voffset;
-				mxDxL->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2), 0);
-			}
-			int ul = std::max(std::min((int)mpxL.at<float>(*mxDxL), (int)cxl*2),0);
-			int vl = std::max(std::min((int)mpyL.at<float>(*mxDxL), (int)cyl*2),0);
-			int ur = std::max(std::min((int)mpxR.at<float>(*mxDxR), (int)cxr*2),0);
-			int vr = std::max(std::min((int)mpyR.at<float>(*mxDxR)+voffset, (int)cyr*2),0);
-
-			//end logan's code (triangulation not needed)
-
-			//use motor diff and retinal loc + disp to train
-			//how best to represent retinal location?
-			//<ur,vr,mxCrVal>?
-
-
-
-			yarp::sig::Vector *dMotor;
-			dMotor = new yarp::sig::Vector(usedJoints);
-			dMotor->zero();
-			for(int i = 0; i < usedJoints; i++){
-				(*dMotor)[i] = (*command)[i] - (*tmp)[i];
-			}
-
-			printf("Training map\n");
-
-			count++;
-
-			int wU = floor((ur-uMin)*res);
-			int wV = floor((vr-vMin)*res);
-			int wD = floor((mxCrVal-dMin)*res);
-
-			printf("Right cam pixel value: %i %i\n", ur, vr);
-			printf("Disparity: %.1lf\n", mxCrVal);
-
-			double step = 0.5*exp(-count*1.0/(5*U*V*D*mmapSize));
-
-			printf("Current step size %.3lf\n", step);
-
-			retMotMap[wU][wV][wD]->update(dMotor,step);
-
-
-
-			//fixate
-			//fix the fixation on environmental residuals
-			printf("%i, %i; %i, %i\n", ul, vl, ur, vr);
-			//if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal < 0.95 && mxCrVal > 0.01){
-			if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal > 0.01){
-				printf("Found hand? Fixating.\n");
-				yarp::sig::Vector pxl(2), pxr(2);
-				pxl[0] = ul; pxl[1] = vl;
-				pxr[0] = ur; pxr[1] = vr;
-				igaze->lookAtStereoPixels(pxl, pxr);
 				bool done = false;
 				while(!done){
-					igaze->checkMotionDone(&done);
+					pos->checkMotionDone(&done);
 					Time::delay(1);
 				}
-			}
-			else{
-				printf("No hand found, choosing random view\n");
-				int az = azMin + (azMax-azMin)*gsl_rng_uniform(r);
-				int el = elMin + (elMax-elMin)*gsl_rng_uniform(r);
-				int ver = verMin + (verMax-verMin)*gsl_rng_uniform(r);
-				yarp::sig::Vector ang(3);
-				ang[0] = az; ang[1] = el; ang[2] = ver;
-				igaze->lookAtAbsAngles(ang);
-				bool done = false;
-				while(!done){
-					igaze->checkMotionDone(&done);
-					Time::delay(1);
-				}
-			}
 
-			delete mxVal;
-			delete mxDxL;
-			delete mxDxR;
-	        delete Sl, Sr, Scl, Scr;
-	        delete Sclm, Scrm;
-	        delete dMotor;
+				//logan's code
+
+				//get salience images
+				pSalL = portSalL->read(true);
+				pSalR = portSalR->read(true);
+				Sl = new Mat(pSalL->height(), pSalL->width(), CV_32F, (void *)pSalL->getRawImage());
+				Sr = new Mat(pSalR->height(), pSalR->width(), CV_32F, (void *)pSalR->getRawImage());
+				Scl = new Mat(pSalL->height(), pSalL->width(), CV_32F);
+				Scr = new Mat(pSalR->height(), pSalR->width(), CV_32F);
+				Sclm = new Mat(pSalL->height(), pSalL->width(), CV_32F);
+				Scrm = new Mat(pSalR->height(), pSalR->width(), CV_32F);
+
+				//get head and l/r eye matrices, assuming fixed torso
+				Matrix Hl, Hr, H;
+				Mat R(3,3, CV_64F);
+				vector<double> T(3);
+				yarp::sig::Vector eo, ep;
+				igaze->getLeftEyePose(eo, ep);
+				Hl = axis2dcm(ep);
+				Hl(0,3) = eo[0]; Hl(1,3) = eo[1]; Hl(2,3) = eo[2];
+				igaze->getRightEyePose(eo, ep);
+				Hr = axis2dcm(ep);
+				Hr(0,3) = eo[0]; Hr(1,3) = eo[1]; Hr(2,3) = eo[2];
+
+				//get the transform matrix from the left image to the right image
+				H = SE3inv(Hr)*Hl;
+				for (int i = 0; i < 3; i++) {
+					for (int j = 0; j < 3; j++) {
+						R.at<double>(i,j) = H(i,j);
+					}
+					T.at(i) = H(i,3);
+				}
+
+
+
+				//rectify the images
+				stereoRectify(Pl, Mat::zeros(4,1,CV_64F), Pr, Mat::zeros(4,1,CV_64F), Size(cxl*2, cyl*2), R, Mat(T), R1, R2, P1, P2, Q);
+				initUndistortRectifyMap(Pl, Mat(), R1, P1, Size(cxl*2, cyl*2), CV_32FC1, mpxL, mpyL);
+				initUndistortRectifyMap(Pr, Mat(), R2, P2, Size(cxr*2, cyr*2), CV_32FC1, mpxR, mpyR);
+				remap(*Sl, *Scl, mpxL, mpyL, INTER_LINEAR);
+				remap(*Sr, *Scr, mpxR, mpyR, INTER_LINEAR);
+
+				//end logan's image rectification
+
+
+				//locate the most salient point again (with center focusing)
+				mxDxL = new Point;
+				mxDxR = new Point;
+				bool winimg = false;
+				double * mxVal = new double[2];
+				Scl->copyTo(*Sclm); Scr->copyTo(*Scrm);
+				minMaxLoc(*Sclm, NULL, mxVal, NULL, mxDxL);
+				minMaxLoc(*Scrm, NULL, mxVal+1, NULL, mxDxR);
+				if (mxVal[1] > mxVal[0]) {
+					mxDxL->x = mxDxR->x; mxDxL->y = mxDxR->y;
+					winimg = true;
+				}
+
+				//adjust for vertical offset from left to right image
+				int vamin, vamax, vadj;
+				if (voffset < 0) {
+					vamin = -voffset; vamax = Scr->rows-1; vadj = 0;
+				} else if (voffset > 0) {
+					vamin = 0; vamax = Scr->rows-1-voffset; vadj = voffset;
+				} else {
+					vamin = 0; vamax = Scr->rows-1; vadj = 0;
+				}
+
+
+				//calc the xcorr b/w left/right for various shifts of window around object
+				Mat salImg, srcImg, corr;
+				Rect salWin, srcWin;
+				if (!winimg) {
+					copyMakeBorder(*Scl, salImg, wsize, wsize, wsize, wsize, BORDER_CONSTANT, Scalar(0));
+					copyMakeBorder(Scr->rowRange(vamin,vamax), srcImg, wsize+vadj, wsize+vamin+1, wsize+nlags, wsize+nlags, BORDER_CONSTANT, Scalar(0));
+				} else {
+					copyMakeBorder(Scr->rowRange(vamin,vamax), salImg, wsize+vadj, wsize+vamin+1, wsize, wsize, BORDER_CONSTANT, Scalar(0));
+					copyMakeBorder(*Scl, srcImg, wsize, wsize, wsize+nlags, wsize+nlags, BORDER_CONSTANT, Scalar(0));
+					mxDxL->y = mxDxL->y + voffset;
+				}
+				salWin = Rect(mxDxL->x, mxDxL->y, 2*wsize+1, 2*wsize+1);
+				srcWin = Rect(mxDxL->x, mxDxL->y, 2*nlags+1, 2*wsize+1);
+				matchTemplate(srcImg(srcWin), salImg(salWin), corr, CV_TM_CCORR_NORMED);
+
+
+				//find max of xcorr and calculate disparity at interest point
+				int mCorr; double mxCrVal = 0;
+				for (int i = 0; i < corr.cols; i++) {
+					if (corr.at<float>(0,i) > mxCrVal) {
+						mxCrVal = corr.at<float>(0,i);
+						mCorr = i;
+					}
+				}
+
+				printf("Max corr: %.2lf\n", mxCrVal);
+
+
+				//remap corresponding point onto the unrectified image
+				if (!winimg) {
+					mxDxR->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2), 0);
+					mxDxR->y = mxDxL->y - voffset;
+				} else {
+					mxDxR->x = mxDxL->x; mxDxR->y = mxDxL->y - voffset;
+					mxDxL->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2), 0);
+				}
+				int ul = std::max(std::min((int)mpxL.at<float>(*mxDxL), (int)cxl*2),0);
+				int vl = std::max(std::min((int)mpyL.at<float>(*mxDxL), (int)cyl*2),0);
+				int ur = std::max(std::min((int)mpxR.at<float>(*mxDxR), (int)cxr*2),0);
+				int vr = std::max(std::min((int)mpyR.at<float>(*mxDxR)+voffset, (int)cyr*2),0);
+
+				//end logan's code (triangulation not needed)
+
+				//use motor diff and retinal loc + disp to train
+				//how best to represent retinal location?
+				//<ur,vr,mxCrVal>?
+
+
+
+				yarp::sig::Vector *dMotor;
+				dMotor = new yarp::sig::Vector(usedJoints);
+				dMotor->zero();
+				for(int i = 0; i < usedJoints; i++){
+					(*dMotor)[i] = (*command)[i] - (*tmp)[i];
+				}
+
+				printf("Training map\n");
+
+				count++;
+
+				int wU = floor((ur-uMin)*res);
+				int wV = floor((vr-vMin)*res);
+				int wD = floor((mxCrVal-dMin)*res);
+
+				printf("Right cam pixel value: %i %i\n", ur, vr);
+				printf("Disparity: %.1lf\n", mxCrVal);
+
+				double step = 0.5*exp(-count*1.0/(5*U*V*D*mmapSize));
+
+				printf("Current step size %.3lf\n", step);
+
+				retMotMap[wU][wV][wD]->update(dMotor,step);
+
+
+
+				//fixate
+				//fix the fixation on environmental residuals
+				printf("%i, %i; %i, %i\n", ul, vl, ur, vr);
+				//if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal < 0.95 && mxCrVal > 0.01){
+				if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal > 0.01){
+					printf("Found hand? Fixating.\n");
+					yarp::sig::Vector pxl(2), pxr(2);
+					pxl[0] = ul; pxl[1] = vl;
+					pxr[0] = ur; pxr[1] = vr;
+					igaze->lookAtStereoPixels(pxl, pxr);
+					bool done = false;
+					while(!done){
+						igaze->checkMotionDone(&done);
+						Time::delay(1);
+					}
+				}
+				else{
+					printf("No hand found, choosing random view\n");
+					int az = azMin + (azMax-azMin)*gsl_rng_uniform(r);
+					int el = elMin + (elMax-elMin)*gsl_rng_uniform(r);
+					int ver = verMin + (verMax-verMin)*gsl_rng_uniform(r);
+					yarp::sig::Vector ang(3);
+					ang[0] = az; ang[1] = el; ang[2] = ver;
+					igaze->lookAtAbsAngles(ang);
+					bool done = false;
+					while(!done){
+						igaze->checkMotionDone(&done);
+						Time::delay(1);
+					}
+				}
+
+				//delete mxVal;
+				delete mxDxL;
+				delete mxDxR;
+				delete Sl, Sr, Scl, Scr;
+				delete Sclm, Scrm;
+				delete dMotor;
+			}
 		}
 	}
 
@@ -672,7 +675,7 @@ public:
 		rpcPort = new Port;
 		rpcPort->open("/fineMotor");
 		attach(*rpcPort);
-		thr = new fineMotorThread(50,rf);
+		thr = new fineMotorThread(rf);
 		bool ok = thr->start();
 		if(!ok){
 			delete thr;
