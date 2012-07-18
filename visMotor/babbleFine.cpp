@@ -75,6 +75,7 @@ protected:
     Mat R, Rl, Rr;
     Mat mpxL, mpyL, mpxR, mpyR;
     Point * mxDxL, * mxDxR;
+    double * mxVal;
     Mat CF;
 
 	const gsl_rng_type *Type;
@@ -108,9 +109,12 @@ protected:
 
 	int U; int V; int D;
 
+	int Y; int P; int G;
+
 	int maxDiv;
 
 	SOM ****retMotMap;
+	SOM ****egoMotMap;
 
 	bool realRobot;
 
@@ -121,8 +125,8 @@ protected:
 	int elMin; int elMax;
 	int verMin; int verMax;
 
-	ImageOf<PixelFloat> *pSalL;
-	ImageOf<PixelFloat> *pSalR;
+	//ImageOf<PixelFloat> *pSalL;
+	//ImageOf<PixelFloat> *pSalR;
 
 public:
 	fineMotorThread(ResourceFinder &_rf) : Thread(), rf(_rf){}
@@ -139,7 +143,8 @@ public:
 		name = rf.check("name",Value("fineMotor")).asString().c_str();
 		arm = rf.check("arm", Value("left")).asString().c_str();
 
-		neckTT = rf.check("nt",Value(1.0)).asDouble();
+		//neckTT = rf.check("nt",Value(1.0)).asDouble();
+		neckTT = rf.check("nt",Value(3.0)).asDouble();
 		eyeTT = rf.check("et",Value(0.5)).asDouble();
 
 		wsize = (int)rf.check("wsize",Value(25)).asInt()/2;
@@ -333,16 +338,27 @@ public:
 		string portSalrName="/"+name+"/sal:r";
 		portSalR->open(portSalrName.c_str());
 
-		pSalL = portSalL->read(true);
-		pSalR= portSalR->read(true);
+		//pSalL = portSalL->read(true);
+		//pSalR= portSalR->read(true);
 
-		uMin = 0; uMax = pSalL->width();
-		vMin = 0; vMax = pSalR->height();
+		uMin = 0; uMax = cxl*2;
+		vMin = 0; vMax = cyl*2;
 		dMin = 0; dMax = maxDiv;
+
+
+		//not really yaw and pitch
+		azMin = -80; azMax = 0;
+		elMin = -60; elMax = 0;
+		verMin = 0; verMax = 20;
+
 		//number of units along a dimension
 		U = (uMax-uMin)*res;
 		V = (vMax-vMin)*res;
 		D = (dMax-dMin)*res;
+
+		Y = (azMax-azMin)*res;
+		P = (elMax-elMin)*res;
+		G = (verMax-verMin)*res;
 
 		//initialize model
 		retMotMap = new SOM***[U];
@@ -356,33 +372,63 @@ public:
 			}
 		}
 
+		egoMotMap = new SOM***[Y];
+		for (int y = 0; y < Y; y ++){
+			egoMotMap[y] = new SOM**[P];
+			for (int p = 0; p < P; p++){
+				egoMotMap[y][p] = new SOM*[G];
+				for (int g = 0; g < G; g++){
+					egoMotMap[y][p][g] = new SOM(mmapSize,usedJoints);
+				}
+			}
+		}
+
 		count = 0;
 
-		//not really yaw and pitch
-		azMin = -80; azMax = 0;
-		elMin = -60; elMax = 0;
-		verMin = 0; verMax = 20;
 
 		return true;
 	}
 
-	void mapWrite(string fName){
+	//ret=false when egomotor map, =true when retinomotor map
+
+	void mapWrite(string fName, bool ret){
 		ofstream mapFile;
 		mapFile.open(fName.c_str());
 		//do something
-		mapFile << U << " " << V << " " << D << endl;
-		mapFile << mmapSize << " " << usedJoints << endl;
-		for(int u = 0; u < U; u++){
-			for(int v = 0; v < V; v++){
-				for(int d = 0; d < D; d++){
-					mapFile << u << " " << v << " " << d << endl;
-					for(int k = 0; k < mmapSize; k++){
-						mapFile << k << endl;
-						for(int n = 0; n < usedJoints; n++){
-							mapFile << (*retMotMap[u][v][d]).weights[k][n];
-							mapFile << " ";
+		if(ret){
+			mapFile << U << " " << V << " " << D << endl;
+			mapFile << mmapSize << " " << usedJoints << endl;
+			for(int u = 0; u < U; u++){
+				for(int v = 0; v < V; v++){
+					for(int d = 0; d < D; d++){
+						mapFile << u << " " << v << " " << d << endl;
+						for(int k = 0; k < mmapSize; k++){
+							mapFile << k << endl;
+							for(int n = 0; n < usedJoints; n++){
+								mapFile << (*retMotMap[u][v][d]).weights[k][n];
+								mapFile << " ";
+							}
+							mapFile << endl;
 						}
-						mapFile << endl;
+					}
+				}
+			}
+		}
+		else{
+			mapFile << Y << " " << P << " " << G << endl;
+			mapFile << mmapSize << " " << usedJoints << endl;
+			for(int y = 0; y < Y; y++){
+				for(int p = 0; p < P; p++){
+					for(int g = 0; g < G; g++){
+						mapFile << y << " " << p << " " << g << endl;
+						for(int k = 0; k < mmapSize; k++){
+							mapFile << k << endl;
+							for(int n = 0; n < usedJoints; n++){
+								mapFile << (*egoMotMap[y][p][g]).weights[k][n];
+								mapFile << " ";
+							}
+							mapFile << endl;
+						}
 					}
 				}
 			}
@@ -396,7 +442,7 @@ public:
 
 		while(isStopping() != true){
 
-			tmp = command;
+			*tmp = *command;
 			(*command)[0] = (*command)[0] + 10*(2*gsl_rng_uniform(r)-1);
 			(*command)[1] = (*command)[1] + 10*(2*gsl_rng_uniform(r)-1);
 			(*command)[2] = (*command)[2] + 10*(2*gsl_rng_uniform(r)-1);
@@ -436,18 +482,18 @@ public:
 
 				printf("Moving to new position\n");
 				pos->positionMove(command->data());
-				Time::delay(1);
+				//Time::delay(1);
 				bool done = false;
 				while(!done){
 					pos->checkMotionDone(&done);
-					Time::delay(1);
+					//Time::delay(1);
 				}
 
 				//logan's code
 
 				//get salience images
-				pSalL = portSalL->read(true);
-				pSalR = portSalR->read(true);
+				ImageOf<PixelFloat> *pSalL = portSalL->read(true);
+				ImageOf<PixelFloat> *pSalR = portSalR->read(true);
 				Sl = new Mat(pSalL->height(), pSalL->width(), CV_32F, (void *)pSalL->getRawImage());
 				Sr = new Mat(pSalR->height(), pSalR->width(), CV_32F, (void *)pSalR->getRawImage());
 				Scl = new Mat(pSalL->height(), pSalL->width(), CV_32F);
@@ -492,7 +538,7 @@ public:
 				mxDxL = new Point;
 				mxDxR = new Point;
 				bool winimg = false;
-				double * mxVal = new double[2];
+				mxVal = new double[2];
 				Scl->copyTo(*Sclm); Scr->copyTo(*Scrm);
 				minMaxLoc(*Sclm, NULL, mxVal, NULL, mxDxL);
 				minMaxLoc(*Scrm, NULL, mxVal+1, NULL, mxDxR);
@@ -562,28 +608,15 @@ public:
 
 
 				yarp::sig::Vector *dMotor;
+				yarp::sig::Vector *armJ;
 				dMotor = new yarp::sig::Vector(usedJoints);
 				dMotor->zero();
+				armJ = new yarp::sig::Vector(usedJoints);
+				armJ->zero();
 				for(int i = 0; i < usedJoints; i++){
 					(*dMotor)[i] = (*command)[i] - (*tmp)[i];
+					(*armJ)[i] = (*command)[i];
 				}
-
-				printf("Training map\n");
-
-				count++;
-
-				int wU = floor((ur-uMin)*res);
-				int wV = floor((vr-vMin)*res);
-				int wD = floor((mxCrVal-dMin)*res);
-
-				printf("Right cam pixel value: %i %i\n", ur, vr);
-				printf("Disparity: %.1lf\n", mxCrVal);
-
-				double step = 0.5*exp(-count*1.0/(5*U*V*D*mmapSize));
-
-				printf("Current step size %.3lf\n", step);
-
-				retMotMap[wU][wV][wD]->update(dMotor,step);
 
 
 
@@ -592,15 +625,37 @@ public:
 				printf("%i, %i; %i, %i\n", ul, vl, ur, vr);
 				//if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal < 0.95 && mxCrVal > 0.01){
 				if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal > 0.01){
+					printf("Training map\n");
+					count++;
+
+					//train retinomotor map
+					int wU = floor((ur-uMin)*res);
+					int wV = floor((vr-vMin)*res);
+					int wD = floor((mxCrVal-dMin)*res);
+					printf("Right cam pixel value: %i %i\n", ur, vr);
+					printf("Disparity: %.1lf\n", mxCrVal);
+					double step = 0.5*exp(-count*1.0/(5*U*V*D*mmapSize));
+					printf("Current step size %.3lf\n", step);
+					retMotMap[wU][wV][wD]->update(dMotor,step);
 					printf("Found hand? Fixating.\n");
 					yarp::sig::Vector pxl(2), pxr(2);
 					pxl[0] = ul; pxl[1] = vl;
 					pxr[0] = ur; pxr[1] = vr;
 					igaze->lookAtStereoPixels(pxl, pxr);
-					bool done = false;
+					done = false;
 					while(!done){
 						igaze->checkMotionDone(&done);
-						Time::delay(1);
+						//Time::delay(1);
+					}
+
+					//train egomotor map
+					yarp::sig::Vector headAng(3);
+					igaze->getAngles(headAng);
+					int wY = floor((headAng(0)-azMin)*res);
+					int wP = floor((headAng(1)-elMin)*res);
+					int wG = floor((headAng(2)-verMin)*res);
+					if(!(wY < 0 || wY >= Y || wP < 0 || wP >= P || wG < 0 || wG >= G)){
+						egoMotMap[wY][wP][wG]->update(armJ,step);
 					}
 				}
 				else{
@@ -611,19 +666,26 @@ public:
 					yarp::sig::Vector ang(3);
 					ang[0] = az; ang[1] = el; ang[2] = ver;
 					igaze->lookAtAbsAngles(ang);
-					bool done = false;
+					done = false;
 					while(!done){
 						igaze->checkMotionDone(&done);
-						Time::delay(1);
+						//Time::delay(1);
 					}
 				}
 
-				//delete mxVal;
+				delete mxVal;
 				delete mxDxL;
 				delete mxDxR;
-				delete Sl, Sr, Scl, Scr;
-				delete Sclm, Scrm;
+				delete Sl;
+				delete Sr;
+				delete Scl;
+				delete Scr;
+				delete Sclm;
+				delete Scrm;
 				delete dMotor;
+				delete armJ;
+				//delete pSalL;
+				//delete pSalR;
 			}
 		}
 	}
@@ -647,6 +709,7 @@ public:
 		delete igaze; delete pos; delete enc;
 		delete command; delete tmp;
 		delete retMotMap;
+		delete egoMotMap;
 	}
 };
 
@@ -660,9 +723,15 @@ public:
 
 	bool respond(const Bottle& command, Bottle& reply){
 		string msg(command.get(0).asString().c_str());
+		string mp(command.get(1).asString().c_str());
 		if(msg == "write"){
-			string fName(command.get(1).asString().c_str());
-			thr->mapWrite(fName);
+			string fName(command.get(2).asString().c_str());
+			if(mp == "ego"){
+				thr->mapWrite(fName,false);
+			}
+			if(mp == "ret"){
+				thr->mapWrite(fName,true);
+			}
 			reply = command;
 		}
 		else{
@@ -681,7 +750,8 @@ public:
 			delete thr;
 			return false;
 		}
-		thr->mapWrite("initMap.dat");
+		thr->mapWrite("initRetMap.dat", true);
+		thr->mapWrite("initEgoMap.dat", false);
 		return true;
 	}
 
