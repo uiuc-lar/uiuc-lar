@@ -448,13 +448,13 @@ public:
 			(*command)[2] = (*command)[2] + 10*(2*gsl_rng_uniform(r)-1);
 			(*command)[3] = (*command)[3] + 10*(2*gsl_rng_uniform(r)-1);
 
-			if ((*command)[0] > 0 || (*command)[0] < -60){
+			if ((*command)[0] > -25 || (*command)[0] < -60){
 				(*command)[0] = (*tmp)[0];
 			}
-			if ((*command)[1] > 100 || (*command)[1] < -0){
+			if ((*command)[1] > 100 || (*command)[1] < 10){
 				(*command)[1] = (*tmp)[1];
 			}
-			if ((*command)[2] > 60 || (*command)[2] < -35){
+			if ((*command)[2] > 60 || (*command)[2] < 0){
 				(*command)[2] = (*tmp)[2];
 			}
 			if ((*command)[3] > 100 || (*command)[3] < 10){
