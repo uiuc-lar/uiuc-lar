@@ -1,0 +1,37 @@
+<application>
+<name>Babble Demo</name>
+	<module>
+		<name>/home/lydia/Research/eclipse_ws/motorImitation/visMotor/babbleDemo/fwdConv</name>
+		<parameters>--input /fwdConv:i --output /fwdConv:o --arm left</parameters>
+		<node>escher</node>
+			<tag>fwdConv</tag>
+	</module>
+	<module>
+		<name>/home/lydia/Research/eclipse_ws/motorImitation/visMotor/babbleDemo/testReach</name>
+		<node>escher</node>
+			<tag>testReach</tag>
+	</module>
+	<module>
+		<name>/home/lydia/Research/eclipse_ws/motorImitation/visMotor/babbleDemo/learnedReachLook</name>
+		<parameters>--robot icub --map mapC.dat</parameters>
+		<node>escher</node>
+			<tag>learnedReachLook</tag>
+	</module>
+	<module>
+		<name>yarpview</name>
+		<node>icub16</node>
+			<tag>yarpview</tag>
+	</module>
+	<connection>
+		<from>/learnedReach/arm:o</from>
+		<to>/testReach/headLoc:i</to>
+	</connection>
+	<connection>
+		<from>/testReach/fixAng:o</from>
+		<to>/learnedReach/loc:i</to>
+	</connection>
+	<connection>
+		<from>/icub/camcalib/left/out</from>
+		<to>/yarpview/img:i</to>
+	</connection>
+</application>
