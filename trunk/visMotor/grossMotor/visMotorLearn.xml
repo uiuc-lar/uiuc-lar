@@ -1,0 +1,49 @@
+<application>
+<name>Visuomotor Map</name>
+<dependencies>
+	<port>/root</port>
+</dependencies>
+	<module>
+		<name>./fwdConv</name>
+		<parameters>--input /fwdConv:i --output /fwdConv:o --arm left</parameters>
+		<node>escher</node>
+			<tag>fwdConv</tag>
+	</module>
+	<module>
+		<name>./randArmExplore</name>
+		<parameters>--robot icubSim --arm left</parameters>
+		<node>escher</node>
+			<tag>randArmExplore</tag>
+	</module>
+	<module>
+		<name>iKinGazeCtrl</name>
+		<parameters>--robot icubSim --config icubSimEyes.ini</parameters>
+		<node>escher</node>
+			<tag>iKinGazeCtrl</tag>
+	</module>
+	<module>
+		<name>./visMotor</name>
+		<parameters>--robot icubSim</parameters>
+		<node>escher</node>
+			<tag>visMotorMap</tag>
+	</module>
+	<module>
+		<name>./dummyTrack</name>
+		<node>escher</node>
+			<tag>dummyTrack</tag>
+	</module>
+	<connection>
+		<from>/randArm/cart</from>
+		<to>/dummyTrack/arm:i</to>
+		<protocol>tcp</protocol>
+	</connection>
+	<connection>
+		<from>/randArm/act</from>
+		<to>/visMotor/arm:i</to>
+		<protocol>tcp</protocol>
+	</connection>
+	<connection>
+		<from>/dummyTrack/head:o</from>
+		<to>/visMotor/head:i</to>
+	</connection>
+</application>
