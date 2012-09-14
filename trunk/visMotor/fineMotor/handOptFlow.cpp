@@ -63,8 +63,8 @@ protected:
 
 	//BufferedPort<ImageOf<PixelRgb> > *salL;
 	//BufferedPort<ImageOf<PixelRgb> > *salR;
-	BufferedPort<ImageOf<PixelFloat> > *salL;
-	BufferedPort<ImageOf<PixelFloat> > *salR;
+	BufferedPort<ImageOf<PixelMono> > *salL;
+	BufferedPort<ImageOf<PixelMono> > *salR;
 
 	//BufferedPort<Bottle> *salPeakL;
 	//BufferedPort<Bottle> *salPeakR;
@@ -115,11 +115,11 @@ public:
 		string eyeRName="/"+name+"/eye:r";
 		eyeR->open(eyeRName.c_str());
 
-		salL=new BufferedPort<ImageOf<PixelFloat> >;
+		salL=new BufferedPort<ImageOf<PixelMono> >;
 		string salLName="/"+name+"/sal:l";
 		salL->open(salLName.c_str());
 
-		salR=new BufferedPort<ImageOf<PixelFloat> >;
+		salR=new BufferedPort<ImageOf<PixelMono> >;
 		string salRName="/"+name+"/sal:r";
 		salR->open(salRName.c_str());
 
@@ -166,8 +166,8 @@ public:
 			//ImageOf<PixelRgb> &salLOut = salL->prepare();
 			//ImageOf<PixelRgb> &salROut = salR->prepare();
 
-			ImageOf<PixelFloat> &salLOut = salL->prepare();
-			ImageOf<PixelFloat> &salROut = salR->prepare();
+			ImageOf<PixelMono> &salLOut = salL->prepare();
+			ImageOf<PixelMono> &salROut = salR->prepare();
 			
 			//Bottle &salPeakLOut = salPeakL->prepare();
 			//Bottle &salPeakROut = salPeakR->prepare();
@@ -249,14 +249,12 @@ public:
 	
 
 
-			salImL = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
-			salImR = Mat::zeros(imgR->height(), imgR->width(), CV_32F);
-			
-			//salImL.convertTo(salImL,CV_8U);
-			//salImR.convertTo(salImR,CV_8U);
-			
-			//oldSalL->convertTo(*oldSalL,CV_8U);
-			//oldSalR->convertTo(*oldSalR,CV_8U);
+			Mat salValL = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
+			Mat salValR = Mat::zeros(imgR->height(), imgR->width(), CV_32F);
+			//salImL = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
+			//salImR = Mat::zeros(imgR->height(), imgR->width(), CV_32F);
+			//salImL = Mat::zeros(imgL->height(), imgL->width(), CV_8U);
+			//salImR = Mat::zeros(imgR->height(), imgR->width(), CV_8U);
 
 			//for now, all salient corners get equal weight
 			for(int i = 0; i < MAX_CORNERS; i++){
@@ -268,17 +266,12 @@ public:
 						//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8U);
 						circle(tmp,cornersNL[orderL.at<int>(i)],20,Scalar(PEAK_VAL),-1);
 						GaussianBlur(tmp,tmp,Size(29,29),0);
-						add(tmp,salImL,salImL);
+						//add(tmp,salImL,salImL);
+						add(tmp,salValL,salValL);
 					}
 				}
 			}
-			add(salImL,*oldSalL*0.5,salImL);
-			//Mat gS = Mat::zeros(imgL->height(), imgL->width(), CV_8UC1);
-			//cvtColor(salImL,gS,CV_RGB2GRAY);
-			//double* minVal = new double(); double* maxVal = new double();
-			//Point* minLoc = new Point(); Point* maxLoc = new Point();
-			//minMaxLoc(gS,minVal,maxVal,minLoc,maxLoc);
-			//salPeakLOut.add(maxLoc->x); salPeakLOut.add(maxLoc->y);
+			add(salValL,*oldSalL*0.5,salValL);
 			
 			for(int i = 0; i < MAX_CORNERS; i++){
 				if(featuresFoundR[orderR.at<int>(i)]){
@@ -289,23 +282,17 @@ public:
 						Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
 						circle(tmp,cornersNR[orderR.at<int>(i)],20,Scalar(PEAK_VAL),-1);
 						GaussianBlur(tmp,tmp,Size(29,29),0);
-						add(tmp,salImR,salImR);
+						add(tmp,salValR,salValR);
 					}
 				}
 			}
-			add(salImR,*oldSalR*0.5,salImR);
+			add(salValR,*oldSalR*0.5,salValR);
 
-			//salImR.convertTo(salImR,CV_32F);
-			//salImL.convertTo(salImL,CV_32F);
+			*oldSalL = salValL;
+			*oldSalR = salValR;
 
-			*oldSalL = salImL;
-			*oldSalR = salImR;
-
-			//cvtColor(salImR,gS,CV_RGB2GRAY);
-			//double* minVal; double* maxVal;
-			//Point* minLoc; Point* maxLoc;
-			//minMaxLoc(gS,minVal,maxVal,minLoc,maxLoc);
-			//salPeakROut.add(maxLoc->x); salPeakROut.add(maxLoc->y);
+			salValR.convertTo(salImR,CV_8U);
+			salValL.convertTo(salImL,CV_8U);
 
 			//convert back to iplImage
 			
