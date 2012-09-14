@@ -102,7 +102,8 @@ protected:
 	int dMin; int dMax;
 
 	//res = neurons/pixel
-	double res;
+	double eRes;
+	double rRes;
 
 	int mmapSize;
 	int usedJoints;
@@ -150,7 +151,9 @@ public:
 		wsize = (int)rf.check("wsize",Value(25)).asInt()/2;
 		nlags = rf.check("nlags",Value(50)).asInt();
 
-		res = rf.check("res",Value(0.2)).asDouble();
+		eRes = rf.check("eRes",Value(0.2)).asDouble();
+		rRes = rf.check("rRes",Value(0.1)).asDouble();
+
 		mmapSize = rf.check("mmapSize",Value(2)).asInt(); //try this
 		usedJoints = rf.check("usedJoints",Value(4)).asInt();
 
@@ -352,13 +355,13 @@ public:
 		verMin = 0; verMax = 20;
 
 		//number of units along a dimension
-		U = (uMax-uMin)*res;
-		V = (vMax-vMin)*res;
-		D = (dMax-dMin)*res;
+		U = (uMax-uMin)*rRes;
+		V = (vMax-vMin)*rRes;
+		D = (dMax-dMin)*rRes;
 
-		Y = (azMax-azMin)*res;
-		P = (elMax-elMin)*res;
-		G = (verMax-verMin)*res;
+		Y = (azMax-azMin)*eRes;
+		P = (elMax-elMin)*eRes;
+		G = (verMax-verMin)*eRes;
 
 		//initialize model
 		retMotMap = new SOM***[U];
@@ -629,9 +632,9 @@ public:
 					count++;
 
 					//train retinomotor map
-					int wU = floor((ur-uMin)*res);
-					int wV = floor((vr-vMin)*res);
-					int wD = floor((mxCrVal-dMin)*res);
+					int wU = floor((ur-uMin)*rRes);
+					int wV = floor((vr-vMin)*rRes);
+					int wD = floor((mxCrVal-dMin)*rRes);
 					printf("Right cam pixel value: %i %i\n", ur, vr);
 					printf("Disparity: %.1lf\n", mxCrVal);
 					double step = 0.5*exp(-count*1.0/(5*U*V*D*mmapSize));
@@ -651,9 +654,9 @@ public:
 					//train egomotor map
 					yarp::sig::Vector headAng(3);
 					igaze->getAngles(headAng);
-					int wY = floor((headAng(0)-azMin)*res);
-					int wP = floor((headAng(1)-elMin)*res);
-					int wG = floor((headAng(2)-verMin)*res);
+					int wY = floor((headAng(0)-azMin)*eRes);
+					int wP = floor((headAng(1)-elMin)*eRes);
+					int wG = floor((headAng(2)-verMin)*eRes);
 					if(!(wY < 0 || wY >= Y || wP < 0 || wP >= P || wG < 0 || wG >= G)){
 						egoMotMap[wY][wP][wG]->update(armJ,step);
 					}
@@ -673,7 +676,7 @@ public:
 					}
 				}
 
-				delete mxVal;
+				delete [] mxVal;
 				delete mxDxL;
 				delete mxDxR;
 				delete Sl;
@@ -708,8 +711,8 @@ public:
 		delete robotDevice;
 		delete igaze; delete pos; delete enc;
 		delete command; delete tmp;
-		delete retMotMap;
-		delete egoMotMap;
+		delete [] retMotMap;
+		delete [] egoMotMap;
 	}
 };
 
