@@ -32,6 +32,8 @@
 #include <iCub/ctrl/math.h>
 #include <iCub/iKin/iKinFwd.h>
 
+#include <boost/lexical_cast.hpp>
+
 #include "SOM.h"
 
 
@@ -627,7 +629,7 @@ public:
 				//fix the fixation on environmental residuals
 				printf("%i, %i; %i, %i\n", ul, vl, ur, vr);
 				//if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal < 0.95 && mxCrVal > 0.01){
-				if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal > 0.01){
+				if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal > 0.01 && mxCrVal < 0.99){
 					printf("Training map\n");
 					count++;
 
@@ -635,8 +637,7 @@ public:
 					int wU = floor((ur-uMin)*rRes);
 					int wV = floor((vr-vMin)*rRes);
 					int wD = floor((mxCrVal-dMin)*rRes);
-					printf("Right cam pixel value: %i %i\n", ur, vr);
-					printf("Disparity: %.1lf\n", mxCrVal);
+					printf("Disparity: %.3lf\n", mxCrVal);
 					double step = 0.5*exp(-count*1.0/(5*U*V*D*mmapSize));
 					printf("Current step size %.3lf\n", step);
 					retMotMap[wU][wV][wD]->update(dMotor,step);
@@ -660,6 +661,13 @@ public:
 					if(!(wY < 0 || wY >= Y || wP < 0 || wP >= P || wG < 0 || wG >= G)){
 						egoMotMap[wY][wP][wG]->update(armJ,step);
 					}
+					if(count%100 == 0){
+						string rName = "rMap" + boost::lexical_cast<string>(count) + ".dat";
+						string eName = "eMap" + boost::lexical_cast<string>(count) + ".dat";
+						mapWrite(rName, true);
+						mapWrite(eName, false);
+					}
+					printf("Count: %i\n", count);
 				}
 				else{
 					printf("No hand found, choosing random view\n");
@@ -702,13 +710,13 @@ public:
 		portSalR->close();
 		armPlan->close();
 		armPred->close();
-		delete portSalL; delete portSalR;
-		delete armPlan; delete armPred;
+		//delete portSalL; delete portSalR;
+		//delete armPlan; delete armPred;
 		delete Type; delete r;
 		clientGazeCtrl->close();
-		delete clientGazeCtrl;
+		//delete clientGazeCtrl;
 		robotDevice->close();
-		delete robotDevice;
+		//delete robotDevice;
 		delete igaze; delete pos; delete enc;
 		delete command; delete tmp;
 		delete [] retMotMap;
