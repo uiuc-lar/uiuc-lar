@@ -41,6 +41,7 @@
 const int MAX_CORNERS = 10;
 const float DISP_THRESH = 55.0;
 const int PEAK_VAL = 50;
+const float DECAY = 0.75;
 
 using namespace std;
 using namespace cv;
@@ -271,7 +272,7 @@ public:
 					}
 				}
 			}
-			add(salValL,*oldSalL*0.5,salValL);
+			add(salValL,*oldSalL*DECAY,salValL);
 			
 			for(int i = 0; i < MAX_CORNERS; i++){
 				if(featuresFoundR[orderR.at<int>(i)]){
@@ -286,7 +287,7 @@ public:
 					}
 				}
 			}
-			add(salValR,*oldSalR*0.5,salValR);
+			add(salValR,*oldSalR*DECAY,salValR);
 
 			*oldSalL = salValL;
 			*oldSalR = salValR;
