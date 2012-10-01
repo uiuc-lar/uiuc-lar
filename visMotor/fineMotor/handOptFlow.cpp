@@ -39,7 +39,7 @@
 #include <iCub/ctrl/math.h>
 
 const int MAX_CORNERS = 10;
-const float DISP_THRESH = 55.0;
+const float DISP_THRESH = 0.0;
 const int PEAK_VAL = 50;
 const float DECAY = 0.75;
 
