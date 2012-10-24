@@ -157,7 +157,8 @@ public:
 		rRes = rf.check("rRes",Value(0.1)).asDouble();
 
 		mmapSize = rf.check("mmapSize",Value(2)).asInt(); //try this
-		usedJoints = rf.check("usedJoints",Value(4)).asInt();
+		//usedJoints = rf.check("usedJoints",Value(4)).asInt();
+		usedJoints = rf.check("usedJoints",Value(3)).asInt();
 
 		maxDiv = rf.check("maxDiv",Value(10)).asInt();
 
@@ -306,6 +307,7 @@ public:
 			commandCart[i] = pred.get(i).asDouble();
 		}
 
+		printf("fixating on hand\n");
 		//fixate exactly on hand to start
 		igaze->lookAtFixationPoint(commandCart);
 		done = false;
@@ -313,6 +315,7 @@ public:
 			igaze->checkMotionDone(&done);
 			Time::delay(0.5);
 		}
+		printf("done fixating\n");
 
 		//camera calib params
 		Pl = Mat::eye(3,3,CV_64F);
@@ -352,8 +355,8 @@ public:
 
 
 		//not really yaw and pitch
-		azMin = -80; azMax = 0;
-		elMin = -60; elMax = 0;
+		azMin = -60; azMax = 10;
+		elMin = -60; elMax = 10;
 		verMin = 0; verMax = 20;
 
 		//number of units along a dimension
@@ -618,12 +621,19 @@ public:
 				dMotor->zero();
 				armJ = new yarp::sig::Vector(usedJoints);
 				armJ->zero();
-				for(int i = 0; i < usedJoints; i++){
-					(*dMotor)[i] = (*command)[i] - (*tmp)[i];
-					(*armJ)[i] = (*command)[i];
-				}
+				//for(int i = 0; i < usedJoints; i++){
+				//	(*dMotor)[i] = (*command)[i] - (*tmp)[i];
+				//	(*armJ)[i] = (*command)[i];
+				//}
 
+				//since we are skipping joint 2
+				(*dMotor)[0] = (*command)[0] - (*tmp)[0];
+				(*dMotor)[1] = (*command)[1] - (*tmp)[1];
+				(*dMotor)[2] = (*command)[3] - (*tmp)[3];
 
+				(*armJ)[0] = (*command)[0];
+				(*armJ)[1] = (*command)[1];
+				(*armJ)[2] = (*command)[3];
 
 				//fixate
 				//fix the fixation on environmental residuals
@@ -702,25 +712,32 @@ public:
 	}
 
 	virtual void threadRelease(){
-		portSalL->interrupt();
-		portSalR->interrupt();
-		armPlan->interrupt();
-		armPred->interrupt();
+		//portSalL->interrupt();
+		//portSalR->interrupt();
+		//armPlan->interrupt();
+		//armPred->interrupt();
+		printf("blargh\n");
 		portSalL->close();
 		portSalR->close();
 		armPlan->close();
 		armPred->close();
 		//delete portSalL; delete portSalR;
 		//delete armPlan; delete armPred;
-		delete Type; delete r;
+		printf("deleting rng vars\n");
+		//delete Type; delete r;
+		printf("about to stop gazectrl\n");
+		igaze->stopControl();
+		printf("Stopping gaze control\n");
 		clientGazeCtrl->close();
+		printf("Gaze control closed\n");
 		//delete clientGazeCtrl;
 		robotDevice->close();
+		printf("closed robot device\n");
 		//delete robotDevice;
-		delete igaze; delete pos; delete enc;
-		delete command; delete tmp;
-		delete [] retMotMap;
-		delete [] egoMotMap;
+		//delete igaze; delete pos; delete enc;
+		//delete command; delete tmp;
+		//delete [] retMotMap;
+		//delete [] egoMotMap;
 	}
 };
 
@@ -767,15 +784,15 @@ public:
 	}
 
 	virtual bool interruptModule(){
-		rpcPort->interrupt();
+		//rpcPort->interrupt();
 		//thr->stop();
 		return true;
 	}
 
 	virtual bool close(){
-		rpcPort->close();
+		//rpcPort->close();
 		thr->stop();
-		delete rpcPort;
+		//delete rpcPort;
 		delete thr;
 		return true;
 	}
