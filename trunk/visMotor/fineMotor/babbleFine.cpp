@@ -355,9 +355,9 @@ public:
 
 
 		//not really yaw and pitch
-		azMin = -60; azMax = 10;
-		elMin = -60; elMax = 10;
-		verMin = 0; verMax = 20;
+		azMin = -50; azMax = 0;
+		elMin = -50; elMax = 0;
+		verMin = 0; verMax = 30;
 
 		//number of units along a dimension
 		U = (uMax-uMin)*rRes;
