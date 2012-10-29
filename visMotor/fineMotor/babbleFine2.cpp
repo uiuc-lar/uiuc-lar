@@ -1,5 +1,5 @@
 /*
- * babbleFine.cpp
+ * babbleFine2.cpp
  *
  * Lydia Majure
  * move hand by small amount,
@@ -7,7 +7,13 @@
  * train model with del-motors and <dx,dy,disparity>
  * fixate on hand again
  *
+ * difference in version 2:
+ * sparse storage of map updates (to come)
+ * multi-kohonen model
+ * don't use joint 2 on arm
+ *
  */
+
 
 
 //yarp
@@ -143,7 +149,7 @@ public:
 			return false;
 		}
 
-		name = rf.check("name",Value("fineMotor")).asString().c_str();
+		name = rf.check("name",Value("fineMotor2")).asString().c_str();
 		arm = rf.check("arm", Value("left")).asString().c_str();
 
 		//neckTT = rf.check("nt",Value(1.0)).asDouble();
@@ -154,7 +160,7 @@ public:
 		nlags = rf.check("nlags",Value(50)).asInt();
 
 		eRes = rf.check("eRes",Value(0.2)).asDouble();
-		rRes = rf.check("rRes",Value(0.1)).asDouble();
+		rRes = rf.check("rRes",Value(0.2)).asDouble();
 
 		mmapSize = rf.check("mmapSize",Value(2)).asInt(); //try this
 		//usedJoints = rf.check("usedJoints",Value(4)).asInt();
@@ -175,8 +181,8 @@ public:
 		armPlan = new Port;
 		armPred = new Port;
 
-		armPlan->open("/fineMotor/plan:o");
-		armPred->open("/fineMotor/pred:i");
+		armPlan->open("/fineMotor2/plan:o");
+		armPred->open("/fineMotor2/pred:i");
 
 		gsl_rng_env_setup();
 		Type = gsl_rng_default;
@@ -192,7 +198,7 @@ public:
 		clientGazeCtrl->open(options);
 
 		options.clear();
-		string localPorts = "/fineMotor/cmd";
+		string localPorts = "/fineMotor2/cmd";
 		string remotePorts = "/" + robotName + "/" + arm + "_arm";
 
 		options.put("device", "remote_controlboard");
@@ -281,13 +287,13 @@ public:
 		bool done = false;
 		while (!done){
 			pos->checkMotionDone(&done);
-			Time::delay(0.1);
+		//	Time::delay(0.1);
 		}
 
 
 		bool fwCvOn = 0;
-		fwCvOn = Network::connect("/fineMotor/plan:o","/fwdConv:i");
-		fwCvOn *= Network::connect("/fwdConv:o","/fineMotor/pred:i");
+		fwCvOn = Network::connect("/fineMotor2/plan:o","/fwdConv:i");
+		fwCvOn *= Network::connect("/fwdConv:o","/fineMotor2/pred:i");
 		if (!fwCvOn){
 			printf("Please run command:\n ./fwdConv --input /fwdConv:i --output /fwdConv:o\n");
 			return false;
@@ -307,15 +313,13 @@ public:
 			commandCart[i] = pred.get(i).asDouble();
 		}
 
-		printf("fixating on hand\n");
 		//fixate exactly on hand to start
 		igaze->lookAtFixationPoint(commandCart);
 		done = false;
 		while(!done){
 			igaze->checkMotionDone(&done);
-			Time::delay(0.5);
+		//	Time::delay(0.5);
 		}
-		printf("done fixating\n");
 
 		//camera calib params
 		Pl = Mat::eye(3,3,CV_64F);
@@ -355,9 +359,9 @@ public:
 
 
 		//not really yaw and pitch
-		azMin = -50; azMax = 0;
-		elMin = -50; elMax = 0;
-		verMin = 0; verMax = 30;
+		azMin = -80; azMax = 0;
+		elMin = -60; elMax = 0;
+		verMin = 0; verMax = 20;
 
 		//number of units along a dimension
 		U = (uMax-uMin)*rRes;
@@ -453,7 +457,8 @@ public:
 			*tmp = *command;
 			(*command)[0] = (*command)[0] + 10*(2*gsl_rng_uniform(r)-1);
 			(*command)[1] = (*command)[1] + 10*(2*gsl_rng_uniform(r)-1);
-			(*command)[2] = (*command)[2] + 10*(2*gsl_rng_uniform(r)-1);
+			//(*command)[2] = (*command)[2] + 10*(2*gsl_rng_uniform(r)-1);
+			(*command)[2] = (*command)[2];
 			(*command)[3] = (*command)[3] + 10*(2*gsl_rng_uniform(r)-1);
 
 			if ((*command)[0] > -25 || (*command)[0] < -60){
@@ -462,9 +467,9 @@ public:
 			if ((*command)[1] > 100 || (*command)[1] < 10){
 				(*command)[1] = (*tmp)[1];
 			}
-			if ((*command)[2] > 60 || (*command)[2] < 0){
-				(*command)[2] = (*tmp)[2];
-			}
+			//if ((*command)[2] > 60 || (*command)[2] < 0){
+			//	(*command)[2] = (*tmp)[2];
+			//}
 			if ((*command)[3] > 100 || (*command)[3] < 10){
 				(*command)[3] = (*tmp)[3];
 			}
@@ -635,6 +640,8 @@ public:
 				(*armJ)[1] = (*command)[1];
 				(*armJ)[2] = (*command)[3];
 
+
+
 				//fixate
 				//fix the fixation on environmental residuals
 				printf("%i, %i; %i, %i\n", ul, vl, ur, vr);
@@ -650,7 +657,27 @@ public:
 					printf("Disparity: %.3lf\n", mxCrVal);
 					double step = 0.5*exp(-count*1.0/(5*U*V*D*mmapSize));
 					printf("Current step size %.3lf\n", step);
-					retMotMap[wU][wV][wD]->update(dMotor,step);
+					if(!(wU < 0 || wU >= U || wV < 0 || wV >= V || wD < 0 || wD >= D)){
+						retMotMap[wU][wV][wD]->update(dMotor,step);
+						if(wU - 1 >= 0){
+							retMotMap[wU-1][wV][wD]->update(dMotor,step*0.5);
+						}
+						if(wU + 1 < U){
+							retMotMap[wU+1][wV][wD]->update(dMotor,step*0.5);
+						}
+						if(wV - 1 >= 0){
+							retMotMap[wU][wV-1][wD]->update(dMotor,step*0.5);
+						}
+						if(wV + 1 < V){
+							retMotMap[wU][wV+1][wD]->update(dMotor,step*0.5);
+						}
+						if(wD - 1 >= 0){
+							retMotMap[wU][wV][wD-1]->update(dMotor,step*0.5);
+						}
+						if(wD + 1 < D){
+							retMotMap[wU][wV][wD+1]->update(dMotor,step*0.5);
+						}
+					}
 					printf("Found hand? Fixating.\n");
 					yarp::sig::Vector pxl(2), pxr(2);
 					pxl[0] = ul; pxl[1] = vl;
@@ -673,6 +700,24 @@ public:
 					int wG = floor((headAng(2)-verMin)*eRes);
 					if(!(wY < 0 || wY >= Y || wP < 0 || wP >= P || wG < 0 || wG >= G)){
 						egoMotMap[wY][wP][wG]->update(armJ,step);
+						if(wY - 1 >= 0){
+							egoMotMap[wY-1][wP][wG]->update(armJ,step*0.5);
+						}
+						if(wY + 1 < Y){
+							egoMotMap[wY+1][wP][wG]->update(armJ,step*0.5);
+						}
+						if(wP - 1 >= 0){
+							egoMotMap[wY][wP-1][wG]->update(armJ,step*0.5);
+						}
+						if(wP + 1 < P){
+							egoMotMap[wY][wP+1][wG]->update(armJ,step*0.5);
+						}
+						if(wG - 1 >= 0){
+							egoMotMap[wY][wP][wG-1]->update(armJ,step*0.5);
+						}
+						if(wD + 1 < D){
+							egoMotMap[wY][wP][wG+1]->update(armJ,step*0.5);
+						}
 					}
 					if(count%100 == 0){
 						string rName = "rMap" + boost::lexical_cast<string>(count) + ".dat";
@@ -718,32 +763,12 @@ public:
 	}
 
 	virtual void threadRelease(){
-		//portSalL->interrupt();
-		//portSalR->interrupt();
-		//armPlan->interrupt();
-		//armPred->interrupt();
-		printf("blargh\n");
 		portSalL->close();
 		portSalR->close();
 		armPlan->close();
 		armPred->close();
-		//delete portSalL; delete portSalR;
-		//delete armPlan; delete armPred;
-		printf("deleting rng vars\n");
-		//delete Type; delete r;
-		printf("about to stop gazectrl\n");
-		igaze->stopControl();
-		printf("Stopping gaze control\n");
 		clientGazeCtrl->close();
-		printf("Gaze control closed\n");
-		//delete clientGazeCtrl;
 		robotDevice->close();
-		printf("closed robot device\n");
-		//delete robotDevice;
-		//delete igaze; delete pos; delete enc;
-		//delete command; delete tmp;
-		//delete [] retMotMap;
-		//delete [] egoMotMap;
 	}
 };
 
@@ -776,7 +801,7 @@ public:
 
 	virtual bool configure(ResourceFinder &rf){
 		rpcPort = new Port;
-		rpcPort->open("/fineMotor");
+		rpcPort->open("/fineMotor2");
 		attach(*rpcPort);
 		thr = new fineMotorThread(rf);
 		bool ok = thr->start();
@@ -790,15 +815,15 @@ public:
 	}
 
 	virtual bool interruptModule(){
-		//rpcPort->interrupt();
+		rpcPort->interrupt();
 		//thr->stop();
 		return true;
 	}
 
 	virtual bool close(){
-		//rpcPort->close();
+		rpcPort->close();
 		thr->stop();
-		//delete rpcPort;
+		delete rpcPort;
 		delete thr;
 		return true;
 	}
@@ -819,6 +844,7 @@ int main(int argc, char *argv[]){
 	mod.runModule(rf);
 	return 0;
 }
+
 
 
 
