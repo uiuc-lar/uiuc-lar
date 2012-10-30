@@ -645,39 +645,8 @@ public:
 				//fixate
 				//fix the fixation on environmental residuals
 				printf("%i, %i; %i, %i\n", ul, vl, ur, vr);
-				//if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal < 0.95 && mxCrVal > 0.01){
 				if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal > 0.01 && mxCrVal < 0.99){
-					printf("Training map\n");
-					count++;
 
-					//train retinomotor map
-					int wU = floor((ur-uMin)*rRes);
-					int wV = floor((vr-vMin)*rRes);
-					int wD = floor((mxCrVal-dMin)*rRes);
-					printf("Disparity: %.3lf\n", mxCrVal);
-					double step = 0.5*exp(-count*1.0/(5*U*V*D*mmapSize));
-					printf("Current step size %.3lf\n", step);
-					if(!(wU < 0 || wU >= U || wV < 0 || wV >= V || wD < 0 || wD >= D)){
-						retMotMap[wU][wV][wD]->update(dMotor,step);
-						if(wU - 1 >= 0){
-							retMotMap[wU-1][wV][wD]->update(dMotor,step*0.5);
-						}
-						if(wU + 1 < U){
-							retMotMap[wU+1][wV][wD]->update(dMotor,step*0.5);
-						}
-						if(wV - 1 >= 0){
-							retMotMap[wU][wV-1][wD]->update(dMotor,step*0.5);
-						}
-						if(wV + 1 < V){
-							retMotMap[wU][wV+1][wD]->update(dMotor,step*0.5);
-						}
-						if(wD - 1 >= 0){
-							retMotMap[wU][wV][wD-1]->update(dMotor,step*0.5);
-						}
-						if(wD + 1 < D){
-							retMotMap[wU][wV][wD+1]->update(dMotor,step*0.5);
-						}
-					}
 					printf("Found hand? Fixating.\n");
 					yarp::sig::Vector pxl(2), pxr(2);
 					pxl[0] = ul; pxl[1] = vl;
@@ -692,40 +661,91 @@ public:
 						i++;
 					}
 
-					//train egomotor map
 					yarp::sig::Vector headAng(3);
 					igaze->getAngles(headAng);
-					int wY = floor((headAng(0)-azMin)*eRes);
-					int wP = floor((headAng(1)-elMin)*eRes);
-					int wG = floor((headAng(2)-verMin)*eRes);
-					if(!(wY < 0 || wY >= Y || wP < 0 || wP >= P || wG < 0 || wG >= G)){
-						egoMotMap[wY][wP][wG]->update(armJ,step);
-						if(wY - 1 >= 0){
-							egoMotMap[wY-1][wP][wG]->update(armJ,step*0.5);
+
+					if(headAng[0] > azMin && headAng[0] < azMax && headAng[1] > elMin && headAng[1] < elMax && headAng[2] >verMin && headAng[2] < verMax){
+						printf("Training map\n");
+						count++;
+
+						//train retinomotor map
+						int wU = floor((ur-uMin)*rRes);
+						int wV = floor((vr-vMin)*rRes);
+						int wD = floor((mxCrVal-dMin)*rRes);
+						printf("Disparity: %.3lf\n", mxCrVal);
+						double step = 0.5*exp(-count*1.0/(5*U*V*D*mmapSize));
+						printf("Current step size %.3lf\n", step);
+						if(!(wU < 0 || wU >= U || wV < 0 || wV >= V || wD < 0 || wD >= D)){
+							retMotMap[wU][wV][wD]->update(dMotor,step);
+							if(wU - 1 >= 0){
+								retMotMap[wU-1][wV][wD]->update(dMotor,step*0.25);
+							}
+							if(wU + 1 < U){
+								retMotMap[wU+1][wV][wD]->update(dMotor,step*0.25);
+							}
+							if(wV - 1 >= 0){
+								retMotMap[wU][wV-1][wD]->update(dMotor,step*0.25);
+							}
+							if(wV + 1 < V){
+								retMotMap[wU][wV+1][wD]->update(dMotor,step*0.25);
+							}
+							if(wD - 1 >= 0){
+								retMotMap[wU][wV][wD-1]->update(dMotor,step*0.25);
+							}
+							if(wD + 1 < D){
+								retMotMap[wU][wV][wD+1]->update(dMotor,step*0.25);
+							}
 						}
-						if(wY + 1 < Y){
-							egoMotMap[wY+1][wP][wG]->update(armJ,step*0.5);
+
+						int wY = floor((headAng(0)-azMin)*eRes);
+						int wP = floor((headAng(1)-elMin)*eRes);
+						int wG = floor((headAng(2)-verMin)*eRes);
+						if(!(wY < 0 || wY >= Y || wP < 0 || wP >= P || wG < 0 || wG >= G)){
+							egoMotMap[wY][wP][wG]->update(armJ,step);
+							if(wY - 1 >= 0){
+								egoMotMap[wY-1][wP][wG]->update(armJ,step*0.25);
+							}
+							if(wY + 1 < Y){
+								egoMotMap[wY+1][wP][wG]->update(armJ,step*0.25);
+							}
+							if(wP - 1 >= 0){
+								egoMotMap[wY][wP-1][wG]->update(armJ,step*0.25);
+							}
+							if(wP + 1 < P){
+								egoMotMap[wY][wP+1][wG]->update(armJ,step*0.25);
+							}
+							if(wG - 1 >= 0){
+								egoMotMap[wY][wP][wG-1]->update(armJ,step*0.25);
+							}
+							if(wD + 1 < D){
+								egoMotMap[wY][wP][wG+1]->update(armJ,step*0.25);
+							}
 						}
-						if(wP - 1 >= 0){
-							egoMotMap[wY][wP-1][wG]->update(armJ,step*0.5);
+						if(count%100 == 0){
+							string rName = "rMap" + boost::lexical_cast<string>(count) + ".dat";
+							string eName = "eMap" + boost::lexical_cast<string>(count) + ".dat";
+							mapWrite(rName, true);
+							mapWrite(eName, false);
 						}
-						if(wP + 1 < P){
-							egoMotMap[wY][wP+1][wG]->update(armJ,step*0.5);
-						}
-						if(wG - 1 >= 0){
-							egoMotMap[wY][wP][wG-1]->update(armJ,step*0.5);
-						}
-						if(wD + 1 < D){
-							egoMotMap[wY][wP][wG+1]->update(armJ,step*0.5);
+						printf("Count: %i\n", count);
+					}
+					else{
+						printf("No hand found, choosing random view\n");
+						int az = azMin + (azMax-azMin)*gsl_rng_uniform(r);
+						int el = elMin + (elMax-elMin)*gsl_rng_uniform(r);
+						int ver = verMin + (verMax-verMin)*gsl_rng_uniform(r);
+						yarp::sig::Vector ang(3);
+						ang[0] = az; ang[1] = el; ang[2] = ver;
+						igaze->lookAtAbsAngles(ang);
+						done = false;
+						int i = 0;
+						while(!done && i < 5){
+							igaze->checkMotionDone(&done);
+							//Time::delay(0.5);
+							sleep(1);
+							i++;
 						}
 					}
-					if(count%100 == 0){
-						string rName = "rMap" + boost::lexical_cast<string>(count) + ".dat";
-						string eName = "eMap" + boost::lexical_cast<string>(count) + ".dat";
-						mapWrite(rName, true);
-						mapWrite(eName, false);
-					}
-					printf("Count: %i\n", count);
 				}
 				else{
 					printf("No hand found, choosing random view\n");
