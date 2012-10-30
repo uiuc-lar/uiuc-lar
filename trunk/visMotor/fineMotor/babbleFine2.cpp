@@ -71,6 +71,10 @@ protected:
 	string robotName;
 	string arm;
 
+	//load initial map from file
+	string rmFile;
+	string emFile;
+
     //camera projection matrix/params
     Mat Pl;
     Mat Pr;
@@ -152,6 +156,9 @@ public:
 		name = rf.check("name",Value("fineMotor2")).asString().c_str();
 		arm = rf.check("arm", Value("left")).asString().c_str();
 
+		rmFile = rf.check("rMFile",Value("none")).asString().c_str();
+		emFile = rf.check("eMFile",Value("none")).asString().c_str();
+
 		//neckTT = rf.check("nt",Value(1.0)).asDouble();
 		neckTT = rf.check("nt",Value(3.0)).asDouble();
 		eyeTT = rf.check("et",Value(0.5)).asDouble();
@@ -162,7 +169,8 @@ public:
 		eRes = rf.check("eRes",Value(0.2)).asDouble();
 		rRes = rf.check("rRes",Value(0.2)).asDouble();
 
-		mmapSize = rf.check("mmapSize",Value(2)).asInt(); //try this
+		mmapSize = rf.check("mmapSize",Value(4)).asInt();
+		//mmapSize = rf.check("mmapSize",Value(2)).asInt(); //try this
 		//usedJoints = rf.check("usedJoints",Value(4)).asInt();
 		usedJoints = rf.check("usedJoints",Value(3)).asInt();
 
