@@ -58,12 +58,6 @@ SOM::SOM(int k, int n) {
 		weights[i][2] = 10 + 80*gsl_rng_uniform(r);
 	}
 
-	//different initialization method
-	//don't use unless only 2 values used
-	//assert(k == 2);
-	//weights[0][0] = -45; weights[0][1] = 45; weights[0][2] = 0; weights[0][3] = 45;
-	//weights[1][0] = -45; weights[1][1] = 75; weights[1][2] = 45; weights[1][3] = 75;
-
 	gsl_rng_free(r);
 	//delete T;
 	//delete r;
@@ -124,10 +118,10 @@ double SOM::mapDist (int i, int winner){
 		dist = distb;
 	}
 	if (dist == 0){
-		return 1; //for now
+		return 1;
 	}
 	if (dist == 1){
-		return 0;
+		return 0.5;
 	}
 	if (dist == 2){
 		return 0;
