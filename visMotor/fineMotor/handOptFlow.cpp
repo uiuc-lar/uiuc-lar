@@ -205,16 +205,16 @@ public:
 	
 	
 			int corner_count = MAX_CORNERS;
-			vector<Point2f> cornersOL(MAX_CORNERS);
+			vector<Point2f> cornersOL(MAX_CORNERS, Point2f(0,0));
 	
 			goodFeaturesToTrack(ImLOG,cornersOL,corner_count,0.01,5.0);
 
 			//cornerSubPix(ImLOG,cornersOL,Size(10,10),Size(-1,-1),TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
 			
-			vector<uchar> featuresFoundL(MAX_CORNERS);
-			vector<float> featuresErrorsL(MAX_CORNERS);
+			vector<uchar> featuresFoundL(MAX_CORNERS,0);
+			vector<float> featuresErrorsL(MAX_CORNERS,0);
 	
-			vector<Point2f> cornersNL(MAX_CORNERS);
+			vector<Point2f> cornersNL(MAX_CORNERS, Point2f(0,0));
 	
 			calcOpticalFlowPyrLK(ImLOG,ImLG,cornersOL,cornersNL,featuresFoundL,featuresErrorsL, Size(20,20),3);
 
@@ -222,16 +222,16 @@ public:
 			//repeat for right
 	
 	
-			vector<Point2f> cornersOR(MAX_CORNERS);
+			vector<Point2f> cornersOR(MAX_CORNERS, Point2f(0,0));
 	
 			goodFeaturesToTrack(ImROG,cornersOR,corner_count,0.01,5.0);
 	
 			//cornerSubPix(ImROG,cornersOR,Size(10,10),cvSize(-1,-1),TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
 	
-			vector<uchar> featuresFoundR(MAX_CORNERS);
-			vector<float> featuresErrorsR(MAX_CORNERS);
+			vector<uchar> featuresFoundR(MAX_CORNERS,0);
+			vector<float> featuresErrorsR(MAX_CORNERS,0);
 	
-			vector<Point2f> cornersNR(MAX_CORNERS);
+			vector<Point2f> cornersNR(MAX_CORNERS,Point2f(0,0));
 	
 			calcOpticalFlowPyrLK(ImROG,ImRG,cornersOR,cornersNR,featuresFoundR,featuresErrorsR, Size(20,20), 3);
 	
