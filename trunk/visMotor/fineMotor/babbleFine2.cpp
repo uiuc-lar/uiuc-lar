@@ -324,9 +324,12 @@ public:
 		//fixate exactly on hand to start
 		igaze->lookAtFixationPoint(commandCart);
 		done = false;
-		while(!done){
+		int i = 0;
+		while(!done && i < 5){
 			igaze->checkMotionDone(&done);
-		//	Time::delay(0.5);
+			//Time::delay(0.5);
+			sleep(1);
+			i++;
 		}
 
 		//camera calib params
@@ -403,6 +406,38 @@ public:
 			}
 		}
 
+		if(rmFile != "none"){
+			ifstream mapFile;
+			mapFile.open(rmFile.c_str());
+			string s;
+			//discard lines
+			getline(mapFile,s);
+			getline(mapFile,s);
+			for(int u = 0; u < U; u++){
+				for(int v= 0; v < V; v++){
+					for(int d = 0; d < D; d++){
+						//discard
+						getline(mapFile,s);
+						for(int k = 0; k < mmapSize; k++){
+							//discard
+							getline(mapFile,s);
+							//split the string
+							getline(mapFile,s);
+							istringstream iss(s);
+							double val;
+							for(int n = 0; n < usedJoints; n++){
+								iss >> val;
+								retMotMap[u][v][d]->weights[k][n] = val;
+							}
+						}
+					}
+				}
+			}
+			mapFile.close();
+		}
+
+		mapWrite("initRetMap.dat", true);
+
 		count = 0;
 
 
@@ -414,7 +449,6 @@ public:
 	void mapWrite(string fName, bool ret){
 		ofstream mapFile;
 		mapFile.open(fName.c_str());
-		//do something
 		if(ret){
 			mapFile << U << " " << V << " " << D << endl;
 			mapFile << mmapSize << " " << usedJoints << endl;
@@ -425,9 +459,11 @@ public:
 						for(int k = 0; k < mmapSize; k++){
 							mapFile << k << endl;
 							for(int n = 0; n < usedJoints; n++){
-								mapFile << (*retMotMap[u][v][d]).weights[k][n];
+								//printf("%f\t", retMotMap[u][v][d]->weights[k][n]);
+								mapFile << retMotMap[u][v][d]->weights[k][n];
 								mapFile << " ";
 							}
+							//printf("\n");
 							mapFile << endl;
 						}
 					}
@@ -837,8 +873,8 @@ public:
 			delete thr;
 			return false;
 		}
-		thr->mapWrite("initRetMap.dat", true);
-		thr->mapWrite("initEgoMap.dat", false);
+		//thr->mapWrite("initRetMap.dat", true);
+		//thr->mapWrite("initEgoMap.dat", false);
 		return true;
 	}
 
