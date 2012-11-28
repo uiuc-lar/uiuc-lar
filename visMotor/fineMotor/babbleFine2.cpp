@@ -195,6 +195,8 @@ public:
 		gsl_rng_env_setup();
 		Type = gsl_rng_default;
 		r = gsl_rng_alloc(Type);
+		srand(time(0));
+		gsl_rng_default_seed = rand();
 
 		igaze = NULL;
 

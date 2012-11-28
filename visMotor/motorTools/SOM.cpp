@@ -37,6 +37,7 @@ SOM::SOM(int k, int n) {
 	const gsl_rng_type *T;
 	gsl_rng *r;
 	gsl_rng_env_setup();
+	srand(time(0));
 	gsl_rng_default_seed = rand();
 	T = gsl_rng_default;
 	r = gsl_rng_alloc(T);
@@ -129,5 +130,9 @@ double SOM::mapDist (int i, int winner){
 	if (dist > 2){
 		return 0;
 	}
+}
+
+void SOM::setVals (int k, int n, double val){
+	weights[k][n] = val;
 }
 
