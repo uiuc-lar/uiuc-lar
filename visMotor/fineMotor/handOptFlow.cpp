@@ -239,8 +239,8 @@ public:
 			Mat errorsL = Mat(featuresErrorsL, true);
 			Mat errorsR = Mat(featuresErrorsR, true);
 			
-			Mat orderL = Mat(MAX_CORNERS,1,CV_8UC1);
-			Mat orderR = Mat(MAX_CORNERS,1,CV_8UC1);
+			Mat orderL = Mat(MAX_CORNERS,1,CV_8UC1,Scalar(0));
+			Mat orderR = Mat(MAX_CORNERS,1,CV_8UC1,Scalar(0));
 			
 			sortIdx(errorsL,orderL,CV_SORT_DESCENDING + CV_SORT_EVERY_COLUMN);
 			sortIdx(errorsR,orderR,CV_SORT_DESCENDING + CV_SORT_EVERY_COLUMN);

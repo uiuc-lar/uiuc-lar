@@ -412,6 +412,10 @@ public:
 			ifstream mapFile;
 			mapFile.open(rmFile.c_str());
 			string s;
+			//get training count
+			getline(mapFile,s);
+			istringstream cnt(s);
+			cnt >> count;
 			//discard lines
 			getline(mapFile,s);
 			getline(mapFile,s);
@@ -438,7 +442,39 @@ public:
 			mapFile.close();
 		}
 
-		mapWrite("initRetMap.dat", true);
+		if(emFile != "none"){
+			ifstream mapFile;
+			mapFile.open(emFile.c_str());
+			string s;
+			//get training count
+			getline(mapFile,s);
+			istringstream cnt(s);
+			cnt >> count;
+			//discard lines
+			getline(mapFile,s);
+			getline(mapFile,s);
+			for(int u = 0; u < U; u++){
+				for(int v= 0; v < V; v++){
+					for(int d = 0; d < D; d++){
+						//discard
+						getline(mapFile,s);
+						for(int k = 0; k < mmapSize; k++){
+							//discard
+							getline(mapFile,s);
+							//split the string
+							getline(mapFile,s);
+							istringstream iss(s);
+							double val;
+							for(int n = 0; n < usedJoints; n++){
+								iss >> val;
+								egoMotMap[u][v][d]->weights[k][n] = val;
+							}
+						}
+					}
+				}
+			}
+			mapFile.close();
+		}
 
 		count = 0;
 
@@ -452,6 +488,7 @@ public:
 		ofstream mapFile;
 		mapFile.open(fName.c_str());
 		if(ret){
+			mapFile << count << endl;
 			mapFile << U << " " << V << " " << D << endl;
 			mapFile << mmapSize << " " << usedJoints << endl;
 			for(int u = 0; u < U; u++){
@@ -473,6 +510,7 @@ public:
 			}
 		}
 		else{
+			mapFile << count << endl;
 			mapFile << Y << " " << P << " " << G << endl;
 			mapFile << mmapSize << " " << usedJoints << endl;
 			for(int y = 0; y < Y; y++){
@@ -720,7 +758,7 @@ public:
 						int wD = floor((mxCrVal-dMin)*rRes);
 						printf("Disparity: %.3lf\n", mxCrVal);
 						double step = 0.5*exp(-count*1.0/(5*U*V*D*mmapSize));
-						printf("Current step size %.3lf\n", step);
+						printf("rmap step size %.3lf\n", step);
 						if(!(wU < 0 || wU >= U || wV < 0 || wV >= V || wD < 0 || wD >= D)){
 							retMotMap[wU][wV][wD]->update(dMotor,step);
 							if(wU - 1 >= 0){
@@ -746,6 +784,8 @@ public:
 						int wY = floor((headAng(0)-azMin)*eRes);
 						int wP = floor((headAng(1)-elMin)*eRes);
 						int wG = floor((headAng(2)-verMin)*eRes);
+						step = 0.5*exp(-count*1.0/(5*Y*P*G*mmapSize));
+						printf("emap step size %.3lf\n", step);
 						if(!(wY < 0 || wY >= Y || wP < 0 || wP >= P || wG < 0 || wG >= G)){
 							egoMotMap[wY][wP][wG]->update(armJ,step);
 							if(wY - 1 >= 0){
