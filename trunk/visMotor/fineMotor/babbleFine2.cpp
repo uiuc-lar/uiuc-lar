@@ -167,13 +167,13 @@ public:
 		nlags = rf.check("nlags",Value(50)).asInt();
 
 		eRes = rf.check("eRes",Value(0.2)).asDouble();
+
 		rRes = rf.check("rRes",Value(0.2)).asDouble();
 
 		mmapSize = rf.check("mmapSize",Value(4)).asInt();
-		//mmapSize = rf.check("mmapSize",Value(2)).asInt(); //try this
-		//usedJoints = rf.check("usedJoints",Value(4)).asInt();
 		usedJoints = rf.check("usedJoints",Value(3)).asInt();
 
+		//i suppose this is just arbitrary
 		maxDiv = rf.check("maxDiv",Value(10)).asInt();
 
 		voffset = rf.check("voffset",Value(0)).asInt();
@@ -731,6 +731,8 @@ public:
 				printf("%i, %i; %i, %i\n", ul, vl, ur, vr);
 				if (ul > 0 && ul < uMax && ur > 0 && ur < uMax && vl > 0 && vl < vMax && vr > 0 && vr < vMax && mxCrVal > 0.01 && mxCrVal < 0.99){
 
+					yarp::sig::Vector oldHeadAng(3);
+					igaze->getAngles(oldHeadAng);
 					printf("Found hand? Fixating.\n");
 					yarp::sig::Vector pxl(2), pxr(2);
 					pxl[0] = ul; pxl[1] = vl;
@@ -753,10 +755,11 @@ public:
 						count++;
 
 						//train retinomotor map
-						int wU = floor((ur-uMin)*rRes);
-						int wV = floor((vr-vMin)*rRes);
-						int wD = floor((mxCrVal-dMin)*rRes);
-						printf("Disparity: %.3lf\n", mxCrVal);
+						int wU = floor((ul-uMin)*rRes);
+						int wV = floor((vl-vMin)*rRes);
+						//this is a hack
+						int wD = floor((mxCrVal*10-dMin)*rRes);
+						//printf("Disparity: %.3lf\n", mxCrVal);
 						double step = 0.5*exp(-count*1.0/(5*U*V*D*mmapSize));
 						printf("rmap step size %.3lf\n", step);
 						if(!(wU < 0 || wU >= U || wV < 0 || wV >= V || wD < 0 || wD >= D)){
@@ -915,8 +918,8 @@ public:
 			delete thr;
 			return false;
 		}
-		//thr->mapWrite("initRetMap.dat", true);
-		//thr->mapWrite("initEgoMap.dat", false);
+		thr->mapWrite("initRetMap.dat", true);
+		thr->mapWrite("initEgoMap.dat", false);
 		return true;
 	}
 

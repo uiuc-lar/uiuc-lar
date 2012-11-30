@@ -37,7 +37,7 @@ SOM::SOM(int k, int n) {
 	const gsl_rng_type *T;
 	gsl_rng *r;
 	gsl_rng_env_setup();
-	srand(time(0));
+	//srand(time(0));
 	gsl_rng_default_seed = rand();
 	T = gsl_rng_default;
 	r = gsl_rng_alloc(T);
@@ -122,7 +122,7 @@ double SOM::mapDist (int i, int winner){
 		return 1;
 	}
 	if (dist == 1){
-		return 0.5;
+		return 0.25;
 	}
 	if (dist == 2){
 		return 0;
