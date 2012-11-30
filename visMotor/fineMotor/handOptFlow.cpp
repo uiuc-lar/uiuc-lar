@@ -256,90 +256,89 @@ public:
 			//Mat errorsL = Mat(featuresErrorsL,true);
 			//Mat errorsR = Mat(featuresErrorsR,true);
 
-			Mat errorsL = Mat(num_feat_L,1,CV_32F);
-			Mat errorsR = Mat(num_feat_R,1,CV_32F);
+			if(num_feat_L > 0 && num_feat_R > 0){
 
-			//Mat orderL = Mat::zeros(MAX_CORNERS,1,CV_8UC1);
-			//Mat orderR = Mat::zeros(MAX_CORNERS,1,CV_8UC1);
+
+				Mat errorsL = Mat(num_feat_L,1,CV_32F);
+				Mat errorsR = Mat(num_feat_R,1,CV_32F);
+
+				//Mat orderL = Mat::zeros(MAX_CORNERS,1,CV_8UC1);
+				//Mat orderR = Mat::zeros(MAX_CORNERS,1,CV_8UC1);
 			
-			Mat orderL = Mat::zeros(num_feat_L,1,CV_8UC1);
-			Mat orderR = Mat::zeros(num_feat_R,1,CV_8UC1);
+				Mat orderL = Mat::zeros(num_feat_L,1,CV_8UC1);
+				Mat orderR = Mat::zeros(num_feat_R,1,CV_8UC1);
 			
-			sortIdx(errorsL,orderL,CV_SORT_DESCENDING + CV_SORT_EVERY_COLUMN);
-			sortIdx(errorsR,orderR,CV_SORT_DESCENDING + CV_SORT_EVERY_COLUMN);
+				sortIdx(errorsL,orderL,CV_SORT_DESCENDING + CV_SORT_EVERY_COLUMN);
+				sortIdx(errorsR,orderR,CV_SORT_DESCENDING + CV_SORT_EVERY_COLUMN);
 			
 			
-			//produce salience images
+				//produce salience images
 	
 
 
-			Mat salValL = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
-			Mat salValR = Mat::zeros(imgR->height(), imgR->width(), CV_32F);
+				Mat salValL = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
+				Mat salValR = Mat::zeros(imgR->height(), imgR->width(), CV_32F);
 
-			//for now, all salient corners get equal weight
-			//for(int i = 0; i < MAX_CORNERS; i++){
-			for(int i = 0; i < num_feat_L; i++){
-				if(featuresFoundL[orderL.at<int>(i)]){
-					if(errorsL.at<float>(i) > DISP_THRESH){
-						//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8UC3);
-						//circle(tmp,cornersNL[orderL.at<int>(i)],20,Scalar(PEAK_VAL,PEAK_VAL,PEAK_VAL,0),-1);
-						Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
-						//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8U);
-						circle(tmp,cornersNL[orderL.at<int>(i)],20,Scalar(PEAK_VAL),-1);
-						GaussianBlur(tmp,tmp,Size(29,29),0);
-						//add(tmp,salImL,salImL);
-						add(tmp,salValL,salValL);
+				//for now, all salient corners get equal weight
+				//for(int i = 0; i < MAX_CORNERS; i++){
+				for(int i = 0; i < num_feat_L; i++){
+					if(featuresFoundL[orderL.at<int>(i)]){
+						if(errorsL.at<float>(i) > DISP_THRESH){
+							//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8UC3);
+							//circle(tmp,cornersNL[orderL.at<int>(i)],20,Scalar(PEAK_VAL,PEAK_VAL,PEAK_VAL,0),-1);
+							Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
+							//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8U);
+							circle(tmp,cornersNL[orderL.at<int>(i)],20,Scalar(PEAK_VAL),-1);
+							GaussianBlur(tmp,tmp,Size(29,29),0);
+							//add(tmp,salImL,salImL);
+							add(tmp,salValL,salValL);
+						}
 					}
 				}
-			}
-			add(salValL,*oldSalL*DECAY,salValL);
-			
-			//for(int i = 0; i < MAX_CORNERS; i++){
-			for(int i = 0; i < num_feat_R; i++){
-				if(featuresFoundR[orderR.at<int>(i)]){
-					if(errorsR.at<float>(i) > DISP_THRESH){
-						//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8UC3);
-						//circle(tmp,cornersNR[orderR.at<int>(i)],20,Scalar(PEAK_VAL,PEAK_VAL,PEAK_VAL,0),-1);
-						//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8U);
-						Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
-						circle(tmp,cornersNR[orderR.at<int>(i)],20,Scalar(PEAK_VAL),-1);
-						GaussianBlur(tmp,tmp,Size(29,29),0);
-						add(tmp,salValR,salValR);
+				add(salValL,*oldSalL*DECAY,salValL);
+
+				//for(int i = 0; i < MAX_CORNERS; i++){
+				for(int i = 0; i < num_feat_R; i++){
+					if(featuresFoundR[orderR.at<int>(i)]){
+						if(errorsR.at<float>(i) > DISP_THRESH){
+							//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8UC3);
+							//circle(tmp,cornersNR[orderR.at<int>(i)],20,Scalar(PEAK_VAL,PEAK_VAL,PEAK_VAL,0),-1);
+							//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8U);
+							Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
+							circle(tmp,cornersNR[orderR.at<int>(i)],20,Scalar(PEAK_VAL),-1);
+							GaussianBlur(tmp,tmp,Size(29,29),0);
+							add(tmp,salValR,salValR);
+						}
 					}
 				}
+				add(salValR,*oldSalR*DECAY,salValR);
+
+				*oldSalL = salValL;
+				*oldSalR = salValR;
+
+				salValR.convertTo(salImR,CV_8U);
+				salValL.convertTo(salImL,CV_8U);
+
+				//convert back to iplImage
+
+				//IplImage salLIpl = *salImL;
+				//IplImage salRIpl = *salImR;
+
+				//void* sL = &salLIpl;
+				//void* sR = &salRIpl;
+
+				//ImageOf<PixelRgb> salLOut = salL->prepare();
+				//salLOut.wrapIplImage(sL);
+				//ImageOf<PixelRgb> salROut = salR->prepare();
+				//salROut.wrapIplImage(sR);
+
+				//salLOut.resize(*imgL);
+				//salROut.resize(*imgR);
+
+				salL->write();
+				salR->write();
 			}
-			add(salValR,*oldSalR*DECAY,salValR);
 
-			*oldSalL = salValL;
-			*oldSalR = salValR;
-
-			salValR.convertTo(salImR,CV_8U);
-			salValL.convertTo(salImL,CV_8U);
-
-			//convert back to iplImage
-			
-			//IplImage salLIpl = *salImL;
-			//IplImage salRIpl = *salImR;
-			
-			//void* sL = &salLIpl;
-			//void* sR = &salRIpl;
-			
-			//ImageOf<PixelRgb> salLOut = salL->prepare();
-			//salLOut.wrapIplImage(sL);
-			//ImageOf<PixelRgb> salROut = salR->prepare();
-			//salROut.wrapIplImage(sR);
-			
-			//salLOut.resize(*imgL);
-			//salROut.resize(*imgR);
-			
-			salL->write();
-			salR->write();
-
-			//salPeakL->write();
-			//salPeakR->write();
-		
-			//delete ImL, ImR;
-			//delete salImL, salImR;
 			
 			*imgLO = *imgL;
 			*imgRO = *imgR;
