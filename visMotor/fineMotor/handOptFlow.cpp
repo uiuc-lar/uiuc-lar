@@ -229,18 +229,41 @@ public:
 			//cornerSubPix(ImROG,cornersOR,Size(10,10),cvSize(-1,-1),TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
 	
 			vector<uchar> featuresFoundR(MAX_CORNERS,0);
-			vector<float> featuresErrorsR(MAX_CORNERS,0);
+			vector<float> featuresErrorsR(MAX_CORNERS,0.0);
 	
 			vector<Point2f> cornersNR(MAX_CORNERS,Point2f(0,0));
 	
 			calcOpticalFlowPyrLK(ImROG,ImRG,cornersOR,cornersNR,featuresFoundR,featuresErrorsR, Size(20,20), 3);
 	
+			//use only found features
+			int num_feat_L = 0;
+			for(int i = 0; i < MAX_CORNERS; i++){
+				if(featuresFoundL[i]){
+					num_feat_L = i;
+				}
+			}
+
+			int num_feat_R = 0;
+			for(int i = 0; i < MAX_CORNERS; i++){
+				if(featuresFoundR[i]){
+					num_feat_R = i;
+				}
+			}
+
+
 			//calculate most salient points, in order
-			Mat errorsL = Mat(featuresErrorsL,true);
-			Mat errorsR = Mat(featuresErrorsR,true);
+
+			//Mat errorsL = Mat(featuresErrorsL,true);
+			//Mat errorsR = Mat(featuresErrorsR,true);
+
+			Mat errorsL = Mat(num_feat_L,1,CV_32F);
+			Mat errorsR = Mat(num_feat_R,1,CV_32F);
+
+			//Mat orderL = Mat::zeros(MAX_CORNERS,1,CV_8UC1);
+			//Mat orderR = Mat::zeros(MAX_CORNERS,1,CV_8UC1);
 			
-			Mat orderL = Mat::zeros(MAX_CORNERS,1,CV_8UC1);
-			Mat orderR = Mat::zeros(MAX_CORNERS,1,CV_8UC1);
+			Mat orderL = Mat::zeros(num_feat_L,1,CV_8UC1);
+			Mat orderR = Mat::zeros(num_feat_R,1,CV_8UC1);
 			
 			sortIdx(errorsL,orderL,CV_SORT_DESCENDING + CV_SORT_EVERY_COLUMN);
 			sortIdx(errorsR,orderR,CV_SORT_DESCENDING + CV_SORT_EVERY_COLUMN);
@@ -252,13 +275,10 @@ public:
 
 			Mat salValL = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
 			Mat salValR = Mat::zeros(imgR->height(), imgR->width(), CV_32F);
-			//salImL = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
-			//salImR = Mat::zeros(imgR->height(), imgR->width(), CV_32F);
-			//salImL = Mat::zeros(imgL->height(), imgL->width(), CV_8U);
-			//salImR = Mat::zeros(imgR->height(), imgR->width(), CV_8U);
 
 			//for now, all salient corners get equal weight
-			for(int i = 0; i < MAX_CORNERS; i++){
+			//for(int i = 0; i < MAX_CORNERS; i++){
+			for(int i = 0; i < num_feat_L; i++){
 				if(featuresFoundL[orderL.at<int>(i)]){
 					if(errorsL.at<float>(i) > DISP_THRESH){
 						//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8UC3);
@@ -274,7 +294,8 @@ public:
 			}
 			add(salValL,*oldSalL*DECAY,salValL);
 			
-			for(int i = 0; i < MAX_CORNERS; i++){
+			//for(int i = 0; i < MAX_CORNERS; i++){
+			for(int i = 0; i < num_feat_R; i++){
 				if(featuresFoundR[orderR.at<int>(i)]){
 					if(errorsR.at<float>(i) > DISP_THRESH){
 						//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8UC3);
