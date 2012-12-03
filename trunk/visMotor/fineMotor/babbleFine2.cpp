@@ -453,9 +453,9 @@ public:
 			//discard lines
 			getline(mapFile,s);
 			getline(mapFile,s);
-			for(int u = 0; u < U; u++){
-				for(int v= 0; v < V; v++){
-					for(int d = 0; d < D; d++){
+			for(int y = 0; y < Y; y++){
+				for(int p= 0; p < P; p++){
+					for(int g = 0; g < G; g++){
 						//discard
 						getline(mapFile,s);
 						for(int k = 0; k < mmapSize; k++){
@@ -467,7 +467,7 @@ public:
 							double val;
 							for(int n = 0; n < usedJoints; n++){
 								iss >> val;
-								egoMotMap[u][v][d]->weights[k][n] = val;
+								egoMotMap[y][p][g]->weights[k][n] = val;
 							}
 						}
 					}
@@ -476,7 +476,7 @@ public:
 			mapFile.close();
 		}
 
-		count = 0;
+		//count = 0;
 
 
 		return true;
