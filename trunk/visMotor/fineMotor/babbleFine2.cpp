@@ -277,10 +277,17 @@ public:
 		*command = 0;
 
 		//set the arm joints to "middle" values
-		(*command)[0] = -45;
-		(*command)[1] = 45;
-		(*command)[2] = 0;
-		(*command)[3] = 45;
+		//(*command)[0] = -45;
+		//(*command)[1] = 45;
+		//(*command)[2] = 0;
+		//(*command)[3] = 45;
+
+		//set the arm to a random value
+		(*command)[0] = 0 + -60*gsl_rng_uniform(r);
+		(*command)[0] = 0 + 60*gsl_rng_uniform(r);
+		(*command)[0] = 0;
+		(*command)[0] = 10 + 80*gsl_rng_uniform(r);
+
 
 		//flex hand
 		(*command)[4] = 60;
