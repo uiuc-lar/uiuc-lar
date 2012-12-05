@@ -283,10 +283,10 @@ public:
 		//(*command)[3] = 45;
 
 		//set the arm to a random value
-		(*command)[0] = 0 + -60*gsl_rng_uniform(r);
-		(*command)[0] = 0 + 60*gsl_rng_uniform(r);
-		(*command)[0] = 0;
-		(*command)[0] = 10 + 80*gsl_rng_uniform(r);
+		(*command)[0] = -60 + 35*gsl_rng_uniform(r);
+		(*command)[1] = 10 + 90*gsl_rng_uniform(r);
+		(*command)[2] = 0;
+		(*command)[3] = 10 + 90*gsl_rng_uniform(r);
 
 
 		//flex hand
@@ -299,13 +299,13 @@ public:
 		(*command)[14] = 15;
 		(*command)[15] = 15;
 
-		pos->positionMove(command->data());
+		//pos->positionMove(command->data());
 
-		bool done = false;
-		while (!done){
-			pos->checkMotionDone(&done);
+		//bool done = false;
+		//while (!done){
+			//pos->checkMotionDone(&done);
 		//	Time::delay(0.1);
-		}
+		//}
 
 
 		bool fwCvOn = 0;
@@ -328,6 +328,24 @@ public:
 		yarp::sig::Vector commandCart(3);
 		for (int i = 0; i < 3; i++){
 			commandCart[i] = pred.get(i).asDouble();
+		}
+
+		double rad = sqrt(commandCart[0]*commandCart[0]+commandCart[1]*commandCart[1]);
+
+		if(rad < 0.3){
+			(*command)[0] = -45;
+			(*command)[1] = 45;
+			(*command)[2] = 0;
+			(*command)[3] = 45;
+		}
+
+
+		pos->positionMove(command->data());
+
+		bool done = false;
+		while (!done){
+			pos->checkMotionDone(&done);
+			Time::delay(0.1);
 		}
 
 		//fixate exactly on hand to start
