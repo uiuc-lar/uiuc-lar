@@ -433,6 +433,8 @@ public:
 			}
 		}
 
+		count = 0;
+
 		if(rmFile != "none"){
 			ifstream mapFile;
 			mapFile.open(rmFile.c_str());
