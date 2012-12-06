@@ -16,8 +16,10 @@ SET(CMAKE_CXX_FLAGS_DEBUG "-g")
 #ADD_LIBRARY(som SOM.cpp)
 
 ADD_EXECUTABLE(babbleFine babbleFine.cpp)
+ADD_EXECUTABLE(babbleFine2 babbleFine2.cpp)
 ADD_EXECUTABLE(handOptFlow handOptFlow.cpp)
 
 TARGET_LINK_LIBRARIES(babbleFine ${YARP_LIBRARIES} ${ICUB_LIBRARIES} ${OpenCV_LIBRARIES} icubmod som)
 TARGET_LINK_LIBRARIES(handOptFlow ${YARP_LIBRARIES} ${ICUB_LIBRARIES} ${OpenCV_LIBRARIES} icubmod som)
-INSTALL(TARGETS babbleFine handOptFlow DESTINATION bin)
+TARGET_LINK_LIBRARIES(babbleFine2 ${YARP_LIBRARIES} ${ICUB_LIBRARIES} ${OpenCV_LIBRARIES} icubmod som)
+INSTALL(TARGETS babbleFine handOptFlow babbleFine2 DESTINATION bin)

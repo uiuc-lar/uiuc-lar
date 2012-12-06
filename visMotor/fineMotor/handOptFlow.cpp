@@ -38,10 +38,16 @@
 #include <math.h>
 #include <iCub/ctrl/math.h>
 
-const int MAX_CORNERS = 10;
+const int MAX_CORNERS = 20;
+const int MAX_FLOW = 10;
+const float QUAL_LEVEL = 0.01;
+const int MIN_DIST = 5;
+const int WIN_SIZE = 20;
+const int MAX_LEVEL = 3;
 const float DISP_THRESH = 0.0;
 const int PEAK_VAL = 50;
 const float DECAY = 0.75;
+const int SAL_BLUR = 29;
 
 using namespace std;
 using namespace cv;
@@ -207,7 +213,7 @@ public:
 			int corner_count = MAX_CORNERS;
 			vector<Point2f> cornersOL(MAX_CORNERS, Point2f(0,0));
 	
-			goodFeaturesToTrack(ImLOG,cornersOL,corner_count,0.01,5.0);
+			goodFeaturesToTrack(ImLOG,cornersOL,corner_count,QUAL_LEVEL,MIN_DIST);
 
 			//cornerSubPix(ImLOG,cornersOL,Size(10,10),Size(-1,-1),TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
 			
@@ -216,7 +222,7 @@ public:
 	
 			vector<Point2f> cornersNL(MAX_CORNERS, Point2f(0,0));
 	
-			calcOpticalFlowPyrLK(ImLOG,ImLG,cornersOL,cornersNL,featuresFoundL,featuresErrorsL, Size(20,20),3);
+			calcOpticalFlowPyrLK(ImLOG,ImLG,cornersOL,cornersNL,featuresFoundL,featuresErrorsL, Size(WIN_SIZE,WIN_SIZE),MAX_LEVEL);
 
 	
 			//repeat for right
@@ -224,7 +230,7 @@ public:
 	
 			vector<Point2f> cornersOR(MAX_CORNERS, Point2f(0,0));
 	
-			goodFeaturesToTrack(ImROG,cornersOR,corner_count,0.01,5.0);
+			goodFeaturesToTrack(ImROG,cornersOR,corner_count,QUAL_LEVEL,MIN_DIST);
 	
 			//cornerSubPix(ImROG,cornersOR,Size(10,10),cvSize(-1,-1),TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
 	
@@ -233,7 +239,7 @@ public:
 	
 			vector<Point2f> cornersNR(MAX_CORNERS,Point2f(0,0));
 	
-			calcOpticalFlowPyrLK(ImROG,ImRG,cornersOR,cornersNR,featuresFoundR,featuresErrorsR, Size(20,20), 3);
+			calcOpticalFlowPyrLK(ImROG,ImRG,cornersOR,cornersNR,featuresFoundR,featuresErrorsR, Size(WIN_SIZE,WIN_SIZE),MAX_LEVEL);
 	
 			//use only found features
 			int num_feat_L = 0;
@@ -279,17 +285,16 @@ public:
 				Mat salValL = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
 				Mat salValR = Mat::zeros(imgR->height(), imgR->width(), CV_32F);
 
-				//for now, all salient corners get equal weight
-				//for(int i = 0; i < MAX_CORNERS; i++){
-				for(int i = 0; i < num_feat_L; i++){
+				int chooseFeatL = min(num_feat_L,MAX_FLOW);
+				for(int i = 0; i < chooseFeatL; i++){
 					if(featuresFoundL[orderL.at<int>(i)]){
-						if(errorsL.at<float>(i) > DISP_THRESH){
+						if(errorsL.at<float>(orderL.at<int>(i)) > DISP_THRESH){
 							//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8UC3);
 							//circle(tmp,cornersNL[orderL.at<int>(i)],20,Scalar(PEAK_VAL,PEAK_VAL,PEAK_VAL,0),-1);
 							Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
 							//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8U);
 							circle(tmp,cornersNL[orderL.at<int>(i)],20,Scalar(PEAK_VAL),-1);
-							GaussianBlur(tmp,tmp,Size(29,29),0);
+							GaussianBlur(tmp,tmp,Size(SAL_BLUR,SAL_BLUR),0);
 							//add(tmp,salImL,salImL);
 							add(tmp,salValL,salValL);
 						}
@@ -297,16 +302,16 @@ public:
 				}
 				add(salValL,*oldSalL*DECAY,salValL);
 
-				//for(int i = 0; i < MAX_CORNERS; i++){
-				for(int i = 0; i < num_feat_R; i++){
+				int chooseFeatR = min(num_feat_R,MAX_FLOW);
+				for(int i = 0; i < chooseFeatR; i++){
 					if(featuresFoundR[orderR.at<int>(i)]){
-						if(errorsR.at<float>(i) > DISP_THRESH){
+						if(errorsR.at<float>(orderR.at<int>(i)) > DISP_THRESH){
 							//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8UC3);
 							//circle(tmp,cornersNR[orderR.at<int>(i)],20,Scalar(PEAK_VAL,PEAK_VAL,PEAK_VAL,0),-1);
 							//Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_8U);
 							Mat tmp = Mat::zeros(imgL->height(), imgL->width(), CV_32F);
 							circle(tmp,cornersNR[orderR.at<int>(i)],20,Scalar(PEAK_VAL),-1);
-							GaussianBlur(tmp,tmp,Size(29,29),0);
+							GaussianBlur(tmp,tmp,Size(SAL_BLUR,SAL_BLUR),0);
 							add(tmp,salValR,salValR);
 						}
 					}
