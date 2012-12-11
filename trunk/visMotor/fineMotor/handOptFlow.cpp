@@ -38,16 +38,16 @@
 #include <math.h>
 #include <iCub/ctrl/math.h>
 
-const int MAX_CORNERS = 20;
-const int MAX_FLOW = 10;
+const int MAX_CORNERS = 30;
+const int MAX_FLOW = 15;
 const float QUAL_LEVEL = 0.01;
 const int MIN_DIST = 5;
 const int WIN_SIZE = 20;
-const int MAX_LEVEL = 3;
+const int MAX_LEVEL = 5;
 const float DISP_THRESH = 0.0;
-const int PEAK_VAL = 50;
+const int PEAK_VAL = 30;
 const float DECAY = 0.75;
-const int SAL_BLUR = 29;
+const int SAL_BLUR = 19;
 
 using namespace std;
 using namespace cv;
@@ -215,7 +215,7 @@ public:
 	
 			goodFeaturesToTrack(ImLOG,cornersOL,corner_count,QUAL_LEVEL,MIN_DIST);
 
-			//cornerSubPix(ImLOG,cornersOL,Size(10,10),Size(-1,-1),TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
+			cornerSubPix(ImLOG,cornersOL,Size(10,10),Size(-1,-1),TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
 			
 			vector<uchar> featuresFoundL(MAX_CORNERS,0);
 			vector<float> featuresErrorsL(MAX_CORNERS,0);
@@ -232,7 +232,7 @@ public:
 	
 			goodFeaturesToTrack(ImROG,cornersOR,corner_count,QUAL_LEVEL,MIN_DIST);
 	
-			//cornerSubPix(ImROG,cornersOR,Size(10,10),cvSize(-1,-1),TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
+			cornerSubPix(ImROG,cornersOR,Size(10,10),cvSize(-1,-1),TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,20,0.03));
 	
 			vector<uchar> featuresFoundR(MAX_CORNERS,0);
 			vector<float> featuresErrorsR(MAX_CORNERS,0.0);
