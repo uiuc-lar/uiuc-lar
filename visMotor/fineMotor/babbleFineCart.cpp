@@ -8,6 +8,8 @@
  * fixate on hand again
  *
  * this version builds a model between cartesian location of hand and joint configuration
+ * 
+ * trainFreqXXX.dat contains how many times each unit has been trained
  *
  */
 
@@ -70,6 +72,7 @@ protected:
 
 	//load initial map from file
 	string mFile;
+	string cFile;
 
     //camera projection matrix/params
     Mat Pl;
@@ -120,6 +123,9 @@ protected:
 	int maxDiv;
 
 	SOM ****egoMotMap;
+	
+	//training counts for units
+	double ***numTimes;
 
 	bool realRobot;
 
@@ -141,6 +147,7 @@ public:
 		arm = rf.check("arm", Value("left")).asString().c_str();
 
 		mFile = rf.check("mFile",Value("none")).asString().c_str();
+		cFile = rf.check("cFile",Value("none")).asString().c_str();
 
 		//neckTT = rf.check("nt",Value(1.0)).asDouble();
 		neckTT = rf.check("nt",Value(3.0)).asDouble();
@@ -395,6 +402,17 @@ public:
 			}
 		}
 
+		numTimes = new double**[X];
+		for (int x = 0; x < X; x++){
+			numTimes[x] = new double*[Y];
+			for (int y = 0; y < Y; y++){
+				numTimes[x][y] = new double[Z];
+				for (int z = 0; z < Z; z++){
+					numTimes[x][y][z] = 0;
+				}
+			}
+		}
+		
 		count = 0;
 		if(mFile != "none"){
 			ifstream mapFile;
@@ -430,9 +448,35 @@ public:
 			mapFile.close();
 		}
 
-		//count = 0;
+		//ADD HERE: read in counts from a file and update numTimes
+		if(cFile != "none"){
+			ifstream countFile;
+			countFile.open(cFile.c_str());
+			string s;
+			//get training count
+			getline(countFile,s);
+			istringstream cnt(s);
+			cnt >> count;
+			//discard lines
+			getline(countFile,s);
+			getline(countFile,s);
+			for(int x = 0; x < X; x++){
+				for(int y = 0; y < Y; y++){
+					for(int z = 0; z < Z; z++){
+						//discard
+						getline(countFile,s);
+						getline(countFile,s);
+						istringstream iss(s);
+						double val;
+						iss >> val;
+						numTimes[x][y][z] = val;
+					}
+				}
+			}
+			countFile.close();
+		}
 
-
+		
 		return true;
 	}
 
@@ -459,6 +503,24 @@ public:
 			}
 		}
 		mapFile.close();
+		return;
+	}
+	
+	void countWrite(string fName){
+		ofstream countFile;
+		countFile.open(fName.c_str());
+		countFile << count << endl;
+		countFile << X << " " << Y << " " << Z << endl;
+		countFile << mmapSize << " " << usedJoints << endl;
+		for(int x = 0; x < X; x++){
+			for(int y = 0; y < Y; y++){
+				for(int z = 0; z < Z; z++){
+					countFile << x << " " << y << " " << z << endl;
+					countFile << numTimes[x][y][z] << endl;
+				}
+			}
+		}
+		countFile.close();
 		return;
 	}
 
@@ -683,28 +745,39 @@ public:
 						printf("step size %.3lf\n", step);
 						if(!(wX < 0 || wX >= X || wY < 0 || wY >= Y || wZ < 0 || wZ >= Z)){
 							egoMotMap[wX][wY][wZ]->update(armJ,step);
+							//UPDATE COUNTS
+							numTimes[wX][wY][wZ]++;
 							if(wX - 1 >= 0){
 								egoMotMap[wX-1][wY][wZ]->update(armJ,step*0.25);
+								//UPDATE COUNTS (by .25)
+								numTimes[wX-1][wY][wZ] += 0.25;
 							}
 							if(wX + 1 < X){
 								egoMotMap[wX+1][wY][wZ]->update(armJ,step*0.25);
+								numTimes[wX+1][wY][wZ] += 0.25;
 							}
 							if(wY - 1 >= 0){
 								egoMotMap[wX][wY-1][wZ]->update(armJ,step*0.25);
+								numTimes[wX][wY-1][wZ] += 0.25;
 							}
 							if(wY + 1 < Y){
 								egoMotMap[wX][wY+1][wZ]->update(armJ,step*0.25);
+								numTimes[wX][wY+1][wZ] += 0.25;
 							}
 							if(wZ - 1 >= 0){
 								egoMotMap[wX][wY][wZ-1]->update(armJ,step*0.25);
+								numTimes[wX][wY][wZ-1] += 0.25;
 							}
 							if(wZ + 1 < Z){
 								egoMotMap[wX][wY][wZ+1]->update(armJ,step*0.25);
+								numTimes[wX][wY][wZ+1] += 0.25;
 							}
 						}
 						if(count%100 == 0){
 							string fName = "cMap" + boost::lexical_cast<string>(count) + ".dat";
 							mapWrite(fName);
+							//WRITE COUNTS
+							fName = "cCounts" + boost::lexical_cast<string>(count) + ".dat";
 						}
 						printf("Count: %i\n", count);
 					}
