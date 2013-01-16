@@ -105,9 +105,9 @@ protected:
 
 	//some SOM parameters
 
-	int xMin; int xMax;
-	int yMin; int yMax;
-	int zMin; int zMax;
+	double xMin; double xMax;
+	double yMin; double yMax;
+	double zMin; double zMax;
 
 	//res = neurons/pixel
 	double res;
@@ -149,7 +149,7 @@ public:
 		wsize = (int)rf.check("wsize",Value(25)).asInt()/2;
 		nlags = rf.check("nlags",Value(50)).asInt();
 
-		res = rf.check("res",Value(0.2)).asDouble();
+		res = rf.check("res",Value(20)).asDouble();
 
 		mmapSize = rf.check("mmapSize",Value(4)).asInt();
 		usedJoints = rf.check("usedJoints",Value(3)).asInt();
@@ -371,9 +371,9 @@ public:
 
 
 		//PLACEHOLDER LIMITS CHANGE ME
-		xMin = 0; xMax = 1;
-		yMin = 0; yMax = 1;
-		zMin = 0; zMax = 1;
+		xMin = -1.0; xMax = 0.0;
+		yMin = -1.0; yMax = 0.0;
+		zMin = -0.5; zMax = 0.5;
 
 
 
