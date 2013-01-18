@@ -46,8 +46,8 @@ const int WIN_SIZE = 20;
 const int MAX_LEVEL = 5;
 const float DISP_THRESH = 0.0;
 const int PEAK_VAL = 30;
-const float DECAY = 0.75;
-const int SAL_BLUR = 19;
+const float DECAY = 0.85;
+const int SAL_BLUR = 11;
 
 using namespace std;
 using namespace cv;
