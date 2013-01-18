@@ -349,9 +349,11 @@ public:
 						headAng[2] = (double)g/eRes + verMin;
 						igaze->lookAtAbsAngles(headAng);
 						bool done = false;
-						while(!done){
+						int wait = 0;
+						while(!done && wait < 5){
 							igaze->checkMotionDone(&done);
 							sleep(1);
+							wait++;
 						}
 						yarp::sig::Vector realCart(3);
 						igaze->getFixationPoint(realCart);

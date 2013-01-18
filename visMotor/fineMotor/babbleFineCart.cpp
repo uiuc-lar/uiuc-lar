@@ -778,6 +778,7 @@ public:
 							mapWrite(fName);
 							//WRITE COUNTS
 							fName = "cCounts" + boost::lexical_cast<string>(count) + ".dat";
+							countWrite(fName);
 						}
 						printf("Count: %i\n", count);
 					}
