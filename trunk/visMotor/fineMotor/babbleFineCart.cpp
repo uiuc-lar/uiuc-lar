@@ -265,16 +265,16 @@ public:
 		*command = 0;
 
 		//set the arm joints to "middle" values
-		//(*command)[0] = -45;
-		//(*command)[1] = 45;
-		//(*command)[2] = 0;
-		//(*command)[3] = 45;
+		(*command)[0] = -45;
+		(*command)[1] = 45;
+		(*command)[2] = 0;
+		(*command)[3] = 45;
 
 		//set the arm to a random value
-		(*command)[0] = -60 + 35*gsl_rng_uniform(r);
-		(*command)[1] = 10 + 90*gsl_rng_uniform(r);
-		(*command)[2] = 0;
-		(*command)[3] = 10 + 90*gsl_rng_uniform(r);
+		//(*command)[0] = -60 + 35*gsl_rng_uniform(r);
+		//(*command)[1] = 10 + 90*gsl_rng_uniform(r);
+		//(*command)[2] = 0;
+		//(*command)[3] = 10 + 90*gsl_rng_uniform(r);
 
 
 		//flex hand
@@ -331,9 +331,11 @@ public:
 		pos->positionMove(command->data());
 
 		bool done = false;
-		while (!done){
+		int j = 0;
+		while (!done && j < 5){
 			pos->checkMotionDone(&done);
-			Time::delay(0.1);
+			sleep(1);
+			j++;
 		}
 
 		//fixate exactly on hand to start
@@ -572,9 +574,11 @@ public:
 				pos->positionMove(command->data());
 				//Time::delay(1);
 				bool done = false;
-				while(!done){
+				int i = 0;
+				while(!done && i < 2){
 					pos->checkMotionDone(&done);
-					//Time::delay(1);
+					i++;
+					sleep(1);
 				}
 
 				//logan's code
@@ -711,7 +715,8 @@ public:
 				//fixate
 				//fix the fixation on environmental residuals
 				printf("%i, %i; %i, %i\n", ul, vl, ur, vr);
-				if (ul > 0 && ul < cxl*2 && ur > 0 && ur < cxl*2 && vl > 0 && vl < cyl*2 && vr > 0 && vr < cyl*2 && mxCrVal > 0.01 && mxCrVal < 0.99){
+				//if (ul > 0 && ul < cxl*2 && ur > 0 && ur < cxl*2 && vl > 0 && vl < cyl*2 && vr > 0 && vr < cyl*2 && mxCrVal > 0.01 && mxCrVal < 0.99){
+				if(ul >= 0 && ul <= cxl*2 && ur >= 0 && ur < cxl*2 && vl >= 0 && vl <= cyl*2 && vr >= 0 && vr < cyl*2){ 
 
 					yarp::sig::Vector oldHeadAng(3);
 					igaze->getAngles(oldHeadAng);
