@@ -55,8 +55,8 @@ SOM::SOM(int k, int n) {
 	for (int i = 0; i < k; i++){
 		weights[i][0] = -60 + 35*gsl_rng_uniform(r);
 		weights[i][1] = 10 + 90*gsl_rng_uniform(r);
-		//weights[i][2] = 60 - 60*gsl_rng_uniform(r);
-		weights[i][2] = 10 + 90*gsl_rng_uniform(r);
+		weights[i][2] = 60 - 60*gsl_rng_uniform(r);
+		weights[i][3] = 10 + 90*gsl_rng_uniform(r);
 	}
 
 	gsl_rng_free(r);
