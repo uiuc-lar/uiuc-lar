@@ -748,7 +748,7 @@ public:
 									pxl[0] = ul; pxl[1] = vl;
 									pxr[0] = ur; pxr[1] = vr;
 									//igaze->lookAtStereoPixels(pxl, pxr);
-									igaze->lookAtMono(0,pxl,0.4);
+									igaze->lookAtMonoPixel(0,pxl,0.4);
 									done = false;
 									int i = 0;
 									while(!done && i < 2){
@@ -817,12 +817,20 @@ public:
 										//yarp::sig::Vector fixR(3);
 										//fixR[0] = xR; fixR[1] = yR; fixR[2] = zR;
 										//igaze->lookAtFixationPoint(fixR);
-										double dAz = -5 + 10*gsl_rng_uniform(r);
-										double dEl = -5 + 10*gsl_rng_uniform(r);
-										double dVer = -5 + 10*gsl_rng_uniform(r);
-										yarp::sig::Vector dAng(3);
-										dAng[0] = dAz; dAng[1] = dEl; dAng[2] = dVer;
-										igaze->lookAtRelAngles(dAng);
+										//double dAz = -5 + 10*gsl_rng_uniform(r);
+										//double dEl = -5 + 10*gsl_rng_uniform(r);
+										//double dVer = -5 + 10*gsl_rng_uniform(r);
+										//yarp::sig::Vector dAng(3);
+										//dAng[0] = dAz; dAng[1] = dEl; dAng[2] = dVer;
+										//igaze->lookAtRelAngles(dAng);
+										
+										//look towards center of reachable space
+										double xR = headFix[0] + ((xMax-xMin)/2.0 - headFix[0])*gsl_rng_uniform(r);
+										double yR = headFix[1] + ((yMax-yMin)/2.0 - headFix[1])*gsl_rng_uniform(r);
+										double zR = headFix[2] + ((zMax-zMin)/2.0 - headFix[2])*gsl_rng_uniform(r);
+										yarp::sig::Vector fixR(3);
+										fixR[0] = xR; fixR[1] = yR; fixR[2] = zR;
+										igaze->lookAtFixationPoint(fixR);
 										done = false;
 										int i = 0;
 										while(!done && i < 2){
@@ -841,12 +849,22 @@ public:
 									//yarp::sig::Vector fixR(3);
 									//fixR[0] = xR; fixR[1] = yR; fixR[2] = zR;
 									//igaze->lookAtFixationPoint(fixR);
-									double dAz = -5 + 10*gsl_rng_uniform(r);
-									double dEl = -5 + 10*gsl_rng_uniform(r);
-									double dVer = -5 + 10*gsl_rng_uniform(r);
-									yarp::sig::Vector dAng(3);
-									dAng[0] = dAz; dAng[1] = dEl; dAng[2] = dVer;
-									igaze->lookAtRelAngles(dAng);
+									//double dAz = -5 + 10*gsl_rng_uniform(r);
+									//double dEl = -5 + 10*gsl_rng_uniform(r);
+									//double dVer = -5 + 10*gsl_rng_uniform(r);
+									//yarp::sig::Vector dAng(3);
+									//dAng[0] = dAz; dAng[1] = dEl; dAng[2] = dVer;
+									//igaze->lookAtRelAngles(dAng);
+									
+									//look towards center of reachable space
+									yarp::sig::Vector headFix(3);
+									igaze->getFixationPoint(headFix);
+									double xR = headFix[0] + ((xMax-xMin)/2.0 - headFix[0])*gsl_rng_uniform(r);
+									double yR = headFix[1] + ((yMax-yMin)/2.0 - headFix[1])*gsl_rng_uniform(r);
+									double zR = headFix[2] + ((zMax-zMin)/2.0 - headFix[2])*gsl_rng_uniform(r);
+									yarp::sig::Vector fixR(3);
+									fixR[0] = xR; fixR[1] = yR; fixR[2] = zR;
+									igaze->lookAtFixationPoint(fixR);
 									done = false;
 									int i = 0;
 									while(!done && i < 2){
