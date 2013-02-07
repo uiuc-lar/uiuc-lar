@@ -539,16 +539,16 @@ public:
 			printf("Loop number: %i\n",loopCnt);
 			double j0 = -60;
 			while(j0 < -25){
-				j0 = j0 + 20*gsl_rng_uniform(r);
+				//j0 = j0 + 20*gsl_rng_uniform(r);
 				double j1 = 10;
 				while(j1 < 100){
-					j1 = j1 + 20*gsl_rng_uniform(r);
+					//j1 = j1 + 20*gsl_rng_uniform(r);
 					double j2 = 0;
 					while(j2 < 60){
-						j2 = j2 + 20*gsl_rng_uniform(r);
+						//j2 = j2 + 20*gsl_rng_uniform(r);
 						double j3 = 10;
 						while(j3 < 100){
-							j3 = j3 + 20*gsl_rng_uniform(r);
+							//j3 = j3 + 20*gsl_rng_uniform(r);
 							(*command)[0]=j0; (*command)[1]=j1;
 							(*command)[2]=j2; (*command)[3]=j3;
 							//use fwd kin to find end effector position
@@ -875,10 +875,13 @@ public:
 									}
 								}
 							}
+							j3 = j3 + 20*gsl_rng_uniform(r);
 						}
+						j2 = j2 + 20*gsl_rng_uniform(r);
 					}
+					j1 = j1 + 20*gsl_rng_uniform(r);
 				}
-
+				j0 = j0 + 20*gsl_rng_uniform(r);
 			
 				delete [] mxVal;
 				delete mxDxL;
