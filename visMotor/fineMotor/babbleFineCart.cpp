@@ -580,7 +580,7 @@ public:
 					i++;
 					sleep(1);
 				}
-
+				printf("Actual hand location: %0.1f, %0.1f, %0.1f\n",pred.get(0).asDouble(),pred.get(1).asDouble(),pred.get(2).asDouble());
 				//logan's code
 
 				//get salience images
