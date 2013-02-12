@@ -530,9 +530,9 @@ public:
 
 	virtual void run(){
 
-		//double rxMin = 0; double rxMax = -100;
-		//double ryMin = 0; double ryMax = -100;
-		//double rzMin = 100; double rzMax = -100;
+		double rxMin = 0; double rxMax = -100;
+		double ryMin = 0; double ryMax = -100;
+		double rzMin = 100; double rzMax = -100;
 		int loopCnt = 0;
 		while(isStopping() != true){
 			loopCnt++;
@@ -573,7 +573,7 @@ public:
 								printf("Moving to new position\n");
 								pos->positionMove(command->data());
 								printf("Actual hand position: %0.3fm, %0.3f, %0.3f\n",commandCart[0],commandCart[1],commandCart[2]);
-								/*
+								
 								if(commandCart[0] < rxMin){
 									rxMin = commandCart[0];
 								}
@@ -592,8 +592,8 @@ public:
 								if(commandCart[2] > rzMax){
 									rzMax = commandCart[2];
 								}
-								*/
-								//printf("%.2f < x < %.2f, %.2f < y < %.2f, %.2f < z < %.2f\n",rxMin,rxMax,ryMin,ryMax,rzMin,rzMax);
+								
+								printf("%.2f < x < %.2f, %.2f < y < %.2f, %.2f < z < %.2f\n",rxMin,rxMax,ryMin,ryMax,rzMin,rzMax);
 								//Time::delay(1);
 								bool done = false;
 								int i = 0;
@@ -774,6 +774,7 @@ public:
 											egoMotMap[wX][wY][wZ]->update(armJ,step);
 											//UPDATE COUNTS
 											numTimes[wX][wY][wZ]++;
+											/*
 											if(wX - 1 >= 0){
 												egoMotMap[wX-1][wY][wZ]->update(armJ,step*0.25);
 												//UPDATE COUNTS (by .25)
@@ -799,12 +800,13 @@ public:
 												egoMotMap[wX][wY][wZ+1]->update(armJ,step*0.25);
 												numTimes[wX][wY][wZ+1] += 0.25;
 											}
+											*/
 										}
 										if(count%100 == 0){
-											string fName = "cMap" + boost::lexical_cast<string>(count) + ".dat";
+											string fName = "cnlMap" + boost::lexical_cast<string>(count) + ".dat";
 											mapWrite(fName);
 											//WRITE COUNTS
-											fName = "cCounts" + boost::lexical_cast<string>(count) + ".dat";
+											fName = "cnlCounts" + boost::lexical_cast<string>(count) + ".dat";
 											countWrite(fName);
 										}
 										printf("Count: %i\n", count);
@@ -825,9 +827,9 @@ public:
 										//igaze->lookAtRelAngles(dAng);
 										
 										//look towards center of reachable space
-										double xR = headFix[0] + ((xMax-xMin)/2.0 - headFix[0])*gsl_rng_uniform(r);
-										double yR = headFix[1] + ((yMax-yMin)/2.0 - headFix[1])*gsl_rng_uniform(r);
-										double zR = headFix[2] + ((zMax-zMin)/2.0 - headFix[2])*gsl_rng_uniform(r);
+										double xR = headFix[0] + (xMin + (xMax-xMin)/2.0 - headFix[0])*1.0;
+										double yR = headFix[1] + (yMin + (yMax-yMin)/2.0 - headFix[1])*1.0;
+										double zR = headFix[2] + (zMin + (zMax-zMin)/2.0 - headFix[2])*1.0;
 										yarp::sig::Vector fixR(3);
 										fixR[0] = xR; fixR[1] = yR; fixR[2] = zR;
 										igaze->lookAtFixationPoint(fixR);
@@ -859,9 +861,9 @@ public:
 									//look towards center of reachable space
 									yarp::sig::Vector headFix(3);
 									igaze->getFixationPoint(headFix);
-									double xR = headFix[0] + ((xMax-xMin)/2.0 - headFix[0])*gsl_rng_uniform(r);
-									double yR = headFix[1] + ((yMax-yMin)/2.0 - headFix[1])*gsl_rng_uniform(r);
-									double zR = headFix[2] + ((zMax-zMin)/2.0 - headFix[2])*gsl_rng_uniform(r);
+									double xR = headFix[0] + (xMin + (xMax-xMin)/2.0 - headFix[0])*1.0;
+									double yR = headFix[1] + (yMin + (yMax-yMin)/2.0 - headFix[1])*1.0;
+									double zR = headFix[2] + (zMin + (zMax-zMin)/2.0 - headFix[2])*1.0;
 									yarp::sig::Vector fixR(3);
 									fixR[0] = xR; fixR[1] = yR; fixR[2] = zR;
 									igaze->lookAtFixationPoint(fixR);
