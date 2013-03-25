@@ -40,6 +40,8 @@
 
 #include <boost/lexical_cast.hpp>
 
+#include <time.h>
+
 #include "SOM.h"
 
 
@@ -184,8 +186,8 @@ public:
 		gsl_rng_env_setup();
 		Type = gsl_rng_default;
 		r = gsl_rng_alloc(Type);
-		srand(time(0));
-		gsl_rng_default_seed = rand();
+		gsl_rng_set(r,time(NULL));
+
 
 		igaze = NULL;
 
@@ -530,9 +532,9 @@ public:
 
 	virtual void run(){
 
-		double rxMin = 0; double rxMax = -100;
-		double ryMin = 0; double ryMax = -100;
-		double rzMin = 100; double rzMax = -100;
+		//double rxMin = 0; double rxMax = -100;
+		//double ryMin = 0; double ryMax = -100;
+		//double rzMin = 100; double rzMax = -100;
 		int loopCnt = 0;
 		while(isStopping() != true){
 			loopCnt++;
@@ -573,7 +575,7 @@ public:
 								printf("Moving to new position\n");
 								pos->positionMove(command->data());
 								printf("Actual hand position: %0.3fm, %0.3f, %0.3f\n",commandCart[0],commandCart[1],commandCart[2]);
-								
+								/*
 								if(commandCart[0] < rxMin){
 									rxMin = commandCart[0];
 								}
@@ -592,8 +594,8 @@ public:
 								if(commandCart[2] > rzMax){
 									rzMax = commandCart[2];
 								}
-								
-								printf("%.2f < x < %.2f, %.2f < y < %.2f, %.2f < z < %.2f\n",rxMin,rxMax,ryMin,ryMax,rzMin,rzMax);
+								*/
+								//printf("%.2f < x < %.2f, %.2f < y < %.2f, %.2f < z < %.2f\n",rxMin,rxMax,ryMin,ryMax,rzMin,rzMax);
 								//Time::delay(1);
 								bool done = false;
 								int i = 0;
@@ -605,231 +607,240 @@ public:
 							//}
 
 								
-
-								//logan's code
-
-								//get salience images
-								ImageOf<PixelFloat> *pSalL = portSalL->read(true);
-								ImageOf<PixelFloat> *pSalR = portSalR->read(true);
-								Sl = new Mat(pSalL->height(), pSalL->width(), CV_32F, (void *)pSalL->getRawImage());
-								Sr = new Mat(pSalR->height(), pSalR->width(), CV_32F, (void *)pSalR->getRawImage());
-								Scl = new Mat(pSalL->height(), pSalL->width(), CV_32F);
-								Scr = new Mat(pSalR->height(), pSalR->width(), CV_32F);
-								Sclm = new Mat(pSalL->height(), pSalL->width(), CV_32F);
-								Scrm = new Mat(pSalR->height(), pSalR->width(), CV_32F);
-
-								//get head and l/r eye matrices, assuming fixed torso
-								Matrix Hl, Hr, H;
-								Mat R(3,3, CV_64F);
-								vector<double> T(3);
-								yarp::sig::Vector eo, ep;
-								igaze->getLeftEyePose(eo, ep);
-								Hl = axis2dcm(ep);
-								Hl(0,3) = eo[0]; Hl(1,3) = eo[1]; Hl(2,3) = eo[2];
-								igaze->getRightEyePose(eo, ep);
-								Hr = axis2dcm(ep);
-								Hr(0,3) = eo[0]; Hr(1,3) = eo[1]; Hr(2,3) = eo[2];
-
-								//get the transform matrix from the left image to the right image
-								H = SE3inv(Hr)*Hl;
-								for (int i = 0; i < 3; i++) {
-									for (int j = 0; j < 3; j++) {
-										R.at<double>(i,j) = H(i,j);
-									}
-									T.at(i) = H(i,3);
-								}
+								
+								if(robotName == "icub"){
 
 
+									//get salience images
+									ImageOf<PixelFloat> *pSalL = portSalL->read(true);
+									ImageOf<PixelFloat> *pSalR = portSalR->read(true);
+									Sl = new Mat(pSalL->height(), pSalL->width(), CV_32F, (void *)pSalL->getRawImage());
+									Sr = new Mat(pSalR->height(), pSalR->width(), CV_32F, (void *)pSalR->getRawImage());
+									Scl = new Mat(pSalL->height(), pSalL->width(), CV_32F);
+									Scr = new Mat(pSalR->height(), pSalR->width(), CV_32F);
+									Sclm = new Mat(pSalL->height(), pSalL->width(), CV_32F);
+									Scrm = new Mat(pSalR->height(), pSalR->width(), CV_32F);
 
-								//rectify the images
-								stereoRectify(Pl, Mat::zeros(4,1,CV_64F), Pr, Mat::zeros(4,1,CV_64F), Size(cxl*2, cyl*2), R, Mat(T), R1, R2, P1, P2, Q);
-								initUndistortRectifyMap(Pl, Mat(), R1, P1, Size(cxl*2, cyl*2), CV_32FC1, mpxL, mpyL);
-								initUndistortRectifyMap(Pr, Mat(), R2, P2, Size(cxr*2, cyr*2), CV_32FC1, mpxR, mpyR);
-								remap(*Sl, *Scl, mpxL, mpyL, INTER_LINEAR);
-								remap(*Sr, *Scr, mpxR, mpyR, INTER_LINEAR);
+									//get head and l/r eye matrices, assuming fixed torso
+									Matrix Hl, Hr, H;
+									Mat R(3,3, CV_64F);
+									vector<double> T(3);
+									yarp::sig::Vector eo, ep;
+									igaze->getLeftEyePose(eo, ep);
+									Hl = axis2dcm(ep);
+									Hl(0,3) = eo[0]; Hl(1,3) = eo[1]; Hl(2,3) = eo[2];
+									igaze->getRightEyePose(eo, ep);
+									Hr = axis2dcm(ep);
+									Hr(0,3) = eo[0]; Hr(1,3) = eo[1]; Hr(2,3) = eo[2];
 
-								//end logan's image rectification
-
-
-								//locate the most salient point again (with center focusing)
-								mxDxL = new Point;
-								mxDxR = new Point;
-								bool winimg = false;
-								mxVal = new double[2];
-								Scl->copyTo(*Sclm); Scr->copyTo(*Scrm);
-								minMaxLoc(*Sclm, NULL, mxVal, NULL, mxDxL);
-								minMaxLoc(*Scrm, NULL, mxVal+1, NULL, mxDxR);
-								if (mxVal[1] > mxVal[0]) {
-									mxDxL->x = mxDxR->x; mxDxL->y = mxDxR->y;
-									winimg = true;
-								}
-
-								//adjust for vertical offset from left to right image
-								int vamin, vamax, vadj;
-								if (voffset < 0) {
-									vamin = -voffset; vamax = Scr->rows-1; vadj = 0;
-								} else if (voffset > 0) {
-									vamin = 0; vamax = Scr->rows-1-voffset; vadj = voffset;
-								} else {
-									vamin = 0; vamax = Scr->rows-1; vadj = 0;
-								}
-
-
-								//calc the xcorr b/w left/right for various shifts of window around object
-								Mat salImg, srcImg, corr;
-								Rect salWin, srcWin;
-								if (!winimg) {
-									copyMakeBorder(*Scl, salImg, wsize, wsize, wsize, wsize, BORDER_CONSTANT, Scalar(0));
-									copyMakeBorder(Scr->rowRange(vamin,vamax), srcImg, wsize+vadj, wsize+vamin+1, wsize+nlags, wsize+nlags, BORDER_CONSTANT, Scalar(0));
-								} else {
-									copyMakeBorder(Scr->rowRange(vamin,vamax), salImg, wsize+vadj, wsize+vamin+1, wsize, wsize, BORDER_CONSTANT, Scalar(0));
-									copyMakeBorder(*Scl, srcImg, wsize, wsize, wsize+nlags, wsize+nlags, BORDER_CONSTANT, Scalar(0));
-									mxDxL->y = mxDxL->y + voffset;
-								}
-								salWin = Rect(mxDxL->x, mxDxL->y, 2*wsize+1, 2*wsize+1);
-								srcWin = Rect(mxDxL->x, mxDxL->y, 2*nlags+1, 2*wsize+1);
-								matchTemplate(srcImg(srcWin), salImg(salWin), corr, CV_TM_CCORR_NORMED);
-
-
-								//find max of xcorr and calculate disparity at interest point
-								int mCorr; double mxCrVal = 0;
-								for (int i = 0; i < corr.cols; i++) {
-									if (corr.at<float>(0,i) > mxCrVal) {
-										mxCrVal = corr.at<float>(0,i);
-										mCorr = i;
-									}
-								}
-
-								printf("Max corr: %.2lf\n", mxCrVal);
-
-
-								//remap corresponding point onto the unrectified image
-								if (!winimg) {
-									mxDxR->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2), 0);
-									mxDxR->y = mxDxL->y - voffset;
-								} else {
-									mxDxR->x = mxDxL->x; mxDxR->y = mxDxL->y - voffset;
-									mxDxL->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2), 0);
-								}
-								int ul = std::max(std::min((int)mpxL.at<float>(*mxDxL), (int)cxl*2),0);
-								int vl = std::max(std::min((int)mpyL.at<float>(*mxDxL), (int)cyl*2),0);
-								int ur = std::max(std::min((int)mpxR.at<float>(*mxDxR), (int)cxr*2),0);
-								int vr = std::max(std::min((int)mpyR.at<float>(*mxDxR)+voffset, (int)cyr*2),0);
-
-								//end logan's code (triangulation not needed)
-
-								//use motor diff and retinal loc + disp to train
-								//how best to represent retinal location?
-								//<ur,vr,mxCrVal>?
-
-
-
-
-								yarp::sig::Vector *armJ;
-								armJ = new yarp::sig::Vector(usedJoints);
-								armJ->zero();
-
-
-								(*armJ)[0] = (*command)[0];
-								(*armJ)[1] = (*command)[1];
-								(*armJ)[2] = (*command)[2];
-								(*armJ)[3] = (*command)[3];
-
-
-
-								//fixate
-								//fix the fixation on environmental residuals
-								printf("%i, %i; %i, %i\n", ul, vl, ur, vr);
-								//if (ul > 0 && ul < cxl*2 && ur > 0 && ur < cxl*2 && vl > 0 && vl < cyl*2 && vr > 0 && vr < cyl*2 && mxCrVal > 0.01 && mxCrVal < 0.99){
-								if(ul >= 0 && ul <= cxl*2 && ur >= 0 && ur < cxl*2 && vl >= 0 && vl <= cyl*2 && vr >= 0 && vr < cyl*2){
-
-									printf("Found hand? Fixating.\n");
-									yarp::sig::Vector pxl(2), pxr(2);
-									pxl[0] = ul; pxl[1] = vl;
-									pxr[0] = ur; pxr[1] = vr;
-									//igaze->lookAtStereoPixels(pxl, pxr);
-									igaze->lookAtMonoPixel(0,pxl,0.4);
-									done = false;
-									int i = 0;
-									while(!done && i < 2){
-										igaze->checkMotionDone(&done);
-										//Time::delay(0.5);
-										sleep(1);
-										i++;
-									}
-
-									yarp::sig::Vector headFix(3);
-									igaze->getFixationPoint(headFix);
-									printf("Fixation point: %.2lf, %.2lf, %.2lf\n", headFix[0], headFix[1], headFix[2]);
-
-									if(headFix[0] > xMin && headFix[0] < xMax && headFix[1] > yMin && headFix[1] < yMax && headFix[2] >zMin && headFix[2] < zMax){
-										printf("Training map\n");
-										count++;
-										int wX = floor((headFix[0]-xMin)*res);
-										int wY = floor((headFix[1]-yMin)*res);
-										int wZ = floor((headFix[2]-zMin)*res);
-										double step = 0.5*exp(-count*1.0/(10*X*Y*Z*mmapSize));
-										printf("step size %.3lf\n", step);
-										if(!(wX < 0 || wX >= X || wY < 0 || wY >= Y || wZ < 0 || wZ >= Z)){
-											egoMotMap[wX][wY][wZ]->update(armJ,step);
-											//UPDATE COUNTS
-											numTimes[wX][wY][wZ]++;
-											/*
-											if(wX - 1 >= 0){
-												egoMotMap[wX-1][wY][wZ]->update(armJ,step*0.25);
-												//UPDATE COUNTS (by .25)
-												numTimes[wX-1][wY][wZ] += 0.25;
-											}
-											if(wX + 1 < X){
-												egoMotMap[wX+1][wY][wZ]->update(armJ,step*0.25);
-												numTimes[wX+1][wY][wZ] += 0.25;
-											}
-											if(wY - 1 >= 0){
-												egoMotMap[wX][wY-1][wZ]->update(armJ,step*0.25);
-												numTimes[wX][wY-1][wZ] += 0.25;
-											}
-											if(wY + 1 < Y){
-												egoMotMap[wX][wY+1][wZ]->update(armJ,step*0.25);
-												numTimes[wX][wY+1][wZ] += 0.25;
-											}
-											if(wZ - 1 >= 0){
-												egoMotMap[wX][wY][wZ-1]->update(armJ,step*0.25);
-												numTimes[wX][wY][wZ-1] += 0.25;
-											}
-											if(wZ + 1 < Z){
-												egoMotMap[wX][wY][wZ+1]->update(armJ,step*0.25);
-												numTimes[wX][wY][wZ+1] += 0.25;
-											}
-											*/
+									//get the transform matrix from the left image to the right image
+									H = SE3inv(Hr)*Hl;
+									for (int i = 0; i < 3; i++) {
+										for (int j = 0; j < 3; j++) {
+											R.at<double>(i,j) = H(i,j);
 										}
-										if(count%100 == 0){
-											string fName = "cnlMap" + boost::lexical_cast<string>(count) + ".dat";
-											mapWrite(fName);
-											//WRITE COUNTS
-											fName = "cnlCounts" + boost::lexical_cast<string>(count) + ".dat";
-											countWrite(fName);
+										T.at(i) = H(i,3);
+									}
+
+
+
+									//rectify the images
+									stereoRectify(Pl, Mat::zeros(4,1,CV_64F), Pr, Mat::zeros(4,1,CV_64F), Size(cxl*2, cyl*2), R, Mat(T), R1, R2, P1, P2, Q);
+									initUndistortRectifyMap(Pl, Mat(), R1, P1, Size(cxl*2, cyl*2), CV_32FC1, mpxL, mpyL);
+									initUndistortRectifyMap(Pr, Mat(), R2, P2, Size(cxr*2, cyr*2), CV_32FC1, mpxR, mpyR);
+									remap(*Sl, *Scl, mpxL, mpyL, INTER_LINEAR);
+									remap(*Sr, *Scr, mpxR, mpyR, INTER_LINEAR);
+
+									//end logan's image rectification
+
+
+									//locate the most salient point again (with center focusing)
+									mxDxL = new Point;
+									mxDxR = new Point;
+									bool winimg = false;
+									mxVal = new double[2];
+									Scl->copyTo(*Sclm); Scr->copyTo(*Scrm);
+									minMaxLoc(*Sclm, NULL, mxVal, NULL, mxDxL);
+									minMaxLoc(*Scrm, NULL, mxVal+1, NULL, mxDxR);
+									if (mxVal[1] > mxVal[0]) {
+										mxDxL->x = mxDxR->x; mxDxL->y = mxDxR->y;
+										winimg = true;
+									}
+
+									//adjust for vertical offset from left to right image
+									int vamin, vamax, vadj;
+									if (voffset < 0) {
+										vamin = -voffset; vamax = Scr->rows-1; vadj = 0;
+									} else if (voffset > 0) {
+										vamin = 0; vamax = Scr->rows-1-voffset; vadj = voffset;
+									} else {
+										vamin = 0; vamax = Scr->rows-1; vadj = 0;
+									}
+
+
+									//calc the xcorr b/w left/right for various shifts of window around object
+									Mat salImg, srcImg, corr;
+									Rect salWin, srcWin;
+									if (!winimg) {
+										copyMakeBorder(*Scl, salImg, wsize, wsize, wsize, wsize, BORDER_CONSTANT, Scalar(0));
+										copyMakeBorder(Scr->rowRange(vamin,vamax), srcImg, wsize+vadj, wsize+vamin+1, wsize+nlags, wsize+nlags, BORDER_CONSTANT, Scalar(0));
+									} else {
+										copyMakeBorder(Scr->rowRange(vamin,vamax), salImg, wsize+vadj, wsize+vamin+1, wsize, wsize, BORDER_CONSTANT, Scalar(0));
+										copyMakeBorder(*Scl, srcImg, wsize, wsize, wsize+nlags, wsize+nlags, BORDER_CONSTANT, Scalar(0));
+										mxDxL->y = mxDxL->y + voffset;
+									}
+									salWin = Rect(mxDxL->x, mxDxL->y, 2*wsize+1, 2*wsize+1);
+									srcWin = Rect(mxDxL->x, mxDxL->y, 2*nlags+1, 2*wsize+1);
+									matchTemplate(srcImg(srcWin), salImg(salWin), corr, CV_TM_CCORR_NORMED);
+
+
+									//find max of xcorr and calculate disparity at interest point
+									int mCorr; double mxCrVal = 0;
+									for (int i = 0; i < corr.cols; i++) {
+										if (corr.at<float>(0,i) > mxCrVal) {
+											mxCrVal = corr.at<float>(0,i);
+											mCorr = i;
 										}
-										printf("Count: %i\n", count);
+									}
+
+									printf("Max corr: %.2lf\n", mxCrVal);
+
+
+									//remap corresponding point onto the unrectified image
+									if (!winimg) {
+										mxDxR->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2), 0);
+										mxDxR->y = mxDxL->y - voffset;
+									} else {
+										mxDxR->x = mxDxL->x; mxDxR->y = mxDxL->y - voffset;
+										mxDxL->x = std::max(std::min(mxDxL->x+mCorr-nlags-1, (int)cxl*2), 0);
+									}
+									int ul = std::max(std::min((int)mpxL.at<float>(*mxDxL), (int)cxl*2),0);
+									int vl = std::max(std::min((int)mpyL.at<float>(*mxDxL), (int)cyl*2),0);
+									int ur = std::max(std::min((int)mpxR.at<float>(*mxDxR), (int)cxr*2),0);
+									int vr = std::max(std::min((int)mpyR.at<float>(*mxDxR)+voffset, (int)cyr*2),0);
+
+									//end logan's code (triangulation not needed)
+
+
+
+
+
+
+									yarp::sig::Vector *armJ;
+									armJ = new yarp::sig::Vector(usedJoints);
+									armJ->zero();
+
+
+									(*armJ)[0] = (*command)[0];
+									(*armJ)[1] = (*command)[1];
+									(*armJ)[2] = (*command)[2];
+									(*armJ)[3] = (*command)[3];
+
+
+
+									//fixate
+									printf("%i, %i; %i, %i\n", ul, vl, ur, vr);
+									//if (ul > 0 && ul < cxl*2 && ur > 0 && ur < cxl*2 && vl > 0 && vl < cyl*2 && vr > 0 && vr < cyl*2 && mxCrVal > 0.01 && mxCrVal < 0.99){
+									if(ul >= 0 && ul <= cxl*2 && ur >= 0 && ur < cxl*2 && vl >= 0 && vl <= cyl*2 && vr >= 0 && vr < cyl*2){
+
+										printf("Found hand? Fixating.\n");
+										yarp::sig::Vector pxl(2), pxr(2);
+										pxl[0] = ul; pxl[1] = vl;
+										pxr[0] = ur; pxr[1] = vr;
+										//igaze->lookAtStereoPixels(pxl, pxr);
+										igaze->lookAtMonoPixel(0,pxl,0.4);
+										done = false;
+										int i = 0;
+										while(!done && i < 2){
+											igaze->checkMotionDone(&done);
+											//Time::delay(0.5);
+											sleep(1);
+											i++;
+										}
+
+										yarp::sig::Vector headFix(3);
+										igaze->getFixationPoint(headFix);
+										printf("Fixation point: %.2lf, %.2lf, %.2lf\n", headFix[0], headFix[1], headFix[2]);
+
+										if(headFix[0] > xMin && headFix[0] < xMax && headFix[1] > yMin && headFix[1] < yMax && headFix[2] >zMin && headFix[2] < zMax){
+											printf("Training map\n");
+											count++;
+											int wX = floor((headFix[0]-xMin)*res);
+											int wY = floor((headFix[1]-yMin)*res);
+											int wZ = floor((headFix[2]-zMin)*res);
+											double step = 0.5*exp(-count*1.0/(10*X*Y*Z*mmapSize));
+											printf("step size %.3lf\n", step);
+											if(!(wX < 0 || wX >= X || wY < 0 || wY >= Y || wZ < 0 || wZ >= Z)){
+												egoMotMap[wX][wY][wZ]->update(armJ,step);
+												//UPDATE COUNTS
+												numTimes[wX][wY][wZ]++;
+												/*
+												if(wX - 1 >= 0){
+													egoMotMap[wX-1][wY][wZ]->update(armJ,step*0.25);
+													//UPDATE COUNTS (by .25)
+													numTimes[wX-1][wY][wZ] += 0.25;
+												}
+												if(wX + 1 < X){
+													egoMotMap[wX+1][wY][wZ]->update(armJ,step*0.25);
+													numTimes[wX+1][wY][wZ] += 0.25;
+												}
+												if(wY - 1 >= 0){
+													egoMotMap[wX][wY-1][wZ]->update(armJ,step*0.25);
+													numTimes[wX][wY-1][wZ] += 0.25;
+												}
+												if(wY + 1 < Y){
+													egoMotMap[wX][wY+1][wZ]->update(armJ,step*0.25);
+													numTimes[wX][wY+1][wZ] += 0.25;
+												}
+												if(wZ - 1 >= 0){
+													egoMotMap[wX][wY][wZ-1]->update(armJ,step*0.25);
+													numTimes[wX][wY][wZ-1] += 0.25;
+												}
+												if(wZ + 1 < Z){
+													egoMotMap[wX][wY][wZ+1]->update(armJ,step*0.25);
+													numTimes[wX][wY][wZ+1] += 0.25;
+												}
+												*/
+											}
+											if(count%100 == 0){
+												string fName = "cMap" + boost::lexical_cast<string>(count) + ".dat";
+												mapWrite(fName);
+												//WRITE COUNTS
+												fName = "cCounts" + boost::lexical_cast<string>(count) + ".dat";
+												countWrite(fName);
+											}
+											printf("Count: %i\n", count);
+										}
+										else{
+											printf("No hand found, choosing random view\n");
+
+										
+											//look towards center of reachable space
+											double xR = headFix[0] + ((xMax-xMin)/2.0 - headFix[0])*gsl_rng_uniform(r);
+											double yR = headFix[1] + ((yMax-yMin)/2.0 - headFix[1])*gsl_rng_uniform(r);
+											double zR = headFix[2] + ((zMax-zMin)/2.0 - headFix[2])*gsl_rng_uniform(r);
+											yarp::sig::Vector fixR(3);
+											fixR[0] = xR; fixR[1] = yR; fixR[2] = zR;
+											igaze->lookAtFixationPoint(fixR);
+											done = false;
+											int i = 0;
+											while(!done && i < 2){
+												igaze->checkMotionDone(&done);
+												//Time::delay(0.5);
+												sleep(1);
+												i++;
+											}
+										}
 									}
 									else{
 										printf("No hand found, choosing random view\n");
-										//double xR = xMin + (xMax-xMin)*gsl_rng_uniform(r);
-										//double yR = yMin + (yMax-yMin)*gsl_rng_uniform(r);
-										//double zR = zMin + (zMax-zMin)*gsl_rng_uniform(r);
-										//yarp::sig::Vector fixR(3);
-										//fixR[0] = xR; fixR[1] = yR; fixR[2] = zR;
-										//igaze->lookAtFixationPoint(fixR);
-										//double dAz = -5 + 10*gsl_rng_uniform(r);
-										//double dEl = -5 + 10*gsl_rng_uniform(r);
-										//double dVer = -5 + 10*gsl_rng_uniform(r);
-										//yarp::sig::Vector dAng(3);
-										//dAng[0] = dAz; dAng[1] = dEl; dAng[2] = dVer;
-										//igaze->lookAtRelAngles(dAng);
-										
+
 										//look towards center of reachable space
-										double xR = headFix[0] + (xMin + (xMax-xMin)/2.0 - headFix[0])*1.0;
-										double yR = headFix[1] + (yMin + (yMax-yMin)/2.0 - headFix[1])*1.0;
-										double zR = headFix[2] + (zMin + (zMax-zMin)/2.0 - headFix[2])*1.0;
+										yarp::sig::Vector headFix(3);
+										igaze->getFixationPoint(headFix);
+										double xR = headFix[0] + ((xMax-xMin)/2.0 - headFix[0])*gsl_rng_uniform(r);
+										double yR = headFix[1] + ((yMax-yMin)/2.0 - headFix[1])*gsl_rng_uniform(r);
+										double zR = headFix[2] + ((zMax-zMin)/2.0 - headFix[2])*gsl_rng_uniform(r);
 										yarp::sig::Vector fixR(3);
 										fixR[0] = xR; fixR[1] = yR; fixR[2] = zR;
 										igaze->lookAtFixationPoint(fixR);
@@ -842,39 +853,55 @@ public:
 											i++;
 										}
 									}
+									delete Sl;
+									delete Sr;
+									delete Scl;
+									delete Scr;
+									delete Sclm;
+									delete Scrm;
+									delete armJ;
 								}
 								else{
-									printf("No hand found, choosing random view\n");
-									//double xR = xMin + (xMax-xMin)*gsl_rng_uniform(r);
-									//double yR = yMin + (yMax-yMin)*gsl_rng_uniform(r);
-									//double zR = zMin + (zMax-zMin)*gsl_rng_uniform(r);
-									//yarp::sig::Vector fixR(3);
-									//fixR[0] = xR; fixR[1] = yR; fixR[2] = zR;
-									//igaze->lookAtFixationPoint(fixR);
-									//double dAz = -5 + 10*gsl_rng_uniform(r);
-									//double dEl = -5 + 10*gsl_rng_uniform(r);
-									//double dVer = -5 + 10*gsl_rng_uniform(r);
-									//yarp::sig::Vector dAng(3);
-									//dAng[0] = dAz; dAng[1] = dEl; dAng[2] = dVer;
-									//igaze->lookAtRelAngles(dAng);
-									
-									//look towards center of reachable space
-									yarp::sig::Vector headFix(3);
-									igaze->getFixationPoint(headFix);
-									double xR = headFix[0] + (xMin + (xMax-xMin)/2.0 - headFix[0])*1.0;
-									double yR = headFix[1] + (yMin + (yMax-yMin)/2.0 - headFix[1])*1.0;
-									double zR = headFix[2] + (zMin + (zMax-zMin)/2.0 - headFix[2])*1.0;
-									yarp::sig::Vector fixR(3);
-									fixR[0] = xR; fixR[1] = yR; fixR[2] = zR;
-									igaze->lookAtFixationPoint(fixR);
+									yarp::sig::Vector *armJ;
+									armJ = new yarp::sig::Vector(usedJoints);
+									armJ->zero();
+									(*armJ)[0] = (*command)[0];
+									(*armJ)[1] = (*command)[1];
+									(*armJ)[2] = (*command)[2];
+									(*armJ)[3] = (*command)[3];
+									//add a bit of noise
+									yarp::sig::Vector noisyCart(3);
+									for(int i = 0; i < 3; i++){
+										noisyCart[i] = commandCart[i] + -0.025 + 0.05*gsl_rng_uniform(r);
+									}
+									igaze->lookAtFixationPoint(commandCart);
 									done = false;
 									int i = 0;
 									while(!done && i < 2){
 										igaze->checkMotionDone(&done);
-										//Time::delay(0.5);
 										sleep(1);
 										i++;
 									}
+									printf("Training map\n");
+									count++;
+									int wX = floor((noisyCart[0]-xMin)*res);
+									int wY = floor((noisyCart[1]-yMin)*res);
+									int wZ = floor((noisyCart[2]-zMin)*res);
+									double step = 0.5*exp(-count*1.0/(10*X*Y*Z*mmapSize));
+									printf("step size %.3lf\n", step);
+									if(!(wX < 0 || wX >= X || wY < 0 || wY >= Y || wZ < 0 || wZ >= Z)){
+										egoMotMap[wX][wY][wZ]->update(armJ,step);
+										//UPDATE COUNTS
+										numTimes[wX][wY][wZ]++;
+									}
+									if(count%100 == 0){
+										string fName = "dMap" + boost::lexical_cast<string>(count) + ".dat";
+										mapWrite(fName);
+										//WRITE COUNTS
+										fName = "dCounts" + boost::lexical_cast<string>(count) + ".dat";
+										countWrite(fName);
+									}
+									printf("Count: %i\n", count);
 								}
 							}
 							j3 = j3 + 20*gsl_rng_uniform(r);
@@ -888,13 +915,7 @@ public:
 				delete [] mxVal;
 				delete mxDxL;
 				delete mxDxR;
-				//delete Sl;
-				//delete Sr;
-				//delete Scl;
-				//delete Scr;
-				//delete Sclm;
-				//delete Scrm;
-				//delete armJ;
+
 			}
 		}
 	}
@@ -966,6 +987,7 @@ public:
 };
 
 int main(int argc, char *argv[]){
+	srand(time(NULL));
 	YARP_REGISTER_DEVICES(icubmod)
 	Network yarp;
 	if(!yarp.checkNetwork()){
