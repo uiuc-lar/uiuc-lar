@@ -15,6 +15,8 @@
 #include <math.h>
 #include <time.h>
 #include <stdio.h>
+#undef min
+#undef max
 #include <vector>
 #include <string>
 

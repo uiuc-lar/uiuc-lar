@@ -95,6 +95,8 @@
 #include <gsl/gsl_rng.h>
 
 //misc
+#undef min
+#undef max
 #include <string>
 #include <math.h>
 #include <deque>

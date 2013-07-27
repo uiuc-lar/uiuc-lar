@@ -7,7 +7,10 @@ FIND_PACKAGE(ICUB)
 
 # add include directories
 INCLUDE_DIRECTORIES(${YARP_INCLUDE_DIRS} ${ICUB_INCLUDE_DIRS})
-LINK_DIRECTORIES(/home/logan/uiuc-lar/lib /usr/lib/atlas /usr/local/lib)
+LINK_DIRECTORIES(/home/logan/uiuc-lar/lib /usr/lib/atlas-base/atlas /usr/lib)
+# if using Ubuntu < 12.10, atlas libs may be in a different location, use this line instead if necessary
+#LINK_DIRECTORIES(/home/logan/uiuc-lar/lib /usr/lib/atlas /usr/lib)
+
 
 # add required linker flags
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ICUB_LINK_FLAGS}")              
@@ -20,13 +23,11 @@ ADD_EXECUTABLE(phoneticClassifier phoneClassifier.cpp)
 ADD_EXECUTABLE(lexiconLearner lexiconLearner.cpp)
 ADD_EXECUTABLE(associativeMemory associativeMemory.cpp)
 ADD_EXECUTABLE(demoGate demoGate.cpp)
-#ADD_EXECUTABLE(robotMicFix robotMicConditioning.cpp)
-#ADD_EXECUTABLE(hmmgenerator hmmgenerator.cpp)
 
 # we now add the YARP and iCub libraries to our project.
 TARGET_LINK_LIBRARIES(vaDetect ${YARP_LIBRARIES} ${ICUB_LIBRARIES} speech fftw3)
 TARGET_LINK_LIBRARIES(phoneticClassifier ${YARP_LIBRARIES} ${ICUB_LIBRARIES} RMLE imatlib torch blas lapack)
-TARGET_LINK_LIBRARIES(lexiconLearner ${YARP_LIBRARIES} ${ICUB_LIBRARIES} RMLE imatlib torch blas lapack lexicon)
+TARGET_LINK_LIBRARIES(lexiconLearner RMLE imatlib lexicon ${YARP_LIBRARIES} ${ICUB_LIBRARIES} torch blas lapack gsl)
 TARGET_LINK_LIBRARIES(associativeMemory ${YARP_LIBRARIES} ${ICUB_LIBRARIES} RMLE imatlib torch blas lapack)
 TARGET_LINK_LIBRARIES(armFwdKin ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(maDetect ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
