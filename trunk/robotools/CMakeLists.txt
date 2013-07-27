@@ -5,7 +5,7 @@ FIND_PACKAGE(ICUB)
 
 # add include directories
 INCLUDE_DIRECTORIES(${YARP_INCLUDE_DIRS} ${ICUB_INCLUDE_DIRS})
-LINK_DIRECTORIES(/home/logan/uiuc-lar/lib /usr/local/lib)
+LINK_DIRECTORIES(/usr/local/lib)
 
 # add required linker flags
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ICUB_LINK_FLAGS}")              
