@@ -5,12 +5,13 @@ PROJECT(BOHDEMO)
 FIND_PACKAGE(YARP)
 FIND_PACKAGE(ICUB)
 
+set(CMAKE_MODULE_PATH ${YARP_MODULE_PATH} ${CMAKE_MODULE_PATH})
+
+FIND_PACKAGE(Atlas)
+
 # add include directories
 INCLUDE_DIRECTORIES(${YARP_INCLUDE_DIRS} ${ICUB_INCLUDE_DIRS})
-LINK_DIRECTORIES(/usr/lib/atlas-base/atlas /usr/lib)
-# if using Ubuntu < 12.10, atlas libs may be in a different location, use this line instead if necessary
-#LINK_DIRECTORIES(/home/logan/uiuc-lar/lib /usr/lib/atlas /usr/lib)
-
+LINK_DIRECTORIES(/usr/lib)
 
 # add required linker flags
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ICUB_LINK_FLAGS}")              
