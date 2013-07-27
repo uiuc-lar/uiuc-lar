@@ -58,6 +58,8 @@
 #include "../imatlib/IMatVecOps.hh"
 
 //misc
+#undef min
+#undef max
 #include <string>
 #include <math.h>
 #include <deque>

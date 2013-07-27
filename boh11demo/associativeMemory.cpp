@@ -84,6 +84,8 @@
 #include "../RMLE/IndepPMF.hh"
 
 //misc
+#undef min
+#undef max
 #include <string>
 #include <math.h>
 #include <deque>

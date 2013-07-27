@@ -81,6 +81,8 @@
 #include <yarp/os/Value.h>
 #include <yarp/sig/Vector.h>
 #include <yarp/math/Math.h>
+#undef min
+#undef max
 
 //internal libraries
 #include "../lexicon/SequenceLearner.h"

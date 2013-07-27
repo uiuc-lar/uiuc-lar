@@ -40,7 +40,7 @@ static char * IBLAS_OPS_HH_Id = "$Id: IMatVecOps.hh,v 1.1 2005/05/09 20:53:20 mr
 
 extern "C"
 {
-#include <clapack.h>
+#include <atlas/clapack.h>
 }
 
 #ifdef USE_DOUBLE
