@@ -110,6 +110,7 @@ protected:
 	yarp::sig::Vector sn;
 	double eta, leak;
 	Matrix Sm, Sn, iSm, iSn;
+	Rect bb;
 
 	int ih,iw;
 	bool filtering;
@@ -220,6 +221,9 @@ public:
 			printf("filtering is OFF\n");
 		}
 
+		//printf("BB: x: %f, y: %f, w: %f, h: %f\n",nr[0], nr[2], (nr[1]-nr[0]), (nr[3]-nr[2]));
+		bb = Rect(nr[0], nr[2], (nr[1]-nr[0]), (nr[3]-nr[2]));
+
 		return true;
 
 	}
@@ -295,6 +299,31 @@ public:
 		Mat * IM = new Mat(map.height(), map.width(), CV_32F, (void *)map.getRawImage());
 		Mat * C = new Mat(Xr->height(), Xr->width(), CV_32F, (void *)Xr->getRawImage());
 		Mat * T = new Mat(Xr->height(), Xr->width(), CV_32F);
+
+		//threshold to cut out low activations
+		threshold(*C, *T, (1-tolerance)*pmaxv, 255.0, THRESH_TOZERO);
+
+		/*
+		//upsample to normal imagesize and gaussian blur
+		resize(*T, *IM, Size(iw,ih));
+		GaussianBlur(*IM, *IM, Size(55,55), 20.0, 20.0);
+
+		//normalize it so that the max value is equal to full scale (255)
+		normalize(*IM, *IM, 255.0, 0, NORM_INF);
+		*/
+
+		//printf("x: %f, y: %f, w: %f, h: %f\n",nr[0], nr[2], (nr[1]-nr[0]), (nr[3]-nr[2]));
+		Mat * IMr = new Mat(*IM, bb);
+		resize(*T, *IMr, Size(IMr->cols,IMr->rows));
+		GaussianBlur(*IM, *IM, Size(55,55), 20.0, 20.0);
+
+		//normalize it so that the max value is equal to full scale (255)
+		normalize(*IM, *IM, 255.0, 0, NORM_INF);
+
+		//rectangle(*IM, bb, 255.0, 2);
+
+		/*
+		//threshold to get the blobb
 		threshold(*C, *T, (1-tolerance)*pmaxv, 255.0, CV_THRESH_BINARY);
 
 		//find the blob with the maximum in it
@@ -339,6 +368,7 @@ public:
 				printf("Tried to draw ellipse with bad axes: %f %f\n",GP.size.width,GP.size.height);
 			}
 		}
+		*/
 
 		//do some temporal filtering if desired
 		if (filtering) {
@@ -354,6 +384,7 @@ public:
 		delete C;
 		delete IM;
 		delete Xr;
+		delete IMr;
 
 	}
 
