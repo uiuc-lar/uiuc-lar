@@ -143,6 +143,7 @@ protected:
 	Mat R, Rl, Rr;
 
 	//parameters for stereo block matching algorithm
+	bool useSG;
 	int preFiltCap, blockSize, ps1, ps2;
 	int minDisp, nDisp, uniquenessRatio, speckWS, speckRng;
 	int dispMaxDiff;
@@ -211,7 +212,8 @@ public:
 		speckWS = rf.check("speckWS",Value(150)).asInt();
 		speckRng = rf.check("speckRng",Value(1)).asInt();
 		dispMaxDiff = rf.check("dispMaxDiff",Value(0)).asInt();
-		dp = rf.check("fullDP");
+		dp = rf.check("fullDP",Value(0)).asBool();
+		useSG = rf.check("useSG",Value(1)).asBool();
 
 
 		//open up ports
@@ -370,25 +372,60 @@ public:
 				remap(Sr, Scr, mpxR, mpyR, INTER_LINEAR);
 
 
-
-				StereoSGBM sgbm;
-
-				sgbm.preFilterCap = preFiltCap; //63
-				sgbm.SADWindowSize = blockSize;
-				int cn = 3;
-				sgbm.P1 = ps1*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
-				sgbm.P2 = ps2*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
-				sgbm.minDisparity = minDisp; //-15
-				sgbm.numberOfDisparities = nDisp;
-				sgbm.uniquenessRatio = uniquenessRatio; //22
-				sgbm.speckleWindowSize = speckWS; //100
-				sgbm.speckleRange = speckRng; //32
-				sgbm.disp12MaxDiff = dispMaxDiff;
-				sgbm.fullDP = dp; // alg == STEREO_HH
-
-
 				Mat disp;
-				sgbm(Scl, Scr, disp);
+
+
+				Mat scl1(Scl.rows, Scl.cols, CV_8UC1);
+				Mat scr1(Scr.rows, Scr.cols, CV_8UC1);
+				Mat ctmp(Scl.rows, Scl.cols, CV_8UC3);
+
+
+
+				//convert to HSV color space and get the S channel (for colored objects basically)
+				int * frto = new int[2];
+				frto[0] = 1; frto[1] = 0;
+
+				cvtColor(Scl,ctmp,CV_RGB2HSV);
+				mixChannels(&ctmp, 1, &scl1, 1, frto, 1);
+
+				//frto[0] = 2; frto[1] = 0;
+				cvtColor(Scr,ctmp,CV_RGB2HSV);
+				mixChannels(&ctmp, 1, &scr1, 1, frto, 1);
+
+				cvtColor(scl1,Scl,CV_GRAY2RGB);
+				cvtColor(scr1,Scr,CV_GRAY2RGB);
+
+				//cvtColor(Scl,scl1,CV_RGB2Lab);
+				//cvtColor(Scr,scr1,CV_RGB2Lab);
+
+
+				//perform stereo block matching algorithm
+				if (useSG) {
+
+					StereoSGBM sgbm;
+
+					sgbm.preFilterCap = preFiltCap; //63
+					sgbm.SADWindowSize = blockSize;
+					int cn = 1;
+					sgbm.P1 = ps1*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
+					sgbm.P2 = ps2*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
+					sgbm.minDisparity = minDisp; //-15
+					sgbm.numberOfDisparities = nDisp;
+					sgbm.uniquenessRatio = uniquenessRatio; //22
+					sgbm.speckleWindowSize = speckWS; //100
+					sgbm.speckleRange = speckRng; //32
+					sgbm.disp12MaxDiff = dispMaxDiff;
+					sgbm.fullDP = dp; // alg == STEREO_HH
+
+					sgbm(scl1, scr1, disp);
+
+				}
+				else {
+
+					StereoBM sbm(CV_STEREO_BM_BASIC,0,blockSize);
+					sbm(scl1,scr1,disp);
+
+				}
 
 				Mat dispo, dispt;
 				disp.convertTo(dispo, CV_32FC1, 255/(16*16.));
