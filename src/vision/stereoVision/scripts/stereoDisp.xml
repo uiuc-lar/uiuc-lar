@@ -1,0 +1,64 @@
+<application>
+<name>Stereo Disparity Map</name>
+<dependencies>
+      <port>/icub/camcalib/left</port>
+      <port>/icub/camcalib/right</port>
+      <port>/icub/head/state:o</port>
+</dependencies>
+   <module>
+      <name>stereoVision</name>
+      <parameters></parameters>
+      <node>johnny5</node>
+	<tag>stereovision</tag>
+   </module>
+   <module>
+      <name>yarpview</name>
+      <parameters>--name /dispview</parameters>
+	  <node>johnny5</node>
+	<tag>dispviewer</tag>
+   </module>
+   <module>
+      <name>yarpview</name>
+      <parameters>--name /lrectview</parameters>
+	  <node>johnny5</node>
+	<tag>lrectviewer</tag>
+   </module>
+   <module>
+      <name>yarpview</name>
+      <parameters>--name /rrectview</parameters>
+	  <node>johnny5</node>
+	<tag>rrectviewer</tag>
+   </module>
+<connection>
+  <from>/icub/head/state:o</from>
+  <to>/stereoVision/head:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/icub/camcalib/left/out</from>
+  <to>/stereoVision/img:l</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/icub/camcalib/right/out</from>
+  <to>/stereoVision/img:r</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/stereoVision/img:o</from>
+  <to>/dispview</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/stereoVision/img:lo</from>
+  <to>/lrectview</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/stereoVision/img:ro</from>
+  <to>/rrectview</to>
+  <protocol>tcp</protocol>
+</connection>
+
+</application>
+
