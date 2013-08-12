@@ -64,6 +64,7 @@
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/Thread.h>
 #include <yarp/os/RateThread.h>
+#include <yarp/os/Semaphore.h>
 #include <yarp/os/Time.h>
 #include <yarp/sig/Vector.h>
 #include <yarp/sig/Matrix.h>
@@ -139,7 +140,7 @@ protected:
 	Mat mpxL, mpyL, mpxR, mpyR;
 
 	//aux. data for stereo processing
-	Mat R1, R2, P1, P2, Q;
+	Mat R1, R2, P1, P2;
 	Mat R, Rl, Rr;
 
 	//parameters for stereo block matching algorithm
@@ -149,20 +150,88 @@ protected:
 	int dispMaxDiff;
 	bool dp;
 
+	//storage objects for current disparity map and perspective transform matrix
+	Mat * disp;
+	Mat * Q;
+	Matrix Hl;
+	Matrix Hr;
 
+	//semaphores for interaction with rpc port
+	Semaphore * mutex;
 
 public:
 
 	stereoVisionThread(ResourceFinder &_rf) : RateThread(50), rf(_rf)
 	{ }
 
-	void topDownGazeCmd(yarp::sig::Vector &ang, bool wait = false) {
+	virtual float getDispVal(int u, int v) {
 
-		igaze->lookAtAbsAngles(ang);
-		if (wait)
-			igaze->waitMotionDone(0.1, 10.0);
+		float dval;
+
+		mutex->wait();
+		dval = disp->at<float>(v,u);
+		mutex->post();
+
+		return dval;
 
 	}
+
+
+	/* get3dWorldLoc
+	 * Desc: Get the 3d coordinates in the root frame for a point that projects
+	 * to (u,v) in the left rectified camera image, using the disparity map
+	 */
+	virtual yarp::sig::Vector get3dWorldLoc(int u, int v) {
+
+		yarp::sig::Vector loc(4);
+
+		Matrix Hlt, Hrct, Qm;
+		Mat Qt, Rrct;
+		float dval;
+
+		mutex->wait();
+		Hlt = Hl;
+		Q->copyTo(Qt);
+		dval = disp->at<float>(v,u);
+		mutex->post();
+
+		//get the homogeneous coordinates
+		Qm.resize(4,4);
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				Qm(i,j) = (float) Qt.at<double>(i,j);
+			}
+		}
+		loc[0] = (float) u; loc[1] = (float) v; loc[2] = (float) dval; loc[3] = 1.0;
+
+		loc = Qm*loc;
+		loc = loc/loc[3];
+
+
+		//transform back to the unrectified image coordinate frame
+		Hrct.resize(4,4);
+		Hrct.zero();
+		Rrct = R1.t();
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				Hrct(i,j) = Rrct.at<double>(i,j);
+			}
+		}
+		Hrct(3,3) = 1;
+
+		//transform to current world frame
+		loc[3] = 1.0;
+
+		loc = Hlt*Hrct*loc;
+
+		loc = loc/loc[3];
+
+		return loc;
+
+
+	}
+
+
 
 	virtual bool threadInit()
 	{
@@ -280,6 +349,12 @@ public:
 		eyeL->releaseLink(1); eyeR->releaseLink(1);
 		eyeL->releaseLink(2); eyeR->releaseLink(2);
 
+		//initialize semaphores
+		mutex = new Semaphore;
+
+
+		disp = new Mat(wl,hl,CV_32FC1);
+		Q = new Mat(4,4,CV_64FC1);
 
 		return true;
 
@@ -300,10 +375,11 @@ public:
 			Sr = (IplImage *) pImgR->getIplImage();
 			Mat Scl;
 			Mat Scr;
+			Mat Qtmp;
 
 
 			//set up head and l/r eye matrices, assuming fixed torso
-			Matrix Hl, Hr, H;
+			Matrix H, Hlt, Hrt;
 			Mat R(3,3, CV_64F);
 			vector<double> T(3);
 			yarp::sig::Vector eo, ep;
@@ -315,11 +391,11 @@ public:
 			if (clientGazeCtrl.isValid()) {
 
 				igaze->getLeftEyePose(eo, ep);
-				Hl = axis2dcm(ep);
-				Hl(0,3) = eo[0]; Hl(1,3) = eo[1]; Hl(2,3) = eo[2];
+				Hlt = axis2dcm(ep);
+				Hlt(0,3) = eo[0]; Hlt(1,3) = eo[1]; Hlt(2,3) = eo[2];
 				igaze->getRightEyePose(eo, ep);
-				Hr = axis2dcm(ep);
-				Hr(0,3) = eo[0]; Hr(1,3) = eo[1]; Hr(2,3) = eo[2];
+				Hrt = axis2dcm(ep);
+				Hrt(0,3) = eo[0]; Hrt(1,3) = eo[1]; Hrt(2,3) = eo[2];
 				havePose = true;
 
 
@@ -338,9 +414,9 @@ public:
 				angles[7] = (*headAng)[4] + (*headAng)[5]/2.0;
 				angles = PI*angles/180.0;
 
-				Hl = eyeL->getH(angles);
+				Hlt = eyeL->getH(angles);
 				angles[7] = PI*((*headAng)[4] - (*headAng)[5]/2.0)/180.0;
-				Hr = eyeR->getH(angles);
+				Hrt = eyeR->getH(angles);
 				havePose = true;
 
 			}
@@ -356,7 +432,7 @@ public:
 			if (havePose) {
 
 				//get the transform matrix from the left image to the right image
-				H = Hr*SE3inv(Hl);
+				H = Hrt*SE3inv(Hlt);
 				for (int i = 0; i < 3; i++) {
 					for (int j = 0; j < 3; j++) {
 						R.at<double>(i,j) = H(i,j);
@@ -365,20 +441,16 @@ public:
 				}
 
 				//rectify the images
-				stereoRectify(Pl, Mat::zeros(4,1,CV_64F), Pr, Mat::zeros(4,1,CV_64F), Size(wl, hl), R, Mat(T), R1, R2, P1, P2, Q, CALIB_ZERO_DISPARITY, -1);
+				stereoRectify(Pl, Mat::zeros(4,1,CV_64F), Pr, Mat::zeros(4,1,CV_64F), Size(wl, hl), R, Mat(T), R1, R2, P1, P2, Qtmp, CALIB_ZERO_DISPARITY, -1);
 				initUndistortRectifyMap(Pl, Mat(), R1, P1, Size(wl, hl), CV_32FC1, mpxL, mpyL);
 				initUndistortRectifyMap(Pr, Mat(), R2, P2, Size(wr, hr), CV_32FC1, mpxR, mpyR);
 				remap(Sl, Scl, mpxL, mpyL, INTER_LINEAR);
 				remap(Sr, Scr, mpxR, mpyR, INTER_LINEAR);
 
 
-				Mat disp;
-
-
 				Mat scl1(Scl.rows, Scl.cols, CV_8UC1);
 				Mat scr1(Scr.rows, Scr.cols, CV_8UC1);
 				Mat ctmp(Scl.rows, Scl.cols, CV_8UC3);
-
 
 
 				//convert to HSV color space and get the S channel (for colored objects basically)
@@ -388,15 +460,14 @@ public:
 				cvtColor(Scl,ctmp,CV_RGB2HSV);
 				mixChannels(&ctmp, 1, &scl1, 1, frto, 1);
 
-				//frto[0] = 2; frto[1] = 0;
 				cvtColor(Scr,ctmp,CV_RGB2HSV);
 				mixChannels(&ctmp, 1, &scr1, 1, frto, 1);
 
 				cvtColor(scl1,Scl,CV_GRAY2RGB);
 				cvtColor(scr1,Scr,CV_GRAY2RGB);
 
-				//cvtColor(Scl,scl1,CV_RGB2Lab);
-				//cvtColor(Scr,scr1,CV_RGB2Lab);
+
+				Mat dispo, dispt;
 
 
 				//perform stereo block matching algorithm
@@ -417,20 +488,31 @@ public:
 					sgbm.disp12MaxDiff = dispMaxDiff;
 					sgbm.fullDP = dp; // alg == STEREO_HH
 
-					sgbm(scl1, scr1, disp);
+					sgbm(scl1, scr1, dispo);
+
+
+					mutex->wait();
+					dispo.convertTo(*disp, CV_32FC1, 1.0/16.0);
+					Qtmp.copyTo(*Q);
+					Hl = Hlt;
+					Hr = Hrt;
+					mutex->post();
 
 				}
 				else {
 
-					StereoBM sbm(CV_STEREO_BM_BASIC,0,blockSize);
-					sbm(scl1,scr1,disp);
+					StereoBM sbm(CV_STEREO_BM_BASIC, nDisp, blockSize);
+
+					mutex->wait();
+					sbm(scl1,scr1,*disp,CV_32F);
+					Qtmp.copyTo(*Q);
+					Hl = Hlt;
+					Hr = Hrt;
+					mutex->post();
 
 				}
 
-				Mat dispo, dispt;
-				disp.convertTo(dispo, CV_32FC1, 255/(16*16.));
-				dispo.convertTo(dispt, CV_8U);
-
+				disp->convertTo(dispt, CV_8U, 255/((double)nDisp));
 
 
 				ImageOf<PixelBgr> &oImg = portImgO->prepare();
@@ -446,7 +528,7 @@ public:
 				Mat rm((IplImage *)roImg.getIplImage(), false);
 
 
-				Mat dprep(disp.rows, disp.cols, CV_8UC3);
+				Mat dprep(disp->rows, disp->cols, CV_8UC3);
 				cvtColor(dispt,om,CV_GRAY2RGB);
 
 				Scl.copyTo(lm);
@@ -487,6 +569,10 @@ public:
 		delete portImgL, portImgR, portImgO, portImgLO, portImgRO, portHead;
 		delete portFxlOut;
 
+		delete mutex;
+		delete disp;
+		delete Q;
+
 
 	}
 
@@ -507,17 +593,35 @@ public:
 	bool respond(const Bottle& command, Bottle& reply) {
 
 		string msg(command.get(0).asString().c_str());
-		if (msg == "ang") {
-			if (command.size() < 2) {
+		if (msg == "loc") {
+			if (command.size() < 3) {
 				reply.add(-1);
 			}
 			else {
-				yarp::sig::Vector azelr(3);
-				azelr[0] = command.get(1).asDouble();
-				azelr[1] = command.get(2).asDouble();
-				azelr[2] = command.get(3).asDouble();
-				thr->topDownGazeCmd(azelr,true);
-				reply.add(1);
+
+				yarp::sig::Vector mloc;
+				int u = command.get(1).asInt();
+				int v = command.get(2).asInt();
+				mloc = thr->get3dWorldLoc(u,v);
+				reply.add(mloc[0]);
+				reply.add(mloc[1]);
+				reply.add(mloc[2]);
+
+			}
+		}
+		else if (msg == "disp") {
+			if (command.size() < 3) {
+				reply.add(-1);
+			}
+			else {
+
+				int u = command.get(1).asInt();
+				int v = command.get(2).asInt();
+				printf("%d,%d\n",u,v);
+				float dval = thr->getDispVal(u,v);
+				dval = dval*255.0/16.0;
+				reply.add(dval);
+
 			}
 		}
 		else {
