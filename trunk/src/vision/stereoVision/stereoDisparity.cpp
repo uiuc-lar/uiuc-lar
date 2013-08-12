@@ -23,7 +23,9 @@
  * 	Logan Niehaus
  *  08/08/2013
  * 	rudimentary stereo vision system module. takes in the left and right images, head angles (assuming fixed torso)
- * 	and produces a disparity image
+ * 	and produces a disparity image (as well as providing left/right rectified images). Via the RPC port, you can
+ * 	query the module for the XYZ location of a pixel in the left (rectified) image, or its raw disparity value.
+ * 	the module is based on the 3d camera calibration/stereo block matching toolbox available in opencv.
  *
  *  inputs:
  *  	/stereoVision/img:l	-- left eye image
@@ -51,9 +53,19 @@
  *			dp = rf.check("fullDP");
  *
  *
- *
  *  outputs:
- *  	/stereoVision/img:o --
+ *  	/stereoVision/img:o -- 8bit 3-channel disparity image. to get proper floating point disparity
+ *  		map values, take one of the three identical channels and multiple by nDisp/255.
+ *  	/stereoVision/img:lo -- Grayscale (3channel) view of rectified left camera image
+ *  		used to calculate disparity values. May be a particular channel of non-RGB color space
+ *  	/stereoVision/img:ro -- Grayscale (3channel) view of rectified right camera image
+ *  	/stereoVision/rpc -- RPC port for module. Accepts the following commands:
+ *
+ *  		"loc u v" -- Get the XYZ coordinates (in root reference frame) of object corresponding to
+ *  						pixel (u,v) in the left rectified image
+ *  		"disp u v" -- Get the disparity value (32F) at the pixel (u,v)
+ *  		"set <param> <val>" -- set the named parameter to the target value. allowable parameters
+ *  						are those for the stereo block matching, as listed above
  *
  *  TODO:
  *
@@ -230,7 +242,6 @@ public:
 
 
 	}
-
 
 
 	virtual bool threadInit()
@@ -454,7 +465,7 @@ public:
 
 
 				//convert to HSV color space and get the S channel (for colored objects basically)
-				int * frto = new int[2];
+				int * frto = new int[4];
 				frto[0] = 1; frto[1] = 0;
 
 				cvtColor(Scl,ctmp,CV_RGB2HSV);
@@ -463,6 +474,24 @@ public:
 				cvtColor(Scr,ctmp,CV_RGB2HSV);
 				mixChannels(&ctmp, 1, &scr1, 1, frto, 1);
 
+				//TODO: convert to L*a*b color space, and take max of abs(C-255/2) between a and b channels
+				/*
+				Mat * abchn = new Mat[3];
+
+				cvtColor(Scl,ctmp,CV_RGB2Lab);
+				absdiff(ctmp,128,ctmp);
+				ctmp = 2*ctmp;
+				split(ctmp,abchn);
+				max(abchn[1],abchn[2],scl1);
+
+				cvtColor(Scr,ctmp,CV_RGB2Lab);
+				absdiff(ctmp,128,ctmp);
+				ctmp = 2*ctmp;
+				split(ctmp,abchn);
+				max(abchn[1],abchn[2],scr1);
+				*/
+
+				//convert whatever colorspace representation back into an rgb image for viewing
 				cvtColor(scl1,Scl,CV_GRAY2RGB);
 				cvtColor(scr1,Scr,CV_GRAY2RGB);
 
@@ -489,7 +518,6 @@ public:
 					sgbm.fullDP = dp; // alg == STEREO_HH
 
 					sgbm(scl1, scr1, dispo);
-
 
 					mutex->wait();
 					dispo.convertTo(*disp, CV_32FC1, 1.0/16.0);
@@ -576,6 +604,55 @@ public:
 
 	}
 
+	virtual bool setParam(string pname, int pval) {
+
+		bool success = true;
+
+		if (pname == "useSG") {
+			useSG = (bool)pval;
+		}
+		else if (pname == "preFiltCap") {
+			preFiltCap = pval;
+		}
+		else if (pname == "blockSize") {
+			blockSize = pval;
+		}
+		else if (pname == "ps1") {
+			ps1 = pval;
+		}
+		else if (pname == "ps2") {
+			ps2 = pval;
+		}
+		else if (pname == "minDisp") {
+			minDisp = pval;
+		}
+		else if (pname == "nDisp") {
+			nDisp = pval;
+		}
+		else if (pname == "uniquenessRatio") {
+			uniquenessRatio = pval;
+		}
+		else if (pname == "speckWS") {
+			speckWS = pval;
+		}
+		else if (pname == "speckRng") {
+			speckRng = pval;
+		}
+		else if (pname == "dispMaxDiff") {
+			dispMaxDiff = pval;
+		}
+		else if (pname == "fullDP") {
+			dp = (bool)pval;
+		}
+		else {
+			success = false;
+		}
+
+		return success;
+
+	}
+
+
 };
 
 class stereoVisionModule: public RFModule
@@ -622,6 +699,16 @@ public:
 				dval = dval*255.0/16.0;
 				reply.add(dval);
 
+			}
+		}
+		else if (msg == "set") {
+			if (command.size() < 3) {
+				reply.add(-1);
+			}
+			else {
+				string param(command.get(1).asString().c_str());
+				int pval = command.get(2).asInt();
+				reply.add(thr->setParam(param,pval));
 			}
 		}
 		else {
