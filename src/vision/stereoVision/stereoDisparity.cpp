@@ -214,7 +214,21 @@ public:
 				Qm(i,j) = (float) Qt.at<double>(i,j);
 			}
 		}
+
+		/*
+		 * For some reason, it appears that the Q matrix produced by stereoRectify is not
+		 * identical across versions of opencv. This may be wrong, but the following hack
+		 * has corrected some of the problems we have seen.
+		 */
+
+		//assuming we have at least opencv 2.x here
+#if CV_MINOR_VERSION > 3
+		Qm(3,2) = -Qm(3,2); //this entry in Q is somehow made negative
+#endif
+
+
 		loc[0] = (float) u; loc[1] = (float) v; loc[2] = (float) dval; loc[3] = 1.0;
+
 
 		loc = Qm*loc;
 		loc = loc/loc[3];
@@ -230,6 +244,7 @@ public:
 			}
 		}
 		Hrct(3,3) = 1;
+
 
 		//transform to current world frame
 		loc[3] = 1.0;
@@ -489,7 +504,7 @@ public:
 				ctmp = 2*ctmp;
 				split(ctmp,abchn);
 				max(abchn[1],abchn[2],scr1);
-				*/
+				 */
 
 				//convert whatever colorspace representation back into an rgb image for viewing
 				cvtColor(scl1,Scl,CV_GRAY2RGB);
@@ -504,18 +519,18 @@ public:
 
 					StereoSGBM sgbm;
 
-					sgbm.preFilterCap = preFiltCap; //63
-					sgbm.SADWindowSize = blockSize;
 					int cn = 1;
+					sgbm.preFilterCap = preFiltCap;
+					sgbm.SADWindowSize = blockSize;
 					sgbm.P1 = ps1*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
 					sgbm.P2 = ps2*cn*sgbm.SADWindowSize*sgbm.SADWindowSize;
-					sgbm.minDisparity = minDisp; //-15
+					sgbm.minDisparity = minDisp;
 					sgbm.numberOfDisparities = nDisp;
-					sgbm.uniquenessRatio = uniquenessRatio; //22
-					sgbm.speckleWindowSize = speckWS; //100
-					sgbm.speckleRange = speckRng; //32
+					sgbm.uniquenessRatio = uniquenessRatio;
+					sgbm.speckleWindowSize = speckWS;
+					sgbm.speckleRange = speckRng;
 					sgbm.disp12MaxDiff = dispMaxDiff;
-					sgbm.fullDP = dp; // alg == STEREO_HH
+					sgbm.fullDP = dp;
 
 					sgbm(scl1, scr1, dispo);
 
@@ -694,7 +709,6 @@ public:
 
 				int u = command.get(1).asInt();
 				int v = command.get(2).asInt();
-				printf("%d,%d\n",u,v);
 				float dval = thr->getDispVal(u,v);
 				dval = dval*255.0/16.0;
 				reply.add(dval);
