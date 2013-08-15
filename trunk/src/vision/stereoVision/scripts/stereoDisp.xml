@@ -7,7 +7,7 @@
 </dependencies>
    <module>
       <name>stereoVision</name>
-      <parameters></parameters>
+      <parameters>--context stereoVision --from bertEyes.ini</parameters>
       <node>johnny5</node>
 	<tag>stereovision</tag>
    </module>
