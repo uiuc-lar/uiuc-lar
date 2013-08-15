@@ -222,7 +222,7 @@ public:
 		 */
 
 		//assuming we have at least opencv 2.x here
-#if CV_MINOR_VERSION > 3
+#if CV_MINOR_VERSION > 2
 		Qm(3,2) = -Qm(3,2); //this entry in Q is somehow made negative
 #endif
 
@@ -298,16 +298,16 @@ public:
 		}
 
 		preFiltCap = rf.check("preFiltCap",Value(63)).asInt();
-		blockSize = rf.check("blockSize",Value(7)).asInt();
+		blockSize = rf.check("blockSize",Value(5)).asInt();
 		ps1 = rf.check("ps1",Value(8)).asInt();
 		ps2 = rf.check("ps2",Value(32)).asInt();
 		minDisp = rf.check("minDisp",Value(0)).asInt();
-		nDisp = rf.check("nDisp",Value(16)).asInt();
-		uniquenessRatio = rf.check("uniquenessRatio",Value(20)).asInt();
-		speckWS = rf.check("speckWS",Value(150)).asInt();
+		nDisp = rf.check("nDisp",Value(32)).asInt();
+		uniquenessRatio = rf.check("uniquenessRatio",Value(15)).asInt();
+		speckWS = rf.check("speckWS",Value(50)).asInt();
 		speckRng = rf.check("speckRng",Value(1)).asInt();
 		dispMaxDiff = rf.check("dispMaxDiff",Value(0)).asInt();
-		dp = rf.check("fullDP",Value(0)).asBool();
+		dp = rf.check("fullDP",Value(1)).asBool();
 		useSG = rf.check("useSG",Value(1)).asBool();
 
 
@@ -458,7 +458,7 @@ public:
 			if (havePose) {
 
 				//get the transform matrix from the left image to the right image
-				H = Hrt*SE3inv(Hlt);
+				H = SE3inv(Hrt)*Hlt;
 				for (int i = 0; i < 3; i++) {
 					for (int j = 0; j < 3; j++) {
 						R.at<double>(i,j) = H(i,j);
@@ -545,6 +545,14 @@ public:
 				else {
 
 					StereoBM sbm(CV_STEREO_BM_BASIC, nDisp, blockSize);
+
+					sbm.state->preFilterCap = preFiltCap;
+					sbm.state->minDisparity = minDisp;
+					sbm.state->numberOfDisparities = nDisp;
+					sbm.state->uniquenessRatio = uniquenessRatio;
+					sbm.state->speckleWindowSize = speckWS;
+					sbm.state->speckleRange = speckRng;
+					sbm.state->disp12MaxDiff = dispMaxDiff;
 
 					mutex->wait();
 					sbm(scl1,scr1,*disp,CV_32F);
