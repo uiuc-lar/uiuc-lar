@@ -262,7 +262,7 @@ public:
         	delete cmax;
         	delete mloc;
 
-        	imgOut.copy(*pDest);
+        	//imgOut.copy(*pDest);
 
             portImgOut->write();
 

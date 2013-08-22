@@ -51,6 +51,10 @@
  *			speckRng = rf.check("speckRng",Value(1)).asInt();
  *			dispMaxDiff = rf.check("dispMaxDiff",Value(0)).asInt();
  *			dp = rf.check("fullDP");
+ *		cType - variable denoting what kind of color conversion should be used to convert
+ *			to a single channel image for block matching. 0 (default): simple grayscale;
+ *			1: convert to HSV and take saturation channel. if already pre-converted to
+ *			a single channel image, pass it as an RGB and set this to 0.
  *
  *
  *  outputs:
@@ -150,12 +154,14 @@ protected:
 	double fxr, fyr, cxr, cyr;
 	int wl, hl, wr, hr;
 	Mat mpxL, mpyL, mpxR, mpyR;
+	Mat impxL, impyL, impxR, impyR;
 
 	//aux. data for stereo processing
 	Mat R1, R2, P1, P2;
 	Mat R, Rl, Rr;
 
 	//parameters for stereo block matching algorithm
+	int ctype;
 	bool useSG;
 	int preFiltCap, blockSize, ps1, ps2;
 	int minDisp, nDisp, uniquenessRatio, speckWS, speckRng;
@@ -191,7 +197,7 @@ public:
 
 	/* get3dWorldLoc
 	 * Desc: Get the 3d coordinates in the root frame for a point that projects
-	 * to (u,v) in the left rectified camera image, using the disparity map
+	 * to (u,v) in the left ORIGINAL camera image, using the disparity map
 	 */
 	virtual yarp::sig::Vector get3dWorldLoc(int u, int v) {
 
@@ -200,6 +206,15 @@ public:
 		Matrix Hlt, Hrct, Qm;
 		Mat Qt, Rrct;
 		float dval;
+
+
+		//first find the location of the point in the rectified image
+		Mat uvpt(1,1,CV_32FC2);
+		uvpt.at<Point2f>(0,0) = Point2f(u,v);
+		undistortPoints(uvpt, uvpt, Pl, Mat(), R1, P1);
+		u = (int)uvpt.at<Point2f>(0,0).x;
+		v = (int)uvpt.at<Point2f>(0,0).y;
+
 
 		mutex->wait();
 		Hlt = Hl;
@@ -222,7 +237,7 @@ public:
 		 */
 
 		//assuming we have at least opencv 2.x here
-#if CV_MINOR_VERSION > 2
+#if CV_MINOR_VERSION < 4
 		Qm(3,2) = -Qm(3,2); //this entry in Q is somehow made negative
 #endif
 
@@ -297,6 +312,7 @@ public:
 
 		}
 
+		ctype = rf.check("cType",Value(0)).asInt();
 		preFiltCap = rf.check("preFiltCap",Value(63)).asInt();
 		blockSize = rf.check("blockSize",Value(5)).asInt();
 		ps1 = rf.check("ps1",Value(8)).asInt();
@@ -307,8 +323,8 @@ public:
 		speckWS = rf.check("speckWS",Value(50)).asInt();
 		speckRng = rf.check("speckRng",Value(1)).asInt();
 		dispMaxDiff = rf.check("dispMaxDiff",Value(0)).asInt();
-		dp = rf.check("fullDP",Value(1)).asBool();
-		useSG = rf.check("useSG",Value(1)).asBool();
+		dp = rf.check("fullDP",Value(0)).asInt();
+		useSG = rf.check("useSG",Value(1)).asInt();
 
 
 		//open up ports
@@ -474,20 +490,45 @@ public:
 				remap(Sr, Scr, mpxR, mpyR, INTER_LINEAR);
 
 
+				//create an inverse mapping to unrectify the disparity map
+				Mat P1n, P2n, Pln, Prn;
+				P1n = P1.rowRange(0,3).colRange(0,3);
+				P2n = P2.rowRange(0,3).colRange(0,3);
+				Pln = Pl.t(); Pln.resize(4,0); Pln = Pln.t();
+				Prn = Pr.t(); Prn.resize(4,0); Prn = Prn.t();
+				Prn.at<double>(0,3) = -P2.at<double>(0,3);
+
+				initUndistortRectifyMap(P1n, Mat(), R1.t(), Pln, Size(wl, hl), CV_32FC1, impxL, impyL);
+				initUndistortRectifyMap(P2n, Mat(), R2.t(), Prn, Size(wr, hr), CV_32FC1, impxR, impyR);
+
+
+				//convert to HSV color space and get the S channel (for colored objects basically)
 				Mat scl1(Scl.rows, Scl.cols, CV_8UC1);
 				Mat scr1(Scr.rows, Scr.cols, CV_8UC1);
 				Mat ctmp(Scl.rows, Scl.cols, CV_8UC3);
 
 
-				//convert to HSV color space and get the S channel (for colored objects basically)
-				int * frto = new int[4];
-				frto[0] = 1; frto[1] = 0;
+				if (ctype == 1) {
 
-				cvtColor(Scl,ctmp,CV_RGB2HSV);
-				mixChannels(&ctmp, 1, &scl1, 1, frto, 1);
+					//take an HSV conversion and grab the sat channel
+					int * frto = new int[4];
+					frto[0] = 1; frto[1] = 0;
 
-				cvtColor(Scr,ctmp,CV_RGB2HSV);
-				mixChannels(&ctmp, 1, &scr1, 1, frto, 1);
+					cvtColor(Scl,ctmp,CV_RGB2HSV);
+					mixChannels(&ctmp, 1, &scl1, 1, frto, 1);
+
+					cvtColor(Scr,ctmp,CV_RGB2HSV);
+					mixChannels(&ctmp, 1, &scr1, 1, frto, 1);
+
+
+				}
+				else {
+
+					//just convert it to grayscale
+					cvtColor(Scl,scl1,CV_RGB2GRAY);
+					cvtColor(Scr,scr1,CV_RGB2GRAY);
+
+				}
 
 				//TODO: convert to L*a*b color space, and take max of abs(C-255/2) between a and b channels
 				/*
@@ -506,10 +547,10 @@ public:
 				max(abchn[1],abchn[2],scr1);
 				 */
 
+
 				//convert whatever colorspace representation back into an rgb image for viewing
 				cvtColor(scl1,Scl,CV_GRAY2RGB);
 				cvtColor(scr1,Scr,CV_GRAY2RGB);
-
 
 				Mat dispo, dispt;
 
@@ -563,7 +604,13 @@ public:
 
 				}
 
-				disp->convertTo(dispt, CV_8U, 255/((double)nDisp));
+				//disp->convertTo(dispt, CV_8U, 255/((double)nDisp));
+				disp->convertTo(dispt, CV_8U, 1, -minDisp);
+				dispt = (255.0/(double)nDisp)*dispt;
+
+				//undo the rectification before sending out the disparity image
+				dispo = Mat(dispt.rows,dispt.cols,CV_8U);
+				remap(dispt, dispo, impxL, impyL, INTER_LINEAR);
 
 
 				ImageOf<PixelBgr> &oImg = portImgO->prepare();
@@ -580,7 +627,7 @@ public:
 
 
 				Mat dprep(disp->rows, disp->cols, CV_8UC3);
-				cvtColor(dispt,om,CV_GRAY2RGB);
+				cvtColor(dispo,om,CV_GRAY2RGB);
 
 				Scl.copyTo(lm);
 				Scr.copyTo(rm);
@@ -666,6 +713,9 @@ public:
 		}
 		else if (pname == "fullDP") {
 			dp = (bool)pval;
+		}
+		else if (pname == "cType") {
+			ctype = pval;
 		}
 		else {
 			success = false;
