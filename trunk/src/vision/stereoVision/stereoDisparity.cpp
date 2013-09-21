@@ -34,6 +34,7 @@
  *  		or
  *  	/stereoVision/head:i -- streaming head angle values
  *  	/stereoVision/disp:o	-- disparity image output
+ *  	/stereoVision/map:o	-- worldmap image output. XYZ values (root frame) for each pixel in the original image plane
  *
  *
  *  params: ([R]equired/[D]efault <Value>/[O]ptional)
@@ -55,7 +56,15 @@
  *			to a single channel image for block matching. 0 (default): simple grayscale;
  *			1: convert to HSV and take saturation channel. if already pre-converted to
  *			a single channel image, pass it as an RGB and set this to 0.
- *
+ *		mapMin, mapMax - if set, these parameters will cause the world output map to be scaled
+ *			in a way that mapMin takes on value 0 and mapMax takes on value 255. Values outside of [mapMin,mapMax]
+ *			will saturate to 0 (mapMin) or 255 (mapMax).
+ *			This is useful for other modules that read or save the map as an 8bit 3-channel image.
+ *			To reconstruct the original floating point XYZ image, use the following expression:
+ *				IM_orig = IM_uint8 * (mapMax - mapMin)/255 + mapMin
+ *			If not set, or if mapMin == mapMax, the map will remain in its original scaling (real XYZ coordinates)
+ *			It is suggested that these parameters be set to be as close as possible for the application,
+ *			as this will reduce rounding error for the reconstruction
  *
  *  outputs:
  *  	/stereoVision/img:o -- 8bit 3-channel disparity image. to get proper floating point disparity
@@ -135,7 +144,7 @@ protected:
 	BufferedPort<ImageOf<PixelBgr> > *portImgO;
 	BufferedPort<ImageOf<PixelBgr> > *portImgLO;
 	BufferedPort<ImageOf<PixelBgr> > *portImgRO;
-	Port *portFxlOut;
+	BufferedPort<ImageOf<PixelRgbFloat> > *portMapO;
 
 	//ikingaze objects and params
 	PolyDriver clientGazeCtrl;
@@ -167,12 +176,19 @@ protected:
 	int minDisp, nDisp, uniquenessRatio, speckWS, speckRng;
 	int dispMaxDiff;
 	bool dp;
+	double mapMin, mapMax;
+
+	//module parameters
+	bool strict;
 
 	//storage objects for current disparity map and perspective transform matrix
 	Mat * disp;
 	Mat * Q;
 	Matrix Hl;
 	Matrix Hr;
+	Matrix Hl0, Hr0, H0;
+
+	yarp::sig::Vector QL,QR;
 
 	//semaphores for interaction with rpc port
 	Semaphore * mutex;
@@ -185,6 +201,13 @@ public:
 	virtual float getDispVal(int u, int v) {
 
 		float dval;
+
+		//first find the location of the point in the rectified image
+		Mat uvpt(1,1,CV_32FC2);
+		uvpt.at<Point2f>(0,0) = Point2f(u,v);
+		undistortPoints(uvpt, uvpt, Pl, Mat(), R1, P1);
+		u = (int)uvpt.at<Point2f>(0,0).x;
+		v = (int)uvpt.at<Point2f>(0,0).y;
 
 		mutex->wait();
 		dval = disp->at<float>(v,u);
@@ -222,6 +245,7 @@ public:
 		dval = disp->at<float>(v,u);
 		mutex->post();
 
+
 		//get the homogeneous coordinates
 		Qm.resize(4,4);
 		for (int i = 0; i < 4; i++) {
@@ -230,21 +254,81 @@ public:
 			}
 		}
 
-		/*
-		 * For some reason, it appears that the Q matrix produced by stereoRectify is not
-		 * identical across versions of opencv. This may be wrong, but the following hack
-		 * has corrected some of the problems we have seen.
-		 */
-
-		//assuming we have at least opencv 2.x here
-#if CV_MINOR_VERSION < 4
-		Qm(3,2) = -Qm(3,2); //this entry in Q is somehow made negative
-#endif
-
-
 		loc[0] = (float) u; loc[1] = (float) v; loc[2] = (float) dval; loc[3] = 1.0;
 
+		loc = Qm*loc;
+		loc = loc/loc[3];
 
+
+		//transform back to the unrectified image coordinate frame
+		Hrct.resize(4,4);
+		Hrct.zero();
+		Rrct = R1.t();
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				Hrct(i,j) = Rrct.at<double>(i,j);
+			}
+		}
+		Hrct(3,3) = 1;
+
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				printf("%f,",Hlt(i,j));
+			}
+			printf("\n");
+		}
+
+
+		//transform to current world frame
+		loc[3] = 1.0;
+
+		loc = Hlt*Hrct*loc;
+
+		loc = loc/loc[3];
+
+		return loc;
+
+
+	}
+
+	/* triangulatePointMatch
+	 * Desc: Get the 3d coordinates in the root frame for known corresponding points
+	 * in left and right unrectified images.
+	 */
+	virtual yarp::sig::Vector triangulatePointMatch(Point2f lp, Point2f rp) {
+
+		yarp::sig::Vector loc(4);
+		Matrix Hlt, Hrct, Qm;
+		Mat Qt, Rrct;
+		float dval;
+
+		//map points into rectified images
+		Mat lpr(1,1,CV_32FC2);
+		Mat rpr(1,1,CV_32FC2);
+		lpr.at<Point2f>(0,0) = lp;
+		rpr.at<Point2f>(0,0) = rp;
+		undistortPoints(lpr, lpr, Pl, Mat(), R1, P1);
+		undistortPoints(rpr, rpr, Pr, Mat(), R2, P2);
+
+		printf("rectified l coord: %f, %f\n", lpr.at<Point2f>(0,0).x, lpr.at<Point2f>(0,0).y);
+		printf("rectified r coord: %f, %f\n", rpr.at<Point2f>(0,0).x, rpr.at<Point2f>(0,0).y);
+
+		mutex->wait();
+		Hlt = Hl;
+		Q->copyTo(Qt);
+		dval = lpr.at<Point2f>(0,0).x-rpr.at<Point2f>(0,0).x;
+		mutex->post();
+
+		//get the homogeneous coordinates
+		Qm.resize(4,4);
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				Qm(i,j) = (float) Qt.at<double>(i,j);
+			}
+		}
+
+
+		loc[0] = (float) lpr.at<Point2f>(0,0).x; loc[1] = (float) lpr.at<Point2f>(0,0).y; loc[2] = (float) dval; loc[3] = 1.0;
 		loc = Qm*loc;
 		loc = loc/loc[3];
 
@@ -263,15 +347,13 @@ public:
 
 		//transform to current world frame
 		loc[3] = 1.0;
-
 		loc = Hlt*Hrct*loc;
-
 		loc = loc/loc[3];
 
 		return loc;
 
-
 	}
+
 
 
 	virtual bool threadInit()
@@ -312,6 +394,48 @@ public:
 
 		}
 
+		printf("QL:\n");
+		Bottle pars=rf.findGroup("STEREO_DISPARITY");
+		if (Bottle *pXo=pars.find("QL").asList())
+		{
+			QL.resize(pXo->size());
+			for (int i=0; i<(pXo->size()); i++) {
+				QL[i]=pXo->get(i).asDouble();
+				printf("%f,",QL(i));
+			}
+
+		}
+		printf("\n");
+		printf("QR:\n");
+
+		if (Bottle *pXo=pars.find("QR").asList())
+		{
+			QR.resize(pXo->size());
+			for (int i=0; i<(pXo->size()); i++) {
+				QR[i]=pXo->get(i).asDouble();
+				printf("%f,",QR(i));
+			}
+		}
+		printf("\n");
+
+		Bottle extrinsics=rf.findGroup("STEREO_DISPARITY");
+		if (Bottle *pXo=extrinsics.find("HN").asList()) {
+			H0.resize(4,4);
+			for (int i=0; i<4; i++) {
+				for (int j=0; j<4; j++) {
+					H0(i,j) = pXo->get(i*4+j).asDouble();
+				}
+			}
+		}
+
+		printf("H0:\n");
+		for (int i =0; i<4; i++) {
+			for (int j=0; j<4; j++) {
+				printf("%f,", H0(i,j));
+			}
+			printf("\n");
+		}
+
 		ctype = rf.check("cType",Value(0)).asInt();
 		preFiltCap = rf.check("preFiltCap",Value(63)).asInt();
 		blockSize = rf.check("blockSize",Value(5)).asInt();
@@ -326,6 +450,10 @@ public:
 		dp = rf.check("fullDP",Value(0)).asInt();
 		useSG = rf.check("useSG",Value(1)).asInt();
 
+		strict = rf.check("strict");
+
+		mapMin = rf.check("mapMin",Value(0)).asDouble();
+		mapMax = rf.check("mapMax",Value(0)).asDouble();
 
 		//open up ports
 		portHead=new BufferedPort<yarp::sig::Vector >;
@@ -352,11 +480,9 @@ public:
 		string portImgROName="/"+name+"/img:ro";
 		portImgRO->open(portImgROName.c_str());
 
-		portFxlOut=new Port;
-		string portFxlName="/"+name+"/fxl:o";
-		portFxlOut->open(portFxlName.c_str());
-		portFxlOut->setTimeout(0.5);
-
+		portMapO=new BufferedPort<ImageOf<PixelRgbFloat> >;
+		string portMapOName="/"+name+"/map:o";
+		portMapO->open(portMapOName.c_str());
 
 		//start up gaze control client interface
 		Property option("(device gazecontrollerclient)");
@@ -398,6 +524,17 @@ public:
 		disp = new Mat(wl,hl,CV_32FC1);
 		Q = new Mat(4,4,CV_64FC1);
 
+
+		//set reader ports to do strict reads
+		if (strict) {
+			portImgL->setStrict(true);
+			portImgR->setStrict(true);
+		}
+
+		Hl0 = eyeL->getH(QL);
+		Hr0 = eyeR->getH(QR);
+
+
 		return true;
 
 	}
@@ -405,11 +542,14 @@ public:
 	virtual void run()
 	{
 
-		//get the normal salience maps after pre-focusing
-		ImageOf<PixelRgb> *pImgL = portImgL->read(false);
-		ImageOf<PixelRgb> *pImgR = portImgR->read(false);
+		//make sure there are two images available before grabbing one
 
-		if (pImgL && pImgR) {
+		if (portImgL->getPendingReads() > 0 && portImgR->getPendingReads() >0) {
+
+			//get the normal salience maps after pre-focusing
+			ImageOf<PixelRgb> *pImgL = portImgL->read(false);
+			ImageOf<PixelRgb> *pImgR = portImgR->read(false);
+
 
 			Mat Sl, Sr;
 
@@ -474,7 +614,7 @@ public:
 			if (havePose) {
 
 				//get the transform matrix from the left image to the right image
-				H = SE3inv(Hrt)*Hlt;
+				H = SE3inv(Hrt)*Hr0*H0*SE3inv(SE3inv(Hlt)*Hl0);
 				for (int i = 0; i < 3; i++) {
 					for (int j = 0; j < 3; j++) {
 						R.at<double>(i,j) = H(i,j);
@@ -498,7 +638,9 @@ public:
 				Prn = Pr.t(); Prn.resize(4,0); Prn = Prn.t();
 				Prn.at<double>(0,3) = -P2.at<double>(0,3);
 
-				initUndistortRectifyMap(P1n, Mat(), R1.t(), Pln, Size(wl, hl), CV_32FC1, impxL, impyL);
+
+				//initUndistortRectifyMap(P1n, Mat(), R1.t(), Pln, Size(wl, hl), CV_32FC1, impxL, impyL);
+				initUndistortRectifyMap(P1n, Mat(), R1.t(), Pl, Size(wl, hl), CV_32FC1, impxL, impyL);
 				initUndistortRectifyMap(P2n, Mat(), R2.t(), Prn, Size(wr, hr), CV_32FC1, impxR, impyR);
 
 
@@ -547,11 +689,6 @@ public:
 				max(abchn[1],abchn[2],scr1);
 				 */
 
-
-				//convert whatever colorspace representation back into an rgb image for viewing
-				cvtColor(scl1,Scl,CV_GRAY2RGB);
-				cvtColor(scr1,Scr,CV_GRAY2RGB);
-
 				Mat dispo, dispt;
 
 
@@ -577,6 +714,9 @@ public:
 
 					mutex->wait();
 					dispo.convertTo(*disp, CV_32FC1, 1.0/16.0);
+#if CV_MINOR_VERSION < 4
+					Qtmp.at<double>(3,2) = -Qtmp.at<double>(3,2); //the disparity value for some versions of opencv should be negative
+#endif
 					Qtmp.copyTo(*Q);
 					Hl = Hlt;
 					Hr = Hrt;
@@ -597,6 +737,9 @@ public:
 
 					mutex->wait();
 					sbm(scl1,scr1,*disp,CV_32F);
+#if CV_MINOR_VERSION < 4
+					Qtmp.at<double>(3,2) = -Qtmp.at<double>(3,2); //the disparity value for some versions of opencv should be negative
+#endif
 					Qtmp.copyTo(*Q);
 					Hl = Hlt;
 					Hr = Hrt;
@@ -605,37 +748,105 @@ public:
 				}
 
 				//disp->convertTo(dispt, CV_8U, 255/((double)nDisp));
-				disp->convertTo(dispt, CV_8U, 1, -minDisp);
+				disp->convertTo(dispt, CV_8U, 1);
 				dispt = (255.0/(double)nDisp)*dispt;
 
 				//undo the rectification before sending out the disparity image
 				dispo = Mat(dispt.rows,dispt.cols,CV_8U);
 				remap(dispt, dispo, impxL, impyL, INTER_LINEAR);
 
-
 				ImageOf<PixelBgr> &oImg = portImgO->prepare();
-				ImageOf<PixelBgr> &loImg = portImgLO->prepare();
-				ImageOf<PixelBgr> &roImg = portImgRO->prepare();
-
 				oImg.resize(*pImgL);
-				loImg.resize(*pImgL);
-				roImg.resize(*pImgR);
-
 				Mat om((IplImage *)oImg.getIplImage(), false);
-				Mat lm((IplImage *)loImg.getIplImage(), false);
-				Mat rm((IplImage *)roImg.getIplImage(), false);
-
 
 				Mat dprep(disp->rows, disp->cols, CV_8UC3);
 				cvtColor(dispo,om,CV_GRAY2RGB);
 
-				Scl.copyTo(lm);
-				Scr.copyTo(rm);
+				if (strict) {
+					portImgO->writeStrict();
+				}
+				else {
+					portImgO->write();
+				}
 
-				portImgO->write();
-				portImgLO->write();
-				portImgRO->write();
+				//if it is connected to something, calculate the XYZ coordinates of all original image pixels
+				if (portMapO->getOutputCount() > 0) {
 
+					ImageOf<PixelRgbFloat> &mapImg = portMapO->prepare();
+					mapImg.resize(wl,hl);
+					Mat map((IplImage *)mapImg.getIplImage(), false);
+					Mat tmap(map.rows, map.cols, CV_32FC3);
+					reprojectImageTo3D(*disp, map, *Q);
+
+					//transform back to the unrectified image coordinate frame
+					Matrix Hrct;
+					Hrct.resize(4,4);
+					Hrct.zero();
+					Mat Rrct = R1.t();
+					for (int i = 0; i < 3; i++) {
+						for (int j = 0; j < 3; j++) {
+							Hrct(i,j) = Rrct.at<double>(i,j);
+						}
+					}
+					Hrct(3,3) = 1;
+
+					//add transform back to root reference frame
+					Hrct = Hlt*Hrct;
+
+					//apply transform
+					Mat Hm(4,4,CV_32F);
+					for (int i = 0; i < 4; i++) {
+						for (int j = 0; j < 4; j++) {
+							Hm.at<float>(i,j) = (float)Hrct(i,j);
+						}
+					}
+
+					perspectiveTransform(map,tmap,Hm);
+
+					//remap to the original (unrectified) image plane
+					remap(tmap, map, impxL, impyL, INTER_LINEAR);
+
+					//may need to be ranged from [mapMin, mapMax] -> [0,255] for saving
+					//if mapMin == mapMax, do not scale
+					//TODO: Allow for multiple image outputs (both scaled and not)
+					if (mapMin != mapMax) {
+
+						map = (map-mapMin)*255.0/(mapMax-mapMin);
+
+					}
+
+					if (strict) {
+						portMapO->writeStrict();
+					}
+					else {
+						portMapO->write();
+					}
+
+
+				}
+
+				//only write to these ports if they are actually being watched
+				if (portImgLO->getOutputCount() > 0) {
+
+					ImageOf<PixelBgr> &loImg = portImgLO->prepare();
+					loImg.resize(*pImgL);
+					Mat lm((IplImage *)loImg.getIplImage(), false);
+					cvtColor(scl1,Scl,CV_GRAY2RGB);
+					Scl.copyTo(lm);
+					portImgLO->write();
+
+				}
+
+				if (portImgRO->getOutputCount() > 0) {
+
+					ImageOf<PixelBgr> &roImg = portImgRO->prepare();
+					roImg.resize(*pImgR);
+					Mat rm((IplImage *)roImg.getIplImage(), false);
+					cvtColor(scr1,Scr,CV_GRAY2RGB);
+					Scr.copyTo(rm);
+					portImgRO->write();
+
+				}
 			}
 
 		}
@@ -653,19 +864,18 @@ public:
 		portImgO->interrupt();
 		portImgLO->interrupt();
 		portImgRO->interrupt();
-		portFxlOut->interrupt();
 		portHead->interrupt();
+		portMapO->interrupt();
 
 		portImgL->close();
 		portImgR->close();
 		portImgO->close();
 		portImgLO->close();
 		portImgRO->close();
-		portFxlOut->close();
 		portHead->close();
+		portMapO->close();
 
-		delete portImgL, portImgR, portImgO, portImgLO, portImgRO, portHead;
-		delete portFxlOut;
+		delete portImgL, portImgR, portImgO, portImgLO, portImgRO, portHead, portMapO;
 
 		delete mutex;
 		delete disp;
@@ -744,10 +954,8 @@ public:
 
 		string msg(command.get(0).asString().c_str());
 		if (msg == "loc") {
-			if (command.size() < 3) {
-				reply.add(-1);
-			}
-			else {
+
+			if (command.size() == 3) {
 
 				yarp::sig::Vector mloc;
 				int u = command.get(1).asInt();
@@ -757,6 +965,19 @@ public:
 				reply.add(mloc[1]);
 				reply.add(mloc[2]);
 
+			}
+			else if (command.size() == 5) {
+
+				yarp::sig::Vector mloc;
+				mloc = thr->triangulatePointMatch(Point2f(command.get(1).asInt(), command.get(2).asInt()),
+						Point2f(command.get(3).asInt(),command.get(4).asInt()));
+				reply.add(mloc[0]);
+				reply.add(mloc[1]);
+				reply.add(mloc[2]);
+
+			}
+			else {
+				reply.add(-1);
 			}
 		}
 		else if (msg == "disp") {
