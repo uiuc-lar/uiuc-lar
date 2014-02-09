@@ -98,6 +98,7 @@
 #include <yarp/sig/ImageDraw.h>
 #include <yarp/math/Math.h>
 #include <yarp/math/SVD.h>
+#include <yarp/os/RpcServer.h>
 
 #include <yarp/dev/Drivers.h>
 #include <yarp/dev/ControlBoardInterfaces.h>
@@ -214,6 +215,29 @@ public:
 		mutex->post();
 
 		return dval;
+
+	}
+
+	//get the current root to eye H matrix
+	virtual Bottle getH(int eye = 0) {
+
+		Matrix Ht;
+		Bottle Hc;
+
+		if (eye == 0) {
+			Ht = Hl;
+		}
+		else {
+			Ht = Hr;
+		}
+
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				Hc.addDouble(Ht(i,j));
+			}
+		}
+
+		return Hc;
 
 	}
 
@@ -943,7 +967,7 @@ class stereoVisionModule: public RFModule
 protected:
 
 	stereoVisionThread *thr;
-	Port * rpcPort;
+	RpcServer * rpcPort;
 	string name;
 
 public:
@@ -1004,6 +1028,14 @@ public:
 				reply.add(thr->setParam(param,pval));
 			}
 		}
+		else if (msg == "geth") {
+			if (command.size() < 3) {
+				reply = thr->getH();
+			}
+			else {
+				reply = thr->getH(command.get(2).asInt());
+			}
+		}
 		else {
 			reply.add(-1);
 		}
@@ -1017,7 +1049,7 @@ public:
 
 		//set up the rpc port
 		name=rf.check("name",Value("stereoVision")).asString().c_str();
-		rpcPort = new Port;
+		rpcPort = new RpcServer;
 		string portRpcName="/"+name+"/rpc";
 		rpcPort->open(portRpcName.c_str());
 		attach(*rpcPort);
