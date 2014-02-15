@@ -83,12 +83,16 @@ using namespace yarp::math;
 
 #define PI 3.14159
 
+//void smoothHist(Mat &, int *, int, double);
+
+
 class Blob {
 
 private:
 
 	//current bounding rectangle for the blob
 	Rect br;
+	Rect bro;
 
 	//normalized color histogram of the blob
 	Mat H;
@@ -116,7 +120,11 @@ public:
 
 	Mat * getH() { return &H; }
 	Rect getR() { return br; }
-	void setR(Rect _br) { br = _br; }
+	void setR(Rect _br) {
+		bro = br;
+		br = _br;
+	}
+	void revR() { br = bro; }
 	int getIdx() { return idx; }
 
 };
@@ -138,10 +146,14 @@ protected:
 	double gthresh, sthresh;
 	int minobjsize, maxobjsize, tableloc;
 	double cplow, cphi;
+	int inactthresh;
+	int hlim, wlim, alim;
+	double hsmooth;
 
 	//data containers
 	int nobs;
 	vector<int> * isActive;
+	vector<int> * cntInAct;
 	vector<Blob> * objects;
 
 	Mat * BH; //background histogram
@@ -159,11 +171,18 @@ public:
 
 		name=rf.check("name",Value("objSegTrack")).asString().c_str();
 		cplow = rf.check("cplow",Value(80.0)).asDouble();
-		cphi = rf.check("cphi",Value(230.0)).asDouble();
+		cphi = rf.check("cphi",Value(150.0)).asDouble();
 		gthresh = rf.check("gthresh",Value(150.0)).asDouble();
 		sthresh = rf.check("sthresh",Value(30.0)).asDouble();
 		minobjsize = rf.check("minobjsize",Value(50)).asInt();
 		maxobjsize = rf.check("maxobjsize",Value(5000)).asInt();
+		inactthresh = rf.check("inactthresh",Value(50)).asInt();
+		hlim = rf.check("hlim",Value(150)).asInt();
+		wlim = rf.check("wlim",Value(200)).asInt();
+		alim = rf.check("alim",Value(15000)).asInt();
+		hsmooth = rf.check("hsmooth",Value(0.5)).asDouble();
+
+
 
 		portImgIn=new BufferedPort<ImageOf<PixelRgb> >;
 		string portInName="/"+name+"/img:i";
@@ -176,6 +195,7 @@ public:
 		//initialize data objects
 		objects = new vector<Blob>;
 		isActive = new vector<int>;
+		cntInAct = new vector<int>;
 		nobs = 0;
 		BH = NULL;
 
@@ -188,7 +208,7 @@ public:
 	 * the watershed algorithm
 	 */
 
-	virtual void wsSegmentObjects(Mat * IM, Mat &OM, Mat * preLabel, int loff = -1) {
+	virtual void wsSegmentObjects(Mat * IM, Mat &OM, Mat * preLabel, int loff = -1, Mat * bLabel = NULL) {
 
 		int clab = 1;
 
@@ -296,7 +316,11 @@ public:
 		L.convertTo(Tmp, CV_8UC1);
 		max(Tmp, T, Tmp);
 		threshold(Tmp, T, 1, 255.0, CV_THRESH_BINARY);
-		dilate(T, T, Mat(), Point(-1,-1), 5);
+		dilate(T, T, Mat(), Point(-1,-1), 10);
+
+		if (bLabel) {
+			T = T | *bLabel;
+		}
 
 		threshold(T, Tmp, 1, 255.0, CV_THRESH_BINARY_INV);
 
@@ -310,17 +334,28 @@ public:
 
 		threshold(Tmp, OM, loff+clab-1, 0.0, CV_THRESH_TOZERO_INV);
 
+		//exp: try to get rid of some of the strange watershed artifacts
+		erode(OM, OM, Mat());
+		dilate(OM, OM, Mat());
 
 	}
 
 	virtual void run()
 	{
 
-		int chn[] = {0 ,1};
-		int hsz[] = {4, 10};
 		float lranges[] = { 3, 66, 129, 192, 255 };
-		float uranges[] = { 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170 };
-		const float * hranges[] = { lranges, uranges };
+		float uranges[] = { 60,   75,   90,  105,  120,  135,  150,  165,  180 };
+		float vranges[] = { 90,  100,  110,  120,  130,  140, 150,  160,  170,  180 };
+
+		/*
+		int chn[] = {0 ,1, 2};
+		int hsz[] = {4, 8, 9};
+		const float * hranges[] = { lranges, uranges, vranges };
+		*/
+
+		int chn[] = {1, 2};
+		int hsz[] = {8, 9};
+		const float * hranges[] = { uranges, vranges };
 
 		// get inputs
 		ImageOf<PixelRgb> *pImgIn=portImgIn->read(false);
@@ -356,6 +391,7 @@ public:
 
 				Mat SI = Mat::zeros(IM.rows, IM.cols, CV_8UC1);
 				Mat Cmax = Mat::zeros(IM.rows, IM.cols, CV_8UC1);
+				Mat BI = Mat::ones(IM.rows, IM.cols, CV_8UC1);
 
 				//for each active object, calculate the back projection of its histogram on the image
 				Mat ** BP;
@@ -365,11 +401,11 @@ public:
 				Rect tmpR;
 
 				//calculate back projection of background model
-				printf("grenk, nobs: %d\n", nobs);
+				//printf("grenk, nobs: %d\n", nobs);
 				BP[nobs] = new Mat(IM.rows, IM.cols, CV_8UC1);
 				calcBackProject(&IL, 1, chn, *BH, *(BP[nobs]), hranges, bhScale, false);
 				BP[nobs]->copyTo(Cmax);
-				max(Cmax, 5, Cmax);
+				max(Cmax, 2, Cmax);
 
 				for (int i = 0; i < nobs; i++) {
 
@@ -379,6 +415,7 @@ public:
 						int tidx = (*objects)[i].getIdx();
 
 						BP[i] = new Mat(IM.rows, IM.cols, CV_8UC1);
+						//Mat bpMsk = Mat::ones(IM.rows, IM.cols, CV_8UC1);
 						tmpI = BP[i];
 
 						tmpH = (*objects)[i].getH();
@@ -388,24 +425,58 @@ public:
 
 						calcBackProject(&IL, 1, chn, *tmpH, *tmpI, hranges, tScale, false);
 
+						/*
+						//assume that the object is not moving very fast, blank out all parts of the map not
+						//within some region of the old bounding box
+						for (int j = 0; j < tmpI->rows; j++) {
+							for (int k = 0; k < tmpI->cols; k++) {
+								if (!(j > tmpR.x-35 && j < tmpR.x+tmpR.width+35 &&
+										k > tmpR.y-35 && k < tmpR.y+tmpR.height+35)) {
+									tmpI->at<uchar>(j,k) = 0;
+								}
+							}
+						}
+						*/
+
+						medianBlur(*tmpI, *tmpI, 3);
+
+
 						//perform meanshift for each object to get location in this image
-						meanShift(*tmpI, tmpR, TermCriteria( CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 10, 1 ));
-						(*objects)[i].setR(tmpR);
+						//only do this if the object was active in the last frame
+						if ((*cntInAct)[i] < 1) {
+							meanShift(*tmpI, tmpR, TermCriteria( CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 10, 1 ));
+							(*objects)[i].setR(tmpR);
+						}
+						//otherwise, use last known location as potential bounding box
+						else {
+							tmpR = (*objects)[i].getR();
+						}
 
-						//use this to paint the initial segmentation map
-						Mat ti = Mat(*tmpI, tmpR);
-						Mat ci = Mat(Cmax, tmpR);
-						Mat msk = Mat::zeros(ti.rows, ti.cols, CV_8UC1);
+						//if the bounding box for an object has grown too large, it probably indicates object is
+						//marking background pixels
+						if (tmpR.height > hlim || tmpR.width > wlim || tmpR.height*tmpR.width > alim) {
 
-						msk = ti > ci;
-						ci = max(ti, ci);
-						erode(msk, msk, Mat());
+							(*isActive)[i] = 0;
 
-						for (int j = 0; j < ti.rows; j++) {
-							for (int k = 0; k < ti.cols; k++) {
-								if (msk.at<uchar>(j,k) > 0) {
-									SI.at<uchar>(tmpR.y+j,tmpR.x+k) = tidx;
-									Cmax.at<uchar>(tmpR.y+j,tmpR.x+k) = ti.at<uchar>(j,k);
+						}
+						else {
+
+							//use this to paint the initial segmentation map
+							Mat ti = Mat(*tmpI, tmpR);
+							Mat ci = Mat(Cmax, tmpR);
+							Mat msk = Mat::zeros(ti.rows, ti.cols, CV_8UC1);
+
+							msk = ti > ci;
+							ci = max(ti, ci);
+							//erode(msk, msk, Mat());
+
+							for (int j = 0; j < ti.rows; j++) {
+								for (int k = 0; k < ti.cols; k++) {
+									if (msk.at<uchar>(j,k) > 0) {
+										SI.at<uchar>(tmpR.y+j,tmpR.x+k) = tidx;
+										Cmax.at<uchar>(tmpR.y+j,tmpR.x+k) = ti.at<uchar>(j,k);
+									}
+									BI.at<uchar>(tmpR.y+j,tmpR.x+k) = 0;
 								}
 							}
 						}
@@ -413,11 +484,17 @@ public:
 
 				}
 
-				erode(SI,SI,Mat());
+
+				dilate(SI,SI,Mat());
+				erode(SI, SI, Mat(), Point(-1,-1), 2);
+
+				BI = BI & (Cmax > 2);
+				erode(BI, BI, Mat(), Point(-1,-1), 3);
 
 				//refine with watershed algorithm
-				wsSegmentObjects(&IM, S, &SI, nobs);
+				wsSegmentObjects(&IM, S, &SI, nobs, &BI);
 				S.copyTo(OM);
+				//SI.copyTo(OM);
 
 			}
 
@@ -426,7 +503,6 @@ public:
 			minMaxIdx(S, NULL, &mxlab, NULL, NULL);
 
 			//update the bounding rectangle for all objects
-
 			Mat pmsk(IM.rows, IM.cols, CV_8UC1);
 			vector<vector<Point> > contours;
 			vector<Point> mcontour;
@@ -436,24 +512,41 @@ public:
 
 					pmsk = S == (*objects)[i].getIdx();
 
-					if (countNonZero(pmsk) > 0) {
+					if (countNonZero(pmsk) > minobjsize) {
 						findContours(pmsk, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 						mcontour = contours[0];
 						for (int j = 1; j < contours.size(); j++) {
 							mcontour.insert(mcontour.end(), contours[j].begin(), contours[j].end());
 						}
 						(*objects)[i].setR(boundingRect(mcontour));
+						(*cntInAct)[i] = 0;
 					}
 
-					//if an object did not appear after the WS seg, mark it as not in image anymore
+					//if an object did not appear after the WS seg, mark it as being inactive for this frame
 					else {
-						(*isActive)[i] = 0;
+
+						(*cntInAct)[i] += 1;
+
+						//revert its bb, as we consider the update invalid
+						(*objects)[i].revR();
+
+						//if the object has been inactive for enough time, mark it as dead
+						if ((*cntInAct)[i] > inactthresh) {
+							printf("OBJ %d marked as inactive\n",i);
+							(*isActive)[i] = 0;
+						}
+
+						if ((*cntInAct)[i] == 1) {
+							printf("OBJ %d has just gone inactive\n",i);
+						}
 					}
 				}
 			}
 
 			//calculate the histograms for new objects
 			for (int i = nobs; i < (int)mxlab; i++) {
+
+				printf("New OBJ %d added\n",i+1);
 
 				Mat tHist;
 
@@ -470,11 +563,14 @@ public:
 
 				//calculate the histogram and normalize
 				calcHist(&IL, 1, chn, pmsk, tHist, 2, hsz, hranges, false);
+				GaussianBlur(tHist, tHist, Size(3,3), hsmooth);
+
 
 				//create a descriptor for the blob and add it to the list
 				Blob b(tHist, br, i+1);
 				objects->push_back(b);
 				isActive->push_back(1);
+				cntInAct->push_back(0);
 
 			}
 
@@ -491,6 +587,7 @@ public:
 
 				//calculate the histogram and normalize
 				calcHist(&IL, 1, chn, pmsk, tHist, 2, hsz, hranges, false);
+				GaussianBlur(tHist, tHist, Size(3,3), hsmooth);
 
 				bhScale = 255.0/norm(tHist,NORM_L1);
 
@@ -578,3 +675,62 @@ int main(int argc, char *argv[])
 	return mod.runModule(rf);
 }
 
+/*
+void smoothHist(Mat &H, int *hsize, int ksz, double sig) {
+
+	//get gaussian kernel first
+	Mat G = getGaussianKernel(ksz, sig);
+	Mat Ht;
+
+	//printf("crent: %d\n",H.dims);
+
+	H.copyTo(Ht);
+
+	//printf("forf: %d %d %d\n",hsize[0],hsize[1],hsize[2]);
+
+	for (int i = 0; i < hsize[1]; i++) {
+		for (int j = 0; j < hsize[2]; j++) {
+
+			for (int k = 0; k < hsize[0]; k++) {
+				//printf("blif: %d %d %d\n",k,i,j);
+				H.at<double>(k,i,j) = 0;
+				for (int l = -ksz/2; l < ksz/2+1; l++) {
+					if (k+l>=0 && k+l<hsize[0]) {
+						H.at<double>(k,i,j) += G.at<double>(ksz/2+l)*Ht.at<double>(k+l,i,j);
+					}
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < hsize[0]; i++) {
+		for (int j = 0; j < hsize[2]; j++) {
+
+			for (int k = 0; k < hsize[1]; k++) {
+				H.at<double>(i,k,j) = 0;
+				for (int l = -ksz/2; l < ksz/2+1; l++) {
+					if (k+l>=0 && k+l<hsize[1]) {
+						H.at<double>(i,k,j) += G.at<double>(ksz/2+l)*Ht.at<double>(i,k+l,j);
+					}
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < hsize[0]; i++) {
+		for (int j = 0; j < hsize[1]; j++) {
+
+			for (int k = 0; k < hsize[2]; k++) {
+				H.at<double>(i,j,k) = 0;
+				for (int l = -ksz/2; l < ksz/2+1; l++) {
+					if (k+l>=0 && k+l<hsize[2]) {
+						H.at<double>(i,j,k) += G.at<double>(ksz/2+l)*Ht.at<double>(i,j,k+l);
+					}
+				}
+			}
+		}
+	}
+
+
+}
+*/
