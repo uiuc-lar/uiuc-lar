@@ -686,6 +686,9 @@ public:
 					cvtColor(Scr,ctmp,CV_RGB2HSV);
 					mixChannels(&ctmp, 1, &scr1, 1, frto, 1);
 
+					threshold(scl1, scl1, 20, 255, CV_THRESH_TOZERO);
+					threshold(scr1, scr1, 20, 255, CV_THRESH_TOZERO);
+
 
 				}
 				else {
@@ -734,6 +737,7 @@ public:
 					sgbm.disp12MaxDiff = dispMaxDiff;
 					sgbm.fullDP = dp;
 
+					//sgbm(Scl, Scr, dispo);
 					sgbm(scl1, scr1, dispo);
 
 					mutex->wait();
@@ -771,7 +775,7 @@ public:
 
 				}
 
-				//disp->convertTo(dispt, CV_8U, 255/((double)nDisp));
+				//disp->convertTo(dispt, CV_8U, 255/(nDisp*16.));
 				disp->convertTo(dispt, CV_8U, 1);
 				dispt = (255.0/(double)nDisp)*dispt;
 

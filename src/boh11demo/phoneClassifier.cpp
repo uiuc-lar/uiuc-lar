@@ -244,7 +244,7 @@ public:
 		if (msg.get(0).asString() == "open") {
 
 			if (msg.size() != 3) {
-				reply.add(0);
+				reply.addInt(0);
 			} else {
 
 				//get the names of the two ports to connect
@@ -256,10 +256,10 @@ public:
 				if (!mPort->addOutput(nmPort.c_str()) ||
 						!oPort->addOutput(npPort.c_str())) {
 					printf("failed\n");
-					reply.add(0);
+					reply.addInt(0);
 				} else {
 					printf("successful\n");
-					reply.add(1);
+					reply.addInt(1);
 				}
 			}
 		}
