@@ -259,6 +259,7 @@ public:
 		lname = "/"+name+"/torso"; rname = "/"+robotname+"/torso";
 		doption.put("local", lname.c_str());
 		doption.put("remote", rname.c_str());
+
 		robotTorso.open(doption);
 		if (!robotTorso.isValid()) {
 			printf("could not initialize torso control interface, failing...\n");
@@ -269,6 +270,7 @@ public:
 		lname = "/"+name+"/head"; rname = "/"+robotname+"/head";
 		doption.put("local", lname.c_str());
 		doption.put("remote", rname.c_str());
+
 		robotHead.open(doption);
 		if (!robotHead.isValid()) {
 			printf("could not initialize head control interface, failing...\n");
@@ -279,6 +281,7 @@ public:
 		lname = "/"+name+"/"+armname+"_arm"; rname = "/"+robotname+"/"+armname+"_arm";
 		doption.put("local", lname.c_str());
 		doption.put("remote", rname.c_str());
+
 		robotArm.open(doption);
 		if (!robotArm.isValid()) {
 			printf("could not initialize arm control interface, failing...\n");

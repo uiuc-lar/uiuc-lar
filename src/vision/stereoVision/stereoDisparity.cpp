@@ -305,7 +305,7 @@ public:
 
 		//transform to current world frame
 		loc[3] = 1.0;
-		
+
 		loc = Hlt*Hrct*loc;
 
 		loc = loc/loc[3];

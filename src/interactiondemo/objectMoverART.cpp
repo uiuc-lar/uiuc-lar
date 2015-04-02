@@ -323,7 +323,6 @@ public:
 		}
 		*/
 
-
 		return true;
 
 	}

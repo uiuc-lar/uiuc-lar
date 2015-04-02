@@ -30,6 +30,7 @@ TARGET_LINK_LIBRARIES(vaDetect ${YARP_LIBRARIES} ${ICUB_LIBRARIES} speech fftw3)
 TARGET_LINK_LIBRARIES(phoneticClassifier ${YARP_LIBRARIES} ${ICUB_LIBRARIES} RMLE imatlib torch blas lapack lapack_atlas)
 TARGET_LINK_LIBRARIES(lexiconLearner RMLE imatlib lexicon ${YARP_LIBRARIES} ${ICUB_LIBRARIES} torch blas lapack lapack_atlas gsl)
 TARGET_LINK_LIBRARIES(associativeMemory ${YARP_LIBRARIES} ${ICUB_LIBRARIES} RMLE imatlib torch blas lapack lapack_atlas)
+
 TARGET_LINK_LIBRARIES(armFwdKin ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(maDetect ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(demoGate ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
