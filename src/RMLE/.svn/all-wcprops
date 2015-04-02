@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 32
+/svn/!svn/ver/120/trunk/src/RMLE
+END
+HMM.hh
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/120/trunk/src/RMLE/HMM.hh
+END
+N.cc
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/120/trunk/src/RMLE/N.cc
+END
+hmmRMLE.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/120/trunk/src/RMLE/hmmRMLE.cpp
+END
+IndepPMF.cc
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/120/trunk/src/RMLE/IndepPMF.cc
+END
+str_list.cc
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/120/trunk/src/RMLE/str_list.cc
+END
+N.hh
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/120/trunk/src/RMLE/N.hh
+END
+gen_defines.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/120/trunk/src/RMLE/gen_defines.h
+END
+StochasticClassifier.cc
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/120/trunk/src/RMLE/StochasticClassifier.cc
+END
+label_list.cc
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/120/trunk/src/RMLE/label_list.cc
+END
+Gaussian.cc
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/120/trunk/src/RMLE/Gaussian.cc
+END
+IndepPMF.hh
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/120/trunk/src/RMLE/IndepPMF.hh
+END
+str_list.hh
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/120/trunk/src/RMLE/str_list.hh
+END
+HMM.cc
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/120/trunk/src/RMLE/HMM.cc
+END
+StochasticClassifier.hh
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/120/trunk/src/RMLE/StochasticClassifier.hh
+END
+Gaussian.hh
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/120/trunk/src/RMLE/Gaussian.hh
+END
+label_list.hh
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/120/trunk/src/RMLE/label_list.hh
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/120/trunk/src/RMLE/CMakeLists.txt
+END

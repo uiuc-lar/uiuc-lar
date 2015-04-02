@@ -1,0 +1,45 @@
+SET(PROJECTNAME jointAttention)
+
+PROJECT(${PROJECTNAME})
+
+FIND_PACKAGE(YARP)
+FIND_PACKAGE(ICUB)
+
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${YARP_DIR}/conf ${ICUB_DIR}/conf)
+FIND_PACKAGE(OpenCV REQUIRED)
+
+INCLUDE_DIRECTORIES(${YARP_INCLUDE_DIRS} ${ICUB_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+
+# add required linker flags
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ICUB_LINK_FLAGS}")              
+SET(CMAKE_CXX_FLAGS_DEBUG "-g")
+
+ADD_LIBRARY(RBFMap RBFMap.cpp)
+ADD_EXECUTABLE(faceDetector  gazeEstimator.cpp)
+ADD_EXECUTABLE(shakeSalience objectShaker.cpp)
+ADD_EXECUTABLE(jointAttention  jointAttentionMap.cpp)
+ADD_EXECUTABLE(objectSalience  salienceAggregator.cpp)
+ADD_EXECUTABLE(objectFeatures  objectFeatures.cpp)
+ADD_EXECUTABLE(randObjSeg  randObjSeg.cpp)
+ADD_EXECUTABLE(objectSegmentation  objectSegmentation.cpp)
+ADD_EXECUTABLE(topDownObjectMap  topDownObjectMap.cpp)
+ADD_EXECUTABLE(csSalience  csSalience.cpp)
+ADD_EXECUTABLE(gazeEstimator2  gazeEstimator2.cpp)
+ADD_EXECUTABLE(jointAttention3d  jointAttention3d.cpp)
+ADD_EXECUTABLE(objSegTrack  objectSegTrack.cpp)
+
+TARGET_LINK_LIBRARIES(faceDetector ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(shakeSalience ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(jointAttention RBFMap ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(objectSalience ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(objectFeatures ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(randObjSeg ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(objectSegmentation ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(topDownObjectMap ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(csSalience ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(gazeEstimator2 ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(jointAttention3d RBFMap ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(objSegTrack ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+
+
+INSTALL(TARGETS faceDetector shakeSalience jointAttention objectSalience objectFeatures randObjSeg objectSegmentation topDownObjectMap csSalience gazeEstimator2 jointAttention3d objSegTrack DESTINATION bin)

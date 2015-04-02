@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/120/trunk/src/visMotor/fineMotor
+END
+randFixReachable.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/120/trunk/src/visMotor/fineMotor/randFixReachable.cpp
+END
+babbleFineCart.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/120/trunk/src/visMotor/fineMotor/babbleFineCart.cpp
+END
+handOptFlow.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/120/trunk/src/visMotor/fineMotor/handOptFlow.cpp
+END
+babbleFineCart2.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/120/trunk/src/visMotor/fineMotor/babbleFineCart2.cpp
+END
+handTracksFix.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/120/trunk/src/visMotor/fineMotor/handTracksFix.cpp
+END
+babbleFine.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/120/trunk/src/visMotor/fineMotor/babbleFine.cpp
+END
+babbleFine2.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/120/trunk/src/visMotor/fineMotor/babbleFine2.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/120/trunk/src/visMotor/fineMotor/CMakeLists.txt
+END
+testMap.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/120/trunk/src/visMotor/fineMotor/testMap.cpp
+END

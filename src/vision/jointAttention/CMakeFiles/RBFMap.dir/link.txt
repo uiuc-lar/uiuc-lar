@@ -1,0 +1,2 @@
+/usr/bin/ar cr libRBFMap.a  CMakeFiles/RBFMap.dir/RBFMap.cpp.o
+/usr/bin/ranlib libRBFMap.a

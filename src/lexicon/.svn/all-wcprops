@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/120/trunk/src/lexicon
+END
+SequenceLearner.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/120/trunk/src/lexicon/SequenceLearner.cpp
+END
+SequenceLearnerDisc.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/120/trunk/src/lexicon/SequenceLearnerDisc.cpp
+END
+SequenceLearnerCont.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/120/trunk/src/lexicon/SequenceLearnerCont.cpp
+END
+SequenceLearner.h
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/120/trunk/src/lexicon/SequenceLearner.h
+END
+SequenceLearnerDisc.h
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/120/trunk/src/lexicon/SequenceLearnerDisc.h
+END
+SequenceLearnerCont.h
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/120/trunk/src/lexicon/SequenceLearnerCont.h
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/120/trunk/src/lexicon/CMakeLists.txt
+END

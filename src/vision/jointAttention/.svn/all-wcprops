@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/132/trunk/src/vision/jointAttention
+END
+jointAttention3d.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/130/trunk/src/vision/jointAttention/jointAttention3d.cpp
+END
+gazeEstimator2.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/130/trunk/src/vision/jointAttention/gazeEstimator2.cpp
+END
+visFeatExtractor.h
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/120/trunk/src/vision/jointAttention/visFeatExtractor.h
+END
+objectShaker.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/128/trunk/src/vision/jointAttention/objectShaker.cpp
+END
+objectFeatures.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/120/trunk/src/vision/jointAttention/objectFeatures.cpp
+END
+jointAttentionMap.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/!svn/ver/121/trunk/src/vision/jointAttention/jointAttentionMap.cpp
+END
+RBFMap.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/120/trunk/src/vision/jointAttention/RBFMap.cpp
+END
+csSalience.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/120/trunk/src/vision/jointAttention/csSalience.cpp
+END
+RBFMap.h
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/120/trunk/src/vision/jointAttention/RBFMap.h
+END
+gazeEstimator.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/120/trunk/src/vision/jointAttention/gazeEstimator.cpp
+END
+randObjSeg.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/120/trunk/src/vision/jointAttention/randObjSeg.cpp
+END
+colorTransform.h
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/120/trunk/src/vision/jointAttention/colorTransform.h
+END
+topDownObjectMap.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/120/trunk/src/vision/jointAttention/topDownObjectMap.cpp
+END
+objectSegmentation.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/!svn/ver/120/trunk/src/vision/jointAttention/objectSegmentation.cpp
+END
+salienceAggregator.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/!svn/ver/120/trunk/src/vision/jointAttention/salienceAggregator.cpp
+END
+objectSegTrack.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/132/trunk/src/vision/jointAttention/objectSegTrack.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/130/trunk/src/vision/jointAttention/CMakeLists.txt
+END

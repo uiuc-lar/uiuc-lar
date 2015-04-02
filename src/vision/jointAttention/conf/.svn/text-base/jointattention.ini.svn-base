@@ -1,0 +1,16 @@
+m 31 21
+n 31 21
+mr -1.0 1.0 20 60
+nr 0 320 80 220
+eta 0.0
+leak 1.0
+sm 0.001 1.0
+sn 100 20
+name ja
+w 320
+h 240
+tol 0.5
+alpha 0.1
+weights data/weights.tab
+inputs data/inputs.tab
+outputs data/outputs.tab

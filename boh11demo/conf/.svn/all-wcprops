@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/22/trunk/boh11demo/conf
+END
+memparams.ini
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/14/trunk/boh11demo/conf/memparams.ini
+END
+actionclass.ini
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/14/trunk/boh11demo/conf/actionclass.ini
+END
+phoneclassparams.ini
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/14/trunk/boh11demo/conf/phoneclassparams.ini
+END
+phoneclassparams2.ini
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/22/trunk/boh11demo/conf/phoneclassparams2.ini
+END
+actionclass-gen.ini
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/19/trunk/boh11demo/conf/actionclass-gen.ini
+END
+speechclass.ini
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/14/trunk/boh11demo/conf/speechclass.ini
+END
+memparams-load.ini
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/19/trunk/boh11demo/conf/memparams-load.ini
+END
+speechclass-demo.ini
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/19/trunk/boh11demo/conf/speechclass-demo.ini
+END

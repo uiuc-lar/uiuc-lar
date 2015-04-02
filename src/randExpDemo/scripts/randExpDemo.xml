@@ -1,0 +1,34 @@
+<application>
+<name>Motor Babbling Demo</name>
+<dependencies>
+	<port>/root</port>
+</dependencies>
+	<module>
+		<name>/home/niehaus4/uiuc-lar/randExpDemo/fwdConv</name>
+		<parameters>--input /fwdConv:i --output /fwdConv:o</parameters>
+		<node>johnny5</node>
+			<tag>fwdConv</tag>
+	</module>
+	<module>
+		<name>/home/niehaus4/uiuc-lar/randExpDemo/randHead</name>
+		<parameters>--robot icub</parameters>
+		<node>johnny5</node>
+			<tag>randHead</tag>
+	</module>
+	<module>
+		<name>/home/niehaus4/uiuc-lar/randExpDemo/randArmExplore</name>
+		<parameters>--robot icub</parameters>
+		<node>johnny5</node>
+			<tag>randArmExplore</tag>
+	</module>
+	<module>
+		<name>salience</name>
+		<parameters>--filter motion --numBlurPasses 1 --thresholdSalience 0.5</parameters>
+		<node>johnny5</node>
+			<tag>salience</tag>
+	</module>
+	<connection>
+		<from>/icub/cam/left</from>
+		<to>/salience/view</to>
+	</connection>
+</application>

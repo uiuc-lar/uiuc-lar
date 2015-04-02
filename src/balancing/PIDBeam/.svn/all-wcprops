@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/120/trunk/src/balancing/PIDBeam
+END
+control.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/120/trunk/src/balancing/PIDBeam/control.cpp
+END
+initialize.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/120/trunk/src/balancing/PIDBeam/initialize.cpp
+END
+dataWrite.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/120/trunk/src/balancing/PIDBeam/dataWrite.cpp
+END
+balance.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/120/trunk/src/balancing/PIDBeam/balance.cpp
+END
+calibration.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/120/trunk/src/balancing/PIDBeam/calibration.cpp
+END
+vision.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/120/trunk/src/balancing/PIDBeam/vision.cpp
+END
+balance.h
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/120/trunk/src/balancing/PIDBeam/balance.h
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/120/trunk/src/balancing/PIDBeam/CMakeLists.txt
+END

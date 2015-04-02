@@ -1,0 +1,61 @@
+<application>
+<name>Audio processing system</name>
+<dependencies>
+      <port>/root</port>
+</dependencies>
+<module>
+      <name>yarpdev</name>
+      <parameters>--device portaudio --id 10 --channels 1 --read --rate 48000 --samples 4096 --name /microphone</parameters>
+	  <node>johnny5</node>
+	<tag>microphones</tag>
+   </module>
+   <module>
+      <name>vaDetect</name>
+      <parameters>--threshold 10 --jump 50</parameters>
+	  <node>johnny5</node>
+	<stdio>johnny5</stdio>
+	<tag>vad</tag>
+   </module>
+   <module>
+      <name>phoneticClassifier</name>
+      <parameters>--from /home/niehaus4/uiuc-lar/boh11demo/conf/phoneclassparams2.ini</parameters>
+      <node>johnny5</node>
+	<tag>phoneclassifier</tag>
+	<stdio>johnny5</stdio>
+   </module>
+   <module>
+      <name>lexiconLearner</name>
+      <parameters>--from /home/niehaus4/uiuc-lar/boh11demo/conf/speechclass-demo.ini</parameters>
+      <node>johnny5</node>
+	<tag>wordlearner</tag>
+	<stdio>johnny5</stdio>
+   </module>
+   <module>
+	<name>demoGate</name>
+	<parameters>--input /gate:i --output /gate:o</parameters>
+	<node>johnny5</node>
+	<tag>gater</tag>
+	<stdio>johnny5</stdio>
+   </module>
+<connection>
+  <output>/microphone</output>
+  <input>/vad:i</input>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <output>/vad:o</output>
+  <input>/phone:i</input>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <output>/phone:o</output>
+  <input>/words:i</input>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <output>/words:o</output>
+  <input>/gate:i</input>
+  <protocol>tcp</protocol>
+</connection>
+</application>
+

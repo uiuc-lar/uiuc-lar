@@ -1,0 +1,19 @@
+<resources>
+
+	<computer>
+		<name>johnny5</name>
+		<description>Primary lab computer</description>
+	</computer>
+
+	<computer>
+		<name>icubsrv</name>
+		<description>Server laptop</description>
+	</computer>
+
+	<computer>
+		<name>pc104</name>
+		<description>PC104 Computer in Bert's Head</description>
+	</computer>
+
+
+</resources>

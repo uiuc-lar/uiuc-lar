@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/133/trunk/src/boh11demo
+END
+phoneClassifier.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/133/trunk/src/boh11demo/phoneClassifier.cpp
+END
+audioProcessing.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/120/trunk/src/boh11demo/audioProcessing.cpp
+END
+associativeMemory.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/120/trunk/src/boh11demo/associativeMemory.cpp
+END
+robotMicConditioning.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/120/trunk/src/boh11demo/robotMicConditioning.cpp
+END
+demoGate.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/120/trunk/src/boh11demo/demoGate.cpp
+END
+actionVad.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/120/trunk/src/boh11demo/actionVad.cpp
+END
+fwdConverter.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/120/trunk/src/boh11demo/fwdConverter.cpp
+END
+lexiconLearner.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/120/trunk/src/boh11demo/lexiconLearner.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/120/trunk/src/boh11demo/CMakeLists.txt
+END

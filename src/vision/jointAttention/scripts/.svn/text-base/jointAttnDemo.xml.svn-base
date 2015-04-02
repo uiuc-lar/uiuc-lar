@@ -1,0 +1,73 @@
+<application>
+<name>Joint Attention System Demo</name>
+<dependencies>
+      <port>/root</port>
+      <port>/icub/camcalib/right</port>
+</dependencies>
+   <module>
+      <name>faceDetector</name>
+      <parameters></parameters>
+      <node>johnny5</node>
+	<tag>facedetector</tag>
+   </module>
+   <module>
+      <name>shakeSalience</name>
+      <parameters>--from /home/niehaus4/uiuc-lar/vision/jointAttention/conf/eventdetector.ini</parameters>
+	  <node>johnny5</node>
+	<tag>shakesalience</tag>
+   </module>
+   <module>
+      <name>jointAttention</name>
+      <parameters>--from /home/niehaus4/uiuc-lar/vision/jointAttention/conf/jointattention.ini</parameters>
+      <node>johnny5</node>
+	<tag>jointattention</tag>
+   </module>
+   <module>
+      <name>objectSalience</name>
+      <parameters></parameters>
+	  <node>johnny5</node>
+	<tag>objectsalience</tag>
+   </module>
+   <module>
+      <name>yarpview</name>
+      <parameters>--name /objsegview/img:i</parameters>
+	  <node>johnny5</node>
+	<tag>objsegviewer</tag>
+   </module>
+<connection>
+  <from>/faceDetector/feat:o</from>
+  <to>/jointAttention/gaze:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/shakeDetector/loc:o</from>
+  <to>/jointAttention/loc:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/jointAttention/map:o</from>
+  <to>/objectSalience/gaze:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/objectSalience/img:o</from>
+  <to>/objsegview/img:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/icub/camcalib/right</from>
+  <to>/faceDetector/img:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/icub/camcalib/right</from>
+  <to>/shakeDetector/img:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/icub/camcalib/right</from>
+  <to>/objectSalience/img:i</to>
+  <protocol>tcp</protocol>
+</connection>
+</application>
+

@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/120/trunk/src/vision/blobTracker3d
+END
+stereoBlobTrack.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/120/trunk/src/vision/blobTracker3d/stereoBlobTrack.cpp
+END
+stereoBallLoc.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/120/trunk/src/vision/blobTracker3d/stereoBallLoc.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/120/trunk/src/vision/blobTracker3d/CMakeLists.txt
+END

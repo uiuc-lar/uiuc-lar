@@ -1,0 +1,11 @@
+nphones 14
+ncoeffs 15
+<<<<<<< .mine
+afile /home/niehaus4/uiuc-lar/boh11demo/data/A.csv
+mufile /home/niehaus4/uiuc-lar/boh11demo/data/MU.csv
+ufile /home/niehaus4/uiuc-lar/boh11demo/data/U.csv
+=======
+afile /home/logan/uiuc-lar/boh11demo/data/A.csv
+mufile /home/logan/uiuc-lar/boh11demo/data/MU.csv
+ufile /home/logan/uiuc-lar/boh11demo/data/U.csv
+>>>>>>> .r22

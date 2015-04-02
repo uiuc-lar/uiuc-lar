@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/120/trunk/src/vision/stereoAttention/conf
+END
+icubSimEyes.ini
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/!svn/ver/120/trunk/src/vision/stereoAttention/conf/icubSimEyes.ini
+END
+egowarp.ini
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/120/trunk/src/vision/stereoAttention/conf/egowarp.ini
+END
+iorbert.ini
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/120/trunk/src/vision/stereoAttention/conf/iorbert.ini
+END
+bertwarp.ini
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/!svn/ver/120/trunk/src/vision/stereoAttention/conf/bertwarp.ini
+END

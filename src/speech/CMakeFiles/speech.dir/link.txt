@@ -1,0 +1,2 @@
+/usr/bin/ar cr libspeech.a  CMakeFiles/speech.dir/mfcc.cpp.o
+/usr/bin/ranlib libspeech.a

@@ -1,0 +1,101 @@
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/120/trunk/src/imatlib
+END
+IVec.o
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/120/trunk/src/imatlib/IVec.o
+END
+IVec.hh
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/120/trunk/src/imatlib/IVec.hh
+END
+IVecInt.cc
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/120/trunk/src/imatlib/IVecInt.cc
+END
+IMat.o
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/120/trunk/src/imatlib/IMat.o
+END
+IMat.hh
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/120/trunk/src/imatlib/IMat.hh
+END
+IMatInt.cc
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/120/trunk/src/imatlib/IMatInt.cc
+END
+gen_defines.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/120/trunk/src/imatlib/gen_defines.h
+END
+IMatVecOps.cc
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/120/trunk/src/imatlib/IMatVecOps.cc
+END
+IVecInt.hh
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/120/trunk/src/imatlib/IVecInt.hh
+END
+IMatInt.o
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/120/trunk/src/imatlib/IMatInt.o
+END
+IMatInt.hh
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/120/trunk/src/imatlib/IMatInt.hh
+END
+IMatVecOps.o
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/120/trunk/src/imatlib/IMatVecOps.o
+END
+IMatVecOps.hh
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/120/trunk/src/imatlib/IMatVecOps.hh
+END
+IVec.cc
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/120/trunk/src/imatlib/IVec.cc
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/120/trunk/src/imatlib/CMakeLists.txt
+END
+IMat.cc
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/120/trunk/src/imatlib/IMat.cc
+END

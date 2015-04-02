@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/120/trunk/src/boh11demo/data
+END
+initdata.dat
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/120/trunk/src/boh11demo/data/initdata.dat
+END
+A.csv
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/120/trunk/src/boh11demo/data/A.csv
+END
+MU.csv
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/120/trunk/src/boh11demo/data/MU.csv
+END
+soundinitdata.dat
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/120/trunk/src/boh11demo/data/soundinitdata.dat
+END
+U.csv
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/120/trunk/src/boh11demo/data/U.csv
+END

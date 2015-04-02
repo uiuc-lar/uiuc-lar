@@ -1,0 +1,108 @@
+<application>
+<name>Audio processing system</name>
+<dependencies>
+      <port>/root</port>
+      <port>/icubSim/right_arm/state:o</port>
+</dependencies>
+<module>
+      <name>yarpdev</name>
+      <parameters>--device portaudio --id 10 --channels 1 --read --rate 48000 --samples 4096 --name /microphone</parameters>
+	  <node>johnny5</node>
+	<tag>microphones</tag>
+   </module>
+   <module>
+      <name>vaDetect</name>
+      <parameters>--threshold 3</parameters>
+	  <node>johnny5</node>
+	<tag>vad</tag>
+   </module>
+   <module>
+      <name>phoneticClassifier</name>
+      <parameters>--from /home/icub/uiuc-lar/boh11demo/conf/phoneclassparams2.ini</parameters>
+      <node>johnny5</node>
+	<tag>phoneclassifier</tag>
+   </module>
+   <module>
+      <name>lexiconLearner</name>
+      <parameters>--from /home/icub/uiuc-lar/boh11demo/conf/speechclass.ini</parameters>
+      <node>johnny5</node>
+	<tag>wordlearner</tag>
+	<stdio>johnny5</stdio>
+   </module>
+   <module>
+      <name>armFwdKin</name>
+      <node>johnny5</node>
+	<tag>fwdkinematics</tag>
+   </module>
+   <module>
+      <name>maDetect</name>
+      <parameters>--threshold 0.0001 --decimate 3</parameters>
+	  <node>johnny5</node>
+	<tag>mad</tag>
+   </module>
+   <module>
+      <name>lexiconLearner</name>
+      <parameters>--from /home/icub/uiuc-lar/boh11demo/conf/actionclass.ini</parameters>
+      <node>johnny5</node>
+	<tag>actionlearner</tag>
+	<stdio>johnny5</stdio>
+   </module>
+   <module>
+	<name>associativeMemory</name>
+	<parameters> --from /home/icub/uiuc-lar/boh11demo/conf/memparams.ini</parameters>
+	<node>johnny5</node>
+	<tag>chmm</tag>
+	<stdio>johnny5</stdio>
+   </module>
+<connection>
+  <from>/microphone</from>
+  <to>/vad:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/vad:o</from>
+  <to>/phone:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/phone:o</from>
+  <to>/words:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/icubSim/right_arm/state:o</from>
+  <to>/jointsIn</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/cartesianOut</from>
+  <to>/mad:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/mad:o</from>
+  <to>/actions:i</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/words:o</from>
+  <to>/assocMem/in:a</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/actions:o</from>
+  <to>/assocMem/in:b</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/assocMem/act:a</from>
+  <to>/vad:o/status</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/assocMem/act:b</from>
+  <to>/mad:o/status</to>
+  <protocol>tcp</protocol>
+</connection>
+</application>
+

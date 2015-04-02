@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/120/trunk/src/visMotor/motorTools
+END
+SOM.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/120/trunk/src/visMotor/motorTools/SOM.cpp
+END
+SOM.h
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/120/trunk/src/visMotor/motorTools/SOM.h
+END
+fwdConverter.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/120/trunk/src/visMotor/motorTools/fwdConverter.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/120/trunk/src/visMotor/motorTools/CMakeLists.txt
+END

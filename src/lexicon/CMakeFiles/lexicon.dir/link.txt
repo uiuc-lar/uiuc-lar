@@ -1,0 +1,2 @@
+/usr/bin/ar cr liblexicon.a  CMakeFiles/lexicon.dir/SequenceLearnerDisc.cpp.o CMakeFiles/lexicon.dir/SequenceLearner.cpp.o CMakeFiles/lexicon.dir/SequenceLearnerCont.cpp.o
+/usr/bin/ranlib liblexicon.a

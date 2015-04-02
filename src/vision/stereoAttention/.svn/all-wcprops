@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/120/trunk/src/vision/stereoAttention
+END
+depthMap.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/120/trunk/src/vision/stereoAttention/depthMap.cpp
+END
+egoRemapper.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/120/trunk/src/vision/stereoAttention/egoRemapper.cpp
+END
+stereoIOR.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/120/trunk/src/vision/stereoAttention/stereoIOR.cpp
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/120/trunk/src/vision/stereoAttention/CMakeLists.txt
+END
+stereoAttentionSystem.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/!svn/ver/120/trunk/src/vision/stereoAttention/stereoAttentionSystem.cpp
+END

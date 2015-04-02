@@ -1,0 +1,63 @@
+<application>
+<name>Joint Attention 3d</name>
+<dependencies>
+      <port>/icub/camcalib/left/out</port>
+      <port>/stereoVision/rpc</port>
+</dependencies>
+   <module>
+      <name>gazeEstimator2 --eyethresh 110 --mincd 4</name>
+      <parameters></parameters>
+      <node>johnny5</node>
+	<tag>gazeEstimator</tag>
+   </module>
+   <module>
+      <name>jointAttention3d</name>
+      <parameters>--from conf/jointattention3d.ini --name ja</parameters>
+      <node>johnny5</node>
+	<tag>jointattention</tag>
+   </module>
+   <module>
+      <name>yarpview</name>
+      <parameters>--name /jamapview</parameters>
+	  <node>johnny5</node>
+	<tag>JAmapviewer</tag>
+   </module>
+   <module>
+      <name>yarpview</name>
+      <parameters>--name /gazeview</parameters>
+	  <node>johnny5</node>
+	<tag>gazeviewer</tag>
+   </module>
+<connection>
+  <from>/gazeEstimator/feat:o</from>
+  <to>/ja/feat:i</to>
+  <protocol>shmem</protocol>
+</connection>
+<connection>
+  <from>/gazeEstimator/eye:o</from>
+  <to>/ja/eye:i</to>
+  <protocol>shmem</protocol>
+</connection>
+<connection>
+  <from>/ja/view</from>
+  <to>/jamapview</to>
+  <protocol>shmem</protocol>
+</connection>
+<connection>
+  <from>/gazeEstimator/img:o</from>
+  <to>/gazeview</to>
+  <protocol>shmem</protocol>
+</connection>
+<connection>
+  <from>/icub/camcalib/left</from>
+  <to>/gazeEstimator/img:i</to>
+  <protocol>shmem</protocol>
+</connection>
+<connection>
+  <from>/ja/svrpc</from>
+  <to>/stereoVision/rpc</to>
+  <protocol>shmem</protocol>
+</connection>
+
+</application>
+
