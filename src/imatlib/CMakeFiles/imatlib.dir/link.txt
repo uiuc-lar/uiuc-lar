@@ -1,2 +1,0 @@
-/usr/bin/ar cr libimatlib.a  CMakeFiles/imatlib.dir/IMatInt.cc.o CMakeFiles/imatlib.dir/IMat.cc.o CMakeFiles/imatlib.dir/IMatVecOps.cc.o CMakeFiles/imatlib.dir/IVecInt.cc.o CMakeFiles/imatlib.dir/IVec.cc.o
-/usr/bin/ranlib libimatlib.a
