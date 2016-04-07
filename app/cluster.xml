@@ -1,13 +1,8 @@
 <resources>
 
 	<computer>
-		<name>johnny5</name>
-		<description>Primary lab computer</description>
-	</computer>
-
-	<computer>
-		<name>icubsrv</name>
-		<description>Server laptop</description>
+		<name>marvin</name>
+		<description>Primary lab computer and icub server</description>
 	</computer>
 
 	<computer>
