@@ -5,5 +5,5 @@ Language Acquisition and Robotics Group at the University of Illinois at Urbana-
 http://www.isle.illinois.edu/acquisition/ 
 
 2 branches here:
-   master ->  current version on johnny5
+   master ->  current version on marvin
    googlecodeVersion -> exported from google code 
