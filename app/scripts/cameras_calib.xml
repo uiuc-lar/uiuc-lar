@@ -1,32 +1,30 @@
 <application>
-<name>Cameras</name>
+<name>Cameras Calibrated</name>
 <dependencies>
    <port>/root</port>
 </dependencies> 
 <module>
   <name>icubmoddev</name>
-  <parameters>--device grabber --subdevice dragonfly2 --width 320 --height 240 --video_type 1 --white_balance 0.464 0.757 --gain 0.233 --shutter 0.703 --name /icub/cam/left  --brightness 0 --DR2 --stamp --d 0 --sharpness 0.5 --hue 0.48 --gamma 0.4 --saturation 0.271 --framerate 60 </parameters>
+  <parameters>--device grabber --subdevice dragonfly2 --width 320 --height 240 --video_type 1 --white_balance 0.464 0.757 --gain 0.233 --shutter 0.703 --name /icub/cam/left  --brightness 0 --DR2 --stamp --d 0 --sharpness 0.5 --hue 0.48 --gamma 0.4 --saturation 0.271 --framerate 30</parameters>
   <node>pc104</node>
   <tag>camera_left</tag>
 </module>
 <module>
   <name>icubmoddev</name>
-  <parameters>--device grabber --subdevice dragonfly2 --width 320 --height 240 --video_type 1 --white_balance 0.464 0.757 --gain 0.233 --shutter 0.703 --name /icub/cam/right  --brightness 0 --DR2 --stamp --d 1 --sharpness 0.5 --hue 0.48 --gamma 0.4 --saturation 0.271 --framerate 60 </parameters>
+  <parameters>--device grabber --subdevice dragonfly2 --width 320 --height 240 --video_type 1 --white_balance 0.464 0.757 --gain 0.233 --shutter 0.703 --name /icub/cam/right  --brightness 0 --DR2 --stamp --d 1 --sharpness 0.5 --hue 0.48 --gamma 0.4 --saturation 0.271 --framerate 30</parameters>
   <node>pc104</node>
   <tag>camera_right</tag>
 </module>
 <module>
   <name>camCalib</name>
-  <parameters>--name /icub/camcalib/left --context camCalib --from /left/camCalib.ini</parameters>
+  <parameters>--name /icub/camcalib/left --context /srv/uiuc-lar/app/conf --group CAMERA_CALIBRATION_LEFT --from bertEyes.ini</parameters>
   <node>marvin</node>
-  <stdio>marvin</stdio>
   <tag>camCalibLeft</tag>
 </module>
 <module>
   <name>camCalib</name>
-  <parameters>--name /icub/camcalib/right --context camCalib --from /right/camCalib.ini</parameters>
+  <parameters>--name /icub/camcalib/right --context /srv/uiuc-lar/app/conf --group CAMERA_CALIBRATION_RIGHT --from bertEyes.ini</parameters>
   <node>marvin</node>
-  <stdio>marvin</stdio>
   <tag>camCalibRight</tag>
 </module>
 <module>

@@ -37,6 +37,7 @@ bin/*
 *cmake*
 *CMakeCache.txt
 CMakeFiles/*
+src/ballplace/CMakeFiles*
 CMakeScripts
 *Makefile*
 *cmake_install.cmake*
