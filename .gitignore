@@ -37,7 +37,9 @@ bin/*
 *cmake*
 *CMakeCache.txt
 CMakeFiles/*
-src/ballplace/CMakeFiles*
+src/ballplate/CMakeFiles*
+src/blobTracker3d/CMakeFiles/*
+src/maze/CMakeFiles/*
 CMakeScripts
 *Makefile*
 *cmake_install.cmake*
