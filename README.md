@@ -7,3 +7,4 @@ http://www.isle.illinois.edu/acquisition/
 2 branches here:
    master ->  current version on marvin
    googlecodeVersion -> exported from google code 
+   appdate -> version being cleaned up for easier execution of demo apps

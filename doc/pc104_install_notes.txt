@@ -1,0 +1,83 @@
+################################################################################
+                            Configuration on PC104
+################################################################################
+
+    Operating system:  
+        Debian "Edge and a half" is a modified version of debian 4. 
+
+    YARP: 
+        Version 2.3.20 is the latest that is explicitly supported for the 
+        hardware found on iCub running Edge-and-a-half. Later versions could 
+        theoretically be installed would require much effort required to 
+        install all dependencies.
+        
+    iCub Software: 
+        Version 1.1.11 is the latest that will work with Yarp 2.3.20. 
+        
+    Drivers: 
+        Updates are theoretically possible but at great risk of losing 
+        functionality of current demos that involve motor function. 
+        Drivers have not been updated for a long time and some updates
+        change the PID controllers which may cause significant changes 
+        to the motor behavior and ultimately risk physical damage.
+        Since the other software is frozen at an older version, updating
+        the drivers is not recommended.
+
+
+################################################################################
+                        Software installation on PC104
+################################################################################
+
+    The installation instructions are found here: 
+        http://wiki.icub.org/wiki/ICub_server_laptop_installation_instructions
+
+    Note that the link for setting up NFS shares is also important:
+        http://wiki.icub.org/wiki/Generic_iCub_machine_installation_instructions#mount_remote_NFS_shares
+
+    One key thing to be aware of is the ownership of the network files once they 
+    are visible from the PC104. If the machine sharing them has a user called
+    "icub" (which is the case for marvin) then you need to run the 
+                $ sudo chown icub:icub -R /exports/code
+    commands locally on the PC104. You should not need to use sudo to run 
+    ccmake on the build directories. If you do, there is an ownership issue.
+
+    Environment setup: 
+        The current .bash_icub file should be correctly configured for compilation
+        on the PC104. If the file is lost for some reason, it follows the 
+        the configuration detailed on the "old laptop installation" page.
+
+        http://wiki.icub.org/wiki/ICub_laptop_installation_instructions_for_old_releases
+
+        A copy of the current bash_icub file should be kept in this folder
+        for reference if it is lost from the iCub.
+
+
+    Compilation on the PC104:
+        The instructions found on this page were followed exactly with no hickups.
+
+        http://wiki.icub.org/wiki/Compilation_on_the_pc104_old
+    
+    YARP Configuration:
+        Once everything has been installed, you should be able to run YARP from
+        another machine on the network and start the iCub. If iCub does not see 
+        the yarp network then you'll need to make sure yarp is correctly 
+        configured on the PC104 to look at the correct IP.
+
+        Currently, marvin's IP is 10.0.0.4 so the following command will tell 
+        the iCub to look to marvin for the yarp server. The 1000 parameter is 
+        the port to look at (and 1000 is the default port for yarp). 
+
+        $ yarp config 10.0.0.4 1000
+
+        It is also important to make sure that the machine running the yarp
+        server is also using the same version of yarp as the iCub. Some commands
+        may work but other's may break. It's best to keep the configuration 
+        consistent.
+
+
+    Calibration:
+        Once the yarp server is running happily, it should be possible to run 
+        the calibration sequence on the iCub (normal startup procedure). You 
+        may need to double check the directory in which the start-up script
+        looks for the calibration files. The configuration as of writing this 
+        document is not the standard defined on the instructions linked above. 
