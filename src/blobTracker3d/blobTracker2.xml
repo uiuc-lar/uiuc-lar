@@ -3,18 +3,6 @@
 <dependencies>
       <port>/root</port>
 </dependencies>
-<module>
-	<name>yarpview</name>
-	<parameters>--name /icub/view/left --x 0 --y 0 --synch</parameters>
-	<node>marvin</node>
-	<tag>viewleft</tag>
-</module>
-<module>
-	<name>yarpview</name>
-	<parameters>--name /icub/view/right --x 320 --y 0 --synch</parameters>
-	<node>marvin</node>
-	<tag>viewright</tag>
-</module>
    <module>
       <name>fwdConv</name>
       <parameters>--input /fwdConv:i --output /fwdConv:o --arm right</parameters>

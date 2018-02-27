@@ -1,0 +1,58 @@
+<application>
+<name>Audio Blob Tracker</name>
+<dependencies>
+      <port>/root</port>
+</dependencies>
+<module>
+      <name>yarpdev</name>
+      <parameters>--device portaudio --id 1 --channels 1 --read --rate 48000 --samples 4096 --name /microphone</parameters>
+	  <node>pc104</node>
+	<tag>microphones</tag>
+</module>
+<module>
+	<name>yarpview</name>
+	<parameters>--name /icub/view/left --x 0 --y 0 --synch</parameters>
+	<node>marvin</node>
+	<tag>viewleft</tag>
+</module>
+<module>
+	<name>yarpview</name>
+	<parameters>--name /icub/view/right --x 320 --y 0 --synch</parameters>
+	<node>marvin</node>
+	<tag>viewright</tag>
+</module>
+   <module>
+      <name>audioBlobTrack</name>
+      <parameters>--green --tol 10.0 --robot icub --hysval 2.0</parameters>
+      <node>marvin</node>
+      <stdio>marvin</stdio>
+      <tag>stereohandtrack</tag>
+   </module>
+   <module>
+      <name>yarpview</name>
+      <parameters>--name /stereoview/img:i --synch</parameters>
+      <node>marvin</node>
+      <tag>trackviewer</tag>
+   </module>
+<connection>
+  <output>/microphone</output>
+  <input>/vad:i</input>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/icub/camcalib/left/out</from>
+  <to>/stereoBlobTrack/img:l</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/icub/camcalib/right/out</from>
+  <to>/stereoBlobTrack/img:r</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/stereoBlobTrack/img:o</from>
+  <to>/stereoview/img:i</to>
+  <protocol>tcp</protocol>
+</connection>
+</application>
+

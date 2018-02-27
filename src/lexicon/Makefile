@@ -30,22 +30,22 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /usr/local/bin/cmake
+CMAKE_COMMAND = /usr/bin/cmake
 
 # The command to remove a file.
-RM = /usr/local/bin/cmake -E remove -f
+RM = /usr/bin/cmake -E remove -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /usr/local/bin/ccmake
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/niehaus4/uiuc-lar
+CMAKE_SOURCE_DIR = /srv/uiuc-lar
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/niehaus4/uiuc-lar
+CMAKE_BINARY_DIR = /srv/uiuc-lar
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -53,7 +53,7 @@ CMAKE_BINARY_DIR = /home/niehaus4/uiuc-lar
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/usr/local/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -63,19 +63,19 @@ edit_cache/fast: edit_cache
 # Special rule for the target install
 install: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/usr/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install
 
 # Special rule for the target install
 install/fast: preinstall/fast
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/usr/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install/fast
 
 # Special rule for the target install/local
 install/local: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
-	/usr/local/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
 .PHONY : install/local
 
 # Special rule for the target install/local
@@ -85,7 +85,7 @@ install/local/fast: install/local
 # Special rule for the target install/strip
 install/strip: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
-	/usr/local/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
 .PHONY : install/strip
 
 # Special rule for the target install/strip
@@ -104,7 +104,7 @@ list_install_components/fast: list_install_components
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/usr/local/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -113,14 +113,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -E cmake_progress_start /home/niehaus4/uiuc-lar/CMakeFiles /home/niehaus4/uiuc-lar/src/lexicon/CMakeFiles/progress.marks
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/lexicon/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/niehaus4/uiuc-lar/CMakeFiles 0
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -E cmake_progress_start /srv/uiuc-lar/CMakeFiles /srv/uiuc-lar/src/lexicon/CMakeFiles/progress.marks
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/lexicon/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /srv/uiuc-lar/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/lexicon/clean
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/lexicon/clean
 .PHONY : clean
 
 # The main clean target
@@ -129,22 +129,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/lexicon/preinstall
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/lexicon/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/lexicon/preinstall
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/lexicon/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 src/lexicon/CMakeFiles/lexicon.dir/rule:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/lexicon/CMakeFiles/lexicon.dir/rule
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/lexicon/CMakeFiles/lexicon.dir/rule
 .PHONY : src/lexicon/CMakeFiles/lexicon.dir/rule
 
 # Convenience name for target.
@@ -153,7 +153,7 @@ lexicon: src/lexicon/CMakeFiles/lexicon.dir/rule
 
 # fast build rule for target.
 lexicon/fast:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/build
+	cd /srv/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/build
 .PHONY : lexicon/fast
 
 SequenceLearner.o: SequenceLearner.cpp.o
@@ -161,7 +161,7 @@ SequenceLearner.o: SequenceLearner.cpp.o
 
 # target to build an object file
 SequenceLearner.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearner.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearner.cpp.o
 .PHONY : SequenceLearner.cpp.o
 
 SequenceLearner.i: SequenceLearner.cpp.i
@@ -169,7 +169,7 @@ SequenceLearner.i: SequenceLearner.cpp.i
 
 # target to preprocess a source file
 SequenceLearner.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearner.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearner.cpp.i
 .PHONY : SequenceLearner.cpp.i
 
 SequenceLearner.s: SequenceLearner.cpp.s
@@ -177,7 +177,7 @@ SequenceLearner.s: SequenceLearner.cpp.s
 
 # target to generate assembly for a file
 SequenceLearner.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearner.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearner.cpp.s
 .PHONY : SequenceLearner.cpp.s
 
 SequenceLearnerCont.o: SequenceLearnerCont.cpp.o
@@ -185,7 +185,7 @@ SequenceLearnerCont.o: SequenceLearnerCont.cpp.o
 
 # target to build an object file
 SequenceLearnerCont.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerCont.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerCont.cpp.o
 .PHONY : SequenceLearnerCont.cpp.o
 
 SequenceLearnerCont.i: SequenceLearnerCont.cpp.i
@@ -193,7 +193,7 @@ SequenceLearnerCont.i: SequenceLearnerCont.cpp.i
 
 # target to preprocess a source file
 SequenceLearnerCont.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerCont.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerCont.cpp.i
 .PHONY : SequenceLearnerCont.cpp.i
 
 SequenceLearnerCont.s: SequenceLearnerCont.cpp.s
@@ -201,7 +201,7 @@ SequenceLearnerCont.s: SequenceLearnerCont.cpp.s
 
 # target to generate assembly for a file
 SequenceLearnerCont.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerCont.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerCont.cpp.s
 .PHONY : SequenceLearnerCont.cpp.s
 
 SequenceLearnerDisc.o: SequenceLearnerDisc.cpp.o
@@ -209,7 +209,7 @@ SequenceLearnerDisc.o: SequenceLearnerDisc.cpp.o
 
 # target to build an object file
 SequenceLearnerDisc.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerDisc.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerDisc.cpp.o
 .PHONY : SequenceLearnerDisc.cpp.o
 
 SequenceLearnerDisc.i: SequenceLearnerDisc.cpp.i
@@ -217,7 +217,7 @@ SequenceLearnerDisc.i: SequenceLearnerDisc.cpp.i
 
 # target to preprocess a source file
 SequenceLearnerDisc.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerDisc.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerDisc.cpp.i
 .PHONY : SequenceLearnerDisc.cpp.i
 
 SequenceLearnerDisc.s: SequenceLearnerDisc.cpp.s
@@ -225,7 +225,7 @@ SequenceLearnerDisc.s: SequenceLearnerDisc.cpp.s
 
 # target to generate assembly for a file
 SequenceLearnerDisc.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerDisc.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/lexicon/CMakeFiles/lexicon.dir/build.make src/lexicon/CMakeFiles/lexicon.dir/SequenceLearnerDisc.cpp.s
 .PHONY : SequenceLearnerDisc.cpp.s
 
 # Help Target
@@ -261,6 +261,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

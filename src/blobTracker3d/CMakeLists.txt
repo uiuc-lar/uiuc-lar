@@ -18,10 +18,12 @@ SET(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 ADD_EXECUTABLE(stereoBallLoc  stereoBallLoc.cpp)
 ADD_EXECUTABLE(stereoBlobTrack stereoBlobTrack.cpp)
+ADD_EXECUTABLE(audioBlobTrack stereoBlobTrackAudio.cpp)
 
 TARGET_LINK_LIBRARIES(stereoBallLoc ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES} icubmod)
 
 TARGET_LINK_LIBRARIES(stereoBlobTrack ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES} icubmod)
 
+TARGET_LINK_LIBRARIES(audioBlobTrack ${OpenCV_LIBRARIES} ${YARP_LIBRARIES} ${ICUB_LIBRARIES} icubmod)
 
-INSTALL(TARGETS stereoBallLoc stereoBlobTrack DESTINATION bin)
+INSTALL(TARGETS stereoBallLoc stereoBlobTrack audioBlobTrack DESTINATION bin)

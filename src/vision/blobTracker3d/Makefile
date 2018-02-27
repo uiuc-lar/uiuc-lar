@@ -30,22 +30,22 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /usr/local/bin/cmake
+CMAKE_COMMAND = /usr/bin/cmake
 
 # The command to remove a file.
-RM = /usr/local/bin/cmake -E remove -f
+RM = /usr/bin/cmake -E remove -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /usr/local/bin/ccmake
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/niehaus4/uiuc-lar
+CMAKE_SOURCE_DIR = /srv/uiuc-lar
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/niehaus4/uiuc-lar
+CMAKE_BINARY_DIR = /srv/uiuc-lar
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -53,7 +53,7 @@ CMAKE_BINARY_DIR = /home/niehaus4/uiuc-lar
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/usr/local/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -63,19 +63,19 @@ edit_cache/fast: edit_cache
 # Special rule for the target install
 install: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/usr/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install
 
 # Special rule for the target install
 install/fast: preinstall/fast
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/usr/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install/fast
 
 # Special rule for the target install/local
 install/local: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
-	/usr/local/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
 .PHONY : install/local
 
 # Special rule for the target install/local
@@ -85,7 +85,7 @@ install/local/fast: install/local
 # Special rule for the target install/strip
 install/strip: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
-	/usr/local/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
 .PHONY : install/strip
 
 # Special rule for the target install/strip
@@ -104,7 +104,7 @@ list_install_components/fast: list_install_components
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/usr/local/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -113,14 +113,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -E cmake_progress_start /home/niehaus4/uiuc-lar/CMakeFiles /home/niehaus4/uiuc-lar/src/vision/blobTracker3d/CMakeFiles/progress.marks
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/niehaus4/uiuc-lar/CMakeFiles 0
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -E cmake_progress_start /srv/uiuc-lar/CMakeFiles /srv/uiuc-lar/src/vision/blobTracker3d/CMakeFiles/progress.marks
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /srv/uiuc-lar/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/clean
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/clean
 .PHONY : clean
 
 # The main clean target
@@ -129,22 +129,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/preinstall
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/preinstall
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/rule:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/rule
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/rule
 .PHONY : src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/rule
 
 # Convenience name for target.
@@ -153,12 +153,12 @@ stereoBallLoc: src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/rule
 
 # fast build rule for target.
 stereoBallLoc/fast:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/build
+	cd /srv/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/build
 .PHONY : stereoBallLoc/fast
 
 # Convenience name for target.
 src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/rule:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/rule
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/rule
 .PHONY : src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/rule
 
 # Convenience name for target.
@@ -167,7 +167,7 @@ stereoBlobTrack: src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/rule
 
 # fast build rule for target.
 stereoBlobTrack/fast:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/build
+	cd /srv/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/build
 .PHONY : stereoBlobTrack/fast
 
 stereoBallLoc.o: stereoBallLoc.cpp.o
@@ -175,7 +175,7 @@ stereoBallLoc.o: stereoBallLoc.cpp.o
 
 # target to build an object file
 stereoBallLoc.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/stereoBallLoc.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/stereoBallLoc.cpp.o
 .PHONY : stereoBallLoc.cpp.o
 
 stereoBallLoc.i: stereoBallLoc.cpp.i
@@ -183,7 +183,7 @@ stereoBallLoc.i: stereoBallLoc.cpp.i
 
 # target to preprocess a source file
 stereoBallLoc.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/stereoBallLoc.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/stereoBallLoc.cpp.i
 .PHONY : stereoBallLoc.cpp.i
 
 stereoBallLoc.s: stereoBallLoc.cpp.s
@@ -191,7 +191,7 @@ stereoBallLoc.s: stereoBallLoc.cpp.s
 
 # target to generate assembly for a file
 stereoBallLoc.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/stereoBallLoc.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBallLoc.dir/stereoBallLoc.cpp.s
 .PHONY : stereoBallLoc.cpp.s
 
 stereoBlobTrack.o: stereoBlobTrack.cpp.o
@@ -199,7 +199,7 @@ stereoBlobTrack.o: stereoBlobTrack.cpp.o
 
 # target to build an object file
 stereoBlobTrack.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/stereoBlobTrack.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/stereoBlobTrack.cpp.o
 .PHONY : stereoBlobTrack.cpp.o
 
 stereoBlobTrack.i: stereoBlobTrack.cpp.i
@@ -207,7 +207,7 @@ stereoBlobTrack.i: stereoBlobTrack.cpp.i
 
 # target to preprocess a source file
 stereoBlobTrack.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/stereoBlobTrack.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/stereoBlobTrack.cpp.i
 .PHONY : stereoBlobTrack.cpp.i
 
 stereoBlobTrack.s: stereoBlobTrack.cpp.s
@@ -215,7 +215,7 @@ stereoBlobTrack.s: stereoBlobTrack.cpp.s
 
 # target to generate assembly for a file
 stereoBlobTrack.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/stereoBlobTrack.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/build.make src/vision/blobTracker3d/CMakeFiles/stereoBlobTrack.dir/stereoBlobTrack.cpp.s
 .PHONY : stereoBlobTrack.cpp.s
 
 # Help Target
@@ -249,6 +249,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

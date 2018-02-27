@@ -9,32 +9,32 @@
    <module>
       <name>fwdConv</name>
       <parameters>--input /fwdConv:i --output /fwdConv:o --arm right</parameters>
-      <node>johnny5</node>
+      <node>marvin</node>
       <tag>fwdconverter</tag>
    </module>
    <module>
       <name>iKinGazeCtrl</name>
       <parameters>--robot icub --config /home/icub/apps/blobTracker3d/icubBertEyes.ini</parameters>
-      <node>johnny5</node>
+      <node>marvin</node>
       <tag>gazectrl</tag>
    </module>
    <module>
       <name>stereoBlobTrack</name>
       <parameters>--yellow --tol 10.0 --robot icub --hysval 2.0 --verbose</parameters>
-      <node>johnny5</node>
-      <stdio>johnny5</node>
+      <node>marvin</node>
+      <stdio>marvin</stdio>
       <tag>stereohandtrack</tag>
    </module>
    <module>
       <name>randArmExplore</name>
       <parameters>--robot icub --side right</parameters>
-      <node>johnny5</node>
+      <node>marvin</node>
       <tag>armmover</tag>
    </module>
    <module>
       <name>yarpview</name>
       <parameters>--name /stereoview/img:i</parameters>
-      <node>johnny5</node>
+      <node>marvin</node>
       <tag>trackviewer</tag>
    </module>
 <connection>

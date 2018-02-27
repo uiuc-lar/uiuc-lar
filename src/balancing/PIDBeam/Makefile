@@ -30,22 +30,22 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /usr/local/bin/cmake
+CMAKE_COMMAND = /usr/bin/cmake
 
 # The command to remove a file.
-RM = /usr/local/bin/cmake -E remove -f
+RM = /usr/bin/cmake -E remove -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /usr/local/bin/ccmake
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/niehaus4/uiuc-lar
+CMAKE_SOURCE_DIR = /srv/uiuc-lar
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/niehaus4/uiuc-lar
+CMAKE_BINARY_DIR = /srv/uiuc-lar
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -53,7 +53,7 @@ CMAKE_BINARY_DIR = /home/niehaus4/uiuc-lar
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/usr/local/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -63,19 +63,19 @@ edit_cache/fast: edit_cache
 # Special rule for the target install
 install: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/usr/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install
 
 # Special rule for the target install
 install/fast: preinstall/fast
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/usr/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install/fast
 
 # Special rule for the target install/local
 install/local: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
-	/usr/local/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
 .PHONY : install/local
 
 # Special rule for the target install/local
@@ -85,7 +85,7 @@ install/local/fast: install/local
 # Special rule for the target install/strip
 install/strip: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
-	/usr/local/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
 .PHONY : install/strip
 
 # Special rule for the target install/strip
@@ -104,7 +104,7 @@ list_install_components/fast: list_install_components
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/usr/local/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -113,14 +113,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -E cmake_progress_start /home/niehaus4/uiuc-lar/CMakeFiles /home/niehaus4/uiuc-lar/src/balancing/PIDBeam/CMakeFiles/progress.marks
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/balancing/PIDBeam/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/niehaus4/uiuc-lar/CMakeFiles 0
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -E cmake_progress_start /srv/uiuc-lar/CMakeFiles /srv/uiuc-lar/src/balancing/PIDBeam/CMakeFiles/progress.marks
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/balancing/PIDBeam/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /srv/uiuc-lar/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/balancing/PIDBeam/clean
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/balancing/PIDBeam/clean
 .PHONY : clean
 
 # The main clean target
@@ -129,22 +129,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/balancing/PIDBeam/preinstall
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/balancing/PIDBeam/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/balancing/PIDBeam/preinstall
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/balancing/PIDBeam/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/rule:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/rule
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/rule
 .PHONY : src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/rule
 
 # Convenience name for target.
@@ -153,7 +153,7 @@ balanceDemo: src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/rule
 
 # fast build rule for target.
 balanceDemo/fast:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build
 .PHONY : balanceDemo/fast
 
 balance.o: balance.cpp.o
@@ -161,7 +161,7 @@ balance.o: balance.cpp.o
 
 # target to build an object file
 balance.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/balance.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/balance.cpp.o
 .PHONY : balance.cpp.o
 
 balance.i: balance.cpp.i
@@ -169,7 +169,7 @@ balance.i: balance.cpp.i
 
 # target to preprocess a source file
 balance.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/balance.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/balance.cpp.i
 .PHONY : balance.cpp.i
 
 balance.s: balance.cpp.s
@@ -177,7 +177,7 @@ balance.s: balance.cpp.s
 
 # target to generate assembly for a file
 balance.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/balance.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/balance.cpp.s
 .PHONY : balance.cpp.s
 
 calibration.o: calibration.cpp.o
@@ -185,7 +185,7 @@ calibration.o: calibration.cpp.o
 
 # target to build an object file
 calibration.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/calibration.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/calibration.cpp.o
 .PHONY : calibration.cpp.o
 
 calibration.i: calibration.cpp.i
@@ -193,7 +193,7 @@ calibration.i: calibration.cpp.i
 
 # target to preprocess a source file
 calibration.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/calibration.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/calibration.cpp.i
 .PHONY : calibration.cpp.i
 
 calibration.s: calibration.cpp.s
@@ -201,7 +201,7 @@ calibration.s: calibration.cpp.s
 
 # target to generate assembly for a file
 calibration.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/calibration.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/calibration.cpp.s
 .PHONY : calibration.cpp.s
 
 control.o: control.cpp.o
@@ -209,7 +209,7 @@ control.o: control.cpp.o
 
 # target to build an object file
 control.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/control.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/control.cpp.o
 .PHONY : control.cpp.o
 
 control.i: control.cpp.i
@@ -217,7 +217,7 @@ control.i: control.cpp.i
 
 # target to preprocess a source file
 control.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/control.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/control.cpp.i
 .PHONY : control.cpp.i
 
 control.s: control.cpp.s
@@ -225,7 +225,7 @@ control.s: control.cpp.s
 
 # target to generate assembly for a file
 control.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/control.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/control.cpp.s
 .PHONY : control.cpp.s
 
 dataWrite.o: dataWrite.cpp.o
@@ -233,7 +233,7 @@ dataWrite.o: dataWrite.cpp.o
 
 # target to build an object file
 dataWrite.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/dataWrite.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/dataWrite.cpp.o
 .PHONY : dataWrite.cpp.o
 
 dataWrite.i: dataWrite.cpp.i
@@ -241,7 +241,7 @@ dataWrite.i: dataWrite.cpp.i
 
 # target to preprocess a source file
 dataWrite.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/dataWrite.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/dataWrite.cpp.i
 .PHONY : dataWrite.cpp.i
 
 dataWrite.s: dataWrite.cpp.s
@@ -249,7 +249,7 @@ dataWrite.s: dataWrite.cpp.s
 
 # target to generate assembly for a file
 dataWrite.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/dataWrite.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/dataWrite.cpp.s
 .PHONY : dataWrite.cpp.s
 
 initialize.o: initialize.cpp.o
@@ -257,7 +257,7 @@ initialize.o: initialize.cpp.o
 
 # target to build an object file
 initialize.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/initialize.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/initialize.cpp.o
 .PHONY : initialize.cpp.o
 
 initialize.i: initialize.cpp.i
@@ -265,7 +265,7 @@ initialize.i: initialize.cpp.i
 
 # target to preprocess a source file
 initialize.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/initialize.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/initialize.cpp.i
 .PHONY : initialize.cpp.i
 
 initialize.s: initialize.cpp.s
@@ -273,7 +273,7 @@ initialize.s: initialize.cpp.s
 
 # target to generate assembly for a file
 initialize.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/initialize.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/initialize.cpp.s
 .PHONY : initialize.cpp.s
 
 vision.o: vision.cpp.o
@@ -281,7 +281,7 @@ vision.o: vision.cpp.o
 
 # target to build an object file
 vision.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/vision.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/vision.cpp.o
 .PHONY : vision.cpp.o
 
 vision.i: vision.cpp.i
@@ -289,7 +289,7 @@ vision.i: vision.cpp.i
 
 # target to preprocess a source file
 vision.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/vision.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/vision.cpp.i
 .PHONY : vision.cpp.i
 
 vision.s: vision.cpp.s
@@ -297,7 +297,7 @@ vision.s: vision.cpp.s
 
 # target to generate assembly for a file
 vision.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/vision.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/build.make src/balancing/PIDBeam/CMakeFiles/balanceDemo.dir/vision.cpp.s
 .PHONY : vision.cpp.s
 
 # Help Target
@@ -342,6 +342,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

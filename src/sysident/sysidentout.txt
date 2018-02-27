@@ -1,0 +1,1 @@
+********* Omega_max: 12.5664   #sinusoids (m): 40

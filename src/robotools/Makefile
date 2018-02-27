@@ -30,22 +30,22 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /usr/local/bin/cmake
+CMAKE_COMMAND = /usr/bin/cmake
 
 # The command to remove a file.
-RM = /usr/local/bin/cmake -E remove -f
+RM = /usr/bin/cmake -E remove -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /usr/local/bin/ccmake
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/icub/uiuc-lar/src/robotools
+CMAKE_SOURCE_DIR = /srv/uiuc-lar
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/icub/uiuc-lar/src/robotools
+CMAKE_BINARY_DIR = /srv/uiuc-lar
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -53,7 +53,7 @@ CMAKE_BINARY_DIR = /home/icub/uiuc-lar/src/robotools
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/usr/local/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -63,19 +63,19 @@ edit_cache/fast: edit_cache
 # Special rule for the target install
 install: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/usr/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install
 
 # Special rule for the target install
 install/fast: preinstall/fast
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/usr/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install/fast
 
 # Special rule for the target install/local
 install/local: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
-	/usr/local/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
 .PHONY : install/local
 
 # Special rule for the target install/local
@@ -85,7 +85,7 @@ install/local/fast: install/local
 # Special rule for the target install/strip
 install/strip: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
-	/usr/local/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
 .PHONY : install/strip
 
 # Special rule for the target install/strip
@@ -104,7 +104,7 @@ list_install_components/fast: list_install_components
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/usr/local/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -113,14 +113,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/icub/uiuc-lar/src/robotools/CMakeFiles /home/icub/uiuc-lar/src/robotools/CMakeFiles/progress.marks
-	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/icub/uiuc-lar/src/robotools/CMakeFiles 0
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -E cmake_progress_start /srv/uiuc-lar/CMakeFiles /srv/uiuc-lar/src/robotools/CMakeFiles/progress.marks
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/robotools/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /srv/uiuc-lar/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	$(MAKE) -f CMakeFiles/Makefile2 clean
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/robotools/clean
 .PHONY : clean
 
 # The main clean target
@@ -129,158 +129,208 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	$(MAKE) -f CMakeFiles/Makefile2 preinstall
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/robotools/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	$(MAKE) -f CMakeFiles/Makefile2 preinstall
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/robotools/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	$(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
-#=============================================================================
-# Target rules for targets named bottleLogger
+# Convenience name for target.
+src/robotools/CMakeFiles/bottleLogger.dir/rule:
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/robotools/CMakeFiles/bottleLogger.dir/rule
+.PHONY : src/robotools/CMakeFiles/bottleLogger.dir/rule
 
-# Build rule for target.
-bottleLogger: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 bottleLogger
+# Convenience name for target.
+bottleLogger: src/robotools/CMakeFiles/bottleLogger.dir/rule
 .PHONY : bottleLogger
 
 # fast build rule for target.
 bottleLogger/fast:
-	$(MAKE) -f CMakeFiles/bottleLogger.dir/build.make CMakeFiles/bottleLogger.dir/build
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/bottleLogger.dir/build.make src/robotools/CMakeFiles/bottleLogger.dir/build
 .PHONY : bottleLogger/fast
 
-#=============================================================================
-# Target rules for targets named dataPumper
+# Convenience name for target.
+src/robotools/CMakeFiles/dataPumper.dir/rule:
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/robotools/CMakeFiles/dataPumper.dir/rule
+.PHONY : src/robotools/CMakeFiles/dataPumper.dir/rule
 
-# Build rule for target.
-dataPumper: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 dataPumper
+# Convenience name for target.
+dataPumper: src/robotools/CMakeFiles/dataPumper.dir/rule
 .PHONY : dataPumper
 
 # fast build rule for target.
 dataPumper/fast:
-	$(MAKE) -f CMakeFiles/dataPumper.dir/build.make CMakeFiles/dataPumper.dir/build
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/dataPumper.dir/build.make src/robotools/CMakeFiles/dataPumper.dir/build
 .PHONY : dataPumper/fast
 
-#=============================================================================
-# Target rules for targets named floatToRgb
+# Convenience name for target.
+src/robotools/CMakeFiles/floatToRgb.dir/rule:
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/robotools/CMakeFiles/floatToRgb.dir/rule
+.PHONY : src/robotools/CMakeFiles/floatToRgb.dir/rule
 
-# Build rule for target.
-floatToRgb: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 floatToRgb
+# Convenience name for target.
+floatToRgb: src/robotools/CMakeFiles/floatToRgb.dir/rule
 .PHONY : floatToRgb
 
 # fast build rule for target.
 floatToRgb/fast:
-	$(MAKE) -f CMakeFiles/floatToRgb.dir/build.make CMakeFiles/floatToRgb.dir/build
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/floatToRgb.dir/build.make src/robotools/CMakeFiles/floatToRgb.dir/build
 .PHONY : floatToRgb/fast
 
-#=============================================================================
-# Target rules for targets named performAction
+# Convenience name for target.
+src/robotools/CMakeFiles/performAction.dir/rule:
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/robotools/CMakeFiles/performAction.dir/rule
+.PHONY : src/robotools/CMakeFiles/performAction.dir/rule
 
-# Build rule for target.
-performAction: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 performAction
+# Convenience name for target.
+performAction: src/robotools/CMakeFiles/performAction.dir/rule
 .PHONY : performAction
 
 # fast build rule for target.
 performAction/fast:
-	$(MAKE) -f CMakeFiles/performAction.dir/build.make CMakeFiles/performAction.dir/build
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/performAction.dir/build.make src/robotools/CMakeFiles/performAction.dir/build
 .PHONY : performAction/fast
 
-#=============================================================================
-# Target rules for targets named portToScreen
+# Convenience name for target.
+src/robotools/CMakeFiles/portToScreen.dir/rule:
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/robotools/CMakeFiles/portToScreen.dir/rule
+.PHONY : src/robotools/CMakeFiles/portToScreen.dir/rule
 
-# Build rule for target.
-portToScreen: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 portToScreen
+# Convenience name for target.
+portToScreen: src/robotools/CMakeFiles/portToScreen.dir/rule
 .PHONY : portToScreen
 
 # fast build rule for target.
 portToScreen/fast:
-	$(MAKE) -f CMakeFiles/portToScreen.dir/build.make CMakeFiles/portToScreen.dir/build
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/portToScreen.dir/build.make src/robotools/CMakeFiles/portToScreen.dir/build
 .PHONY : portToScreen/fast
 
-# target to build an object file
-actionPerformer.o:
-	$(MAKE) -f CMakeFiles/performAction.dir/build.make CMakeFiles/performAction.dir/actionPerformer.o
+actionPerformer.o: actionPerformer.cpp.o
 .PHONY : actionPerformer.o
 
-# target to preprocess a source file
-actionPerformer.i:
-	$(MAKE) -f CMakeFiles/performAction.dir/build.make CMakeFiles/performAction.dir/actionPerformer.i
+# target to build an object file
+actionPerformer.cpp.o:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/performAction.dir/build.make src/robotools/CMakeFiles/performAction.dir/actionPerformer.cpp.o
+.PHONY : actionPerformer.cpp.o
+
+actionPerformer.i: actionPerformer.cpp.i
 .PHONY : actionPerformer.i
 
-# target to generate assembly for a file
-actionPerformer.s:
-	$(MAKE) -f CMakeFiles/performAction.dir/build.make CMakeFiles/performAction.dir/actionPerformer.s
+# target to preprocess a source file
+actionPerformer.cpp.i:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/performAction.dir/build.make src/robotools/CMakeFiles/performAction.dir/actionPerformer.cpp.i
+.PHONY : actionPerformer.cpp.i
+
+actionPerformer.s: actionPerformer.cpp.s
 .PHONY : actionPerformer.s
 
-# target to build an object file
-bottleLogger.o:
-	$(MAKE) -f CMakeFiles/bottleLogger.dir/build.make CMakeFiles/bottleLogger.dir/bottleLogger.o
+# target to generate assembly for a file
+actionPerformer.cpp.s:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/performAction.dir/build.make src/robotools/CMakeFiles/performAction.dir/actionPerformer.cpp.s
+.PHONY : actionPerformer.cpp.s
+
+bottleLogger.o: bottleLogger.cpp.o
 .PHONY : bottleLogger.o
 
-# target to preprocess a source file
-bottleLogger.i:
-	$(MAKE) -f CMakeFiles/bottleLogger.dir/build.make CMakeFiles/bottleLogger.dir/bottleLogger.i
+# target to build an object file
+bottleLogger.cpp.o:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/bottleLogger.dir/build.make src/robotools/CMakeFiles/bottleLogger.dir/bottleLogger.cpp.o
+.PHONY : bottleLogger.cpp.o
+
+bottleLogger.i: bottleLogger.cpp.i
 .PHONY : bottleLogger.i
 
-# target to generate assembly for a file
-bottleLogger.s:
-	$(MAKE) -f CMakeFiles/bottleLogger.dir/build.make CMakeFiles/bottleLogger.dir/bottleLogger.s
+# target to preprocess a source file
+bottleLogger.cpp.i:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/bottleLogger.dir/build.make src/robotools/CMakeFiles/bottleLogger.dir/bottleLogger.cpp.i
+.PHONY : bottleLogger.cpp.i
+
+bottleLogger.s: bottleLogger.cpp.s
 .PHONY : bottleLogger.s
 
-# target to build an object file
-dataPumper.o:
-	$(MAKE) -f CMakeFiles/dataPumper.dir/build.make CMakeFiles/dataPumper.dir/dataPumper.o
+# target to generate assembly for a file
+bottleLogger.cpp.s:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/bottleLogger.dir/build.make src/robotools/CMakeFiles/bottleLogger.dir/bottleLogger.cpp.s
+.PHONY : bottleLogger.cpp.s
+
+dataPumper.o: dataPumper.cpp.o
 .PHONY : dataPumper.o
 
-# target to preprocess a source file
-dataPumper.i:
-	$(MAKE) -f CMakeFiles/dataPumper.dir/build.make CMakeFiles/dataPumper.dir/dataPumper.i
+# target to build an object file
+dataPumper.cpp.o:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/dataPumper.dir/build.make src/robotools/CMakeFiles/dataPumper.dir/dataPumper.cpp.o
+.PHONY : dataPumper.cpp.o
+
+dataPumper.i: dataPumper.cpp.i
 .PHONY : dataPumper.i
 
-# target to generate assembly for a file
-dataPumper.s:
-	$(MAKE) -f CMakeFiles/dataPumper.dir/build.make CMakeFiles/dataPumper.dir/dataPumper.s
+# target to preprocess a source file
+dataPumper.cpp.i:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/dataPumper.dir/build.make src/robotools/CMakeFiles/dataPumper.dir/dataPumper.cpp.i
+.PHONY : dataPumper.cpp.i
+
+dataPumper.s: dataPumper.cpp.s
 .PHONY : dataPumper.s
 
-# target to build an object file
-floatToRgb.o:
-	$(MAKE) -f CMakeFiles/floatToRgb.dir/build.make CMakeFiles/floatToRgb.dir/floatToRgb.o
+# target to generate assembly for a file
+dataPumper.cpp.s:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/dataPumper.dir/build.make src/robotools/CMakeFiles/dataPumper.dir/dataPumper.cpp.s
+.PHONY : dataPumper.cpp.s
+
+floatToRgb.o: floatToRgb.cpp.o
 .PHONY : floatToRgb.o
 
-# target to preprocess a source file
-floatToRgb.i:
-	$(MAKE) -f CMakeFiles/floatToRgb.dir/build.make CMakeFiles/floatToRgb.dir/floatToRgb.i
+# target to build an object file
+floatToRgb.cpp.o:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/floatToRgb.dir/build.make src/robotools/CMakeFiles/floatToRgb.dir/floatToRgb.cpp.o
+.PHONY : floatToRgb.cpp.o
+
+floatToRgb.i: floatToRgb.cpp.i
 .PHONY : floatToRgb.i
 
-# target to generate assembly for a file
-floatToRgb.s:
-	$(MAKE) -f CMakeFiles/floatToRgb.dir/build.make CMakeFiles/floatToRgb.dir/floatToRgb.s
+# target to preprocess a source file
+floatToRgb.cpp.i:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/floatToRgb.dir/build.make src/robotools/CMakeFiles/floatToRgb.dir/floatToRgb.cpp.i
+.PHONY : floatToRgb.cpp.i
+
+floatToRgb.s: floatToRgb.cpp.s
 .PHONY : floatToRgb.s
 
-# target to build an object file
-portToScreen.o:
-	$(MAKE) -f CMakeFiles/portToScreen.dir/build.make CMakeFiles/portToScreen.dir/portToScreen.o
+# target to generate assembly for a file
+floatToRgb.cpp.s:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/floatToRgb.dir/build.make src/robotools/CMakeFiles/floatToRgb.dir/floatToRgb.cpp.s
+.PHONY : floatToRgb.cpp.s
+
+portToScreen.o: portToScreen.cpp.o
 .PHONY : portToScreen.o
 
-# target to preprocess a source file
-portToScreen.i:
-	$(MAKE) -f CMakeFiles/portToScreen.dir/build.make CMakeFiles/portToScreen.dir/portToScreen.i
+# target to build an object file
+portToScreen.cpp.o:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/portToScreen.dir/build.make src/robotools/CMakeFiles/portToScreen.dir/portToScreen.cpp.o
+.PHONY : portToScreen.cpp.o
+
+portToScreen.i: portToScreen.cpp.i
 .PHONY : portToScreen.i
 
-# target to generate assembly for a file
-portToScreen.s:
-	$(MAKE) -f CMakeFiles/portToScreen.dir/build.make CMakeFiles/portToScreen.dir/portToScreen.s
+# target to preprocess a source file
+portToScreen.cpp.i:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/portToScreen.dir/build.make src/robotools/CMakeFiles/portToScreen.dir/portToScreen.cpp.i
+.PHONY : portToScreen.cpp.i
+
+portToScreen.s: portToScreen.cpp.s
 .PHONY : portToScreen.s
+
+# target to generate assembly for a file
+portToScreen.cpp.s:
+	cd /srv/uiuc-lar && $(MAKE) -f src/robotools/CMakeFiles/portToScreen.dir/build.make src/robotools/CMakeFiles/portToScreen.dir/portToScreen.cpp.s
+.PHONY : portToScreen.cpp.s
 
 # Help Target
 help:
@@ -325,6 +375,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	$(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

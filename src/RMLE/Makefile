@@ -30,22 +30,22 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /usr/local/bin/cmake
+CMAKE_COMMAND = /usr/bin/cmake
 
 # The command to remove a file.
-RM = /usr/local/bin/cmake -E remove -f
+RM = /usr/bin/cmake -E remove -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /usr/local/bin/ccmake
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/niehaus4/uiuc-lar
+CMAKE_SOURCE_DIR = /srv/uiuc-lar
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/niehaus4/uiuc-lar
+CMAKE_BINARY_DIR = /srv/uiuc-lar
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -53,7 +53,7 @@ CMAKE_BINARY_DIR = /home/niehaus4/uiuc-lar
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/usr/local/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -63,19 +63,19 @@ edit_cache/fast: edit_cache
 # Special rule for the target install
 install: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/usr/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install
 
 # Special rule for the target install
 install/fast: preinstall/fast
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/usr/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install/fast
 
 # Special rule for the target install/local
 install/local: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
-	/usr/local/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
 .PHONY : install/local
 
 # Special rule for the target install/local
@@ -85,7 +85,7 @@ install/local/fast: install/local
 # Special rule for the target install/strip
 install/strip: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
-	/usr/local/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
 .PHONY : install/strip
 
 # Special rule for the target install/strip
@@ -104,7 +104,7 @@ list_install_components/fast: list_install_components
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/usr/local/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -113,14 +113,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -E cmake_progress_start /home/niehaus4/uiuc-lar/CMakeFiles /home/niehaus4/uiuc-lar/src/RMLE/CMakeFiles/progress.marks
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/niehaus4/uiuc-lar/CMakeFiles 0
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -E cmake_progress_start /srv/uiuc-lar/CMakeFiles /srv/uiuc-lar/src/RMLE/CMakeFiles/progress.marks
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /srv/uiuc-lar/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/clean
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/clean
 .PHONY : clean
 
 # The main clean target
@@ -129,22 +129,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/preinstall
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/preinstall
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 src/RMLE/CMakeFiles/RMLE.dir/rule:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/CMakeFiles/RMLE.dir/rule
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/CMakeFiles/RMLE.dir/rule
 .PHONY : src/RMLE/CMakeFiles/RMLE.dir/rule
 
 # Convenience name for target.
@@ -153,12 +153,12 @@ RMLE: src/RMLE/CMakeFiles/RMLE.dir/rule
 
 # fast build rule for target.
 RMLE/fast:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/build
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/build
 .PHONY : RMLE/fast
 
 # Convenience name for target.
 src/RMLE/CMakeFiles/hmmRMLE.dir/rule:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/CMakeFiles/hmmRMLE.dir/rule
+	cd /srv/uiuc-lar && $(MAKE) -f CMakeFiles/Makefile2 src/RMLE/CMakeFiles/hmmRMLE.dir/rule
 .PHONY : src/RMLE/CMakeFiles/hmmRMLE.dir/rule
 
 # Convenience name for target.
@@ -167,7 +167,7 @@ hmmRMLE: src/RMLE/CMakeFiles/hmmRMLE.dir/rule
 
 # fast build rule for target.
 hmmRMLE/fast:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/hmmRMLE.dir/build.make src/RMLE/CMakeFiles/hmmRMLE.dir/build
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/hmmRMLE.dir/build.make src/RMLE/CMakeFiles/hmmRMLE.dir/build
 .PHONY : hmmRMLE/fast
 
 Gaussian.o: Gaussian.cc.o
@@ -175,7 +175,7 @@ Gaussian.o: Gaussian.cc.o
 
 # target to build an object file
 Gaussian.cc.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/Gaussian.cc.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/Gaussian.cc.o
 .PHONY : Gaussian.cc.o
 
 Gaussian.i: Gaussian.cc.i
@@ -183,7 +183,7 @@ Gaussian.i: Gaussian.cc.i
 
 # target to preprocess a source file
 Gaussian.cc.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/Gaussian.cc.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/Gaussian.cc.i
 .PHONY : Gaussian.cc.i
 
 Gaussian.s: Gaussian.cc.s
@@ -191,7 +191,7 @@ Gaussian.s: Gaussian.cc.s
 
 # target to generate assembly for a file
 Gaussian.cc.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/Gaussian.cc.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/Gaussian.cc.s
 .PHONY : Gaussian.cc.s
 
 HMM.o: HMM.cc.o
@@ -199,7 +199,7 @@ HMM.o: HMM.cc.o
 
 # target to build an object file
 HMM.cc.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/HMM.cc.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/HMM.cc.o
 .PHONY : HMM.cc.o
 
 HMM.i: HMM.cc.i
@@ -207,7 +207,7 @@ HMM.i: HMM.cc.i
 
 # target to preprocess a source file
 HMM.cc.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/HMM.cc.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/HMM.cc.i
 .PHONY : HMM.cc.i
 
 HMM.s: HMM.cc.s
@@ -215,7 +215,7 @@ HMM.s: HMM.cc.s
 
 # target to generate assembly for a file
 HMM.cc.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/HMM.cc.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/HMM.cc.s
 .PHONY : HMM.cc.s
 
 IndepPMF.o: IndepPMF.cc.o
@@ -223,7 +223,7 @@ IndepPMF.o: IndepPMF.cc.o
 
 # target to build an object file
 IndepPMF.cc.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/IndepPMF.cc.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/IndepPMF.cc.o
 .PHONY : IndepPMF.cc.o
 
 IndepPMF.i: IndepPMF.cc.i
@@ -231,7 +231,7 @@ IndepPMF.i: IndepPMF.cc.i
 
 # target to preprocess a source file
 IndepPMF.cc.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/IndepPMF.cc.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/IndepPMF.cc.i
 .PHONY : IndepPMF.cc.i
 
 IndepPMF.s: IndepPMF.cc.s
@@ -239,7 +239,7 @@ IndepPMF.s: IndepPMF.cc.s
 
 # target to generate assembly for a file
 IndepPMF.cc.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/IndepPMF.cc.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/IndepPMF.cc.s
 .PHONY : IndepPMF.cc.s
 
 N.o: N.cc.o
@@ -247,7 +247,7 @@ N.o: N.cc.o
 
 # target to build an object file
 N.cc.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/N.cc.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/N.cc.o
 .PHONY : N.cc.o
 
 N.i: N.cc.i
@@ -255,7 +255,7 @@ N.i: N.cc.i
 
 # target to preprocess a source file
 N.cc.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/N.cc.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/N.cc.i
 .PHONY : N.cc.i
 
 N.s: N.cc.s
@@ -263,7 +263,7 @@ N.s: N.cc.s
 
 # target to generate assembly for a file
 N.cc.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/N.cc.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/N.cc.s
 .PHONY : N.cc.s
 
 StochasticClassifier.o: StochasticClassifier.cc.o
@@ -271,7 +271,7 @@ StochasticClassifier.o: StochasticClassifier.cc.o
 
 # target to build an object file
 StochasticClassifier.cc.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/StochasticClassifier.cc.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/StochasticClassifier.cc.o
 .PHONY : StochasticClassifier.cc.o
 
 StochasticClassifier.i: StochasticClassifier.cc.i
@@ -279,7 +279,7 @@ StochasticClassifier.i: StochasticClassifier.cc.i
 
 # target to preprocess a source file
 StochasticClassifier.cc.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/StochasticClassifier.cc.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/StochasticClassifier.cc.i
 .PHONY : StochasticClassifier.cc.i
 
 StochasticClassifier.s: StochasticClassifier.cc.s
@@ -287,7 +287,7 @@ StochasticClassifier.s: StochasticClassifier.cc.s
 
 # target to generate assembly for a file
 StochasticClassifier.cc.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/StochasticClassifier.cc.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/StochasticClassifier.cc.s
 .PHONY : StochasticClassifier.cc.s
 
 hmmRMLE.o: hmmRMLE.cpp.o
@@ -295,7 +295,7 @@ hmmRMLE.o: hmmRMLE.cpp.o
 
 # target to build an object file
 hmmRMLE.cpp.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/hmmRMLE.dir/build.make src/RMLE/CMakeFiles/hmmRMLE.dir/hmmRMLE.cpp.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/hmmRMLE.dir/build.make src/RMLE/CMakeFiles/hmmRMLE.dir/hmmRMLE.cpp.o
 .PHONY : hmmRMLE.cpp.o
 
 hmmRMLE.i: hmmRMLE.cpp.i
@@ -303,7 +303,7 @@ hmmRMLE.i: hmmRMLE.cpp.i
 
 # target to preprocess a source file
 hmmRMLE.cpp.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/hmmRMLE.dir/build.make src/RMLE/CMakeFiles/hmmRMLE.dir/hmmRMLE.cpp.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/hmmRMLE.dir/build.make src/RMLE/CMakeFiles/hmmRMLE.dir/hmmRMLE.cpp.i
 .PHONY : hmmRMLE.cpp.i
 
 hmmRMLE.s: hmmRMLE.cpp.s
@@ -311,7 +311,7 @@ hmmRMLE.s: hmmRMLE.cpp.s
 
 # target to generate assembly for a file
 hmmRMLE.cpp.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/hmmRMLE.dir/build.make src/RMLE/CMakeFiles/hmmRMLE.dir/hmmRMLE.cpp.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/hmmRMLE.dir/build.make src/RMLE/CMakeFiles/hmmRMLE.dir/hmmRMLE.cpp.s
 .PHONY : hmmRMLE.cpp.s
 
 label_list.o: label_list.cc.o
@@ -319,7 +319,7 @@ label_list.o: label_list.cc.o
 
 # target to build an object file
 label_list.cc.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/label_list.cc.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/label_list.cc.o
 .PHONY : label_list.cc.o
 
 label_list.i: label_list.cc.i
@@ -327,7 +327,7 @@ label_list.i: label_list.cc.i
 
 # target to preprocess a source file
 label_list.cc.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/label_list.cc.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/label_list.cc.i
 .PHONY : label_list.cc.i
 
 label_list.s: label_list.cc.s
@@ -335,7 +335,7 @@ label_list.s: label_list.cc.s
 
 # target to generate assembly for a file
 label_list.cc.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/label_list.cc.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/label_list.cc.s
 .PHONY : label_list.cc.s
 
 str_list.o: str_list.cc.o
@@ -343,7 +343,7 @@ str_list.o: str_list.cc.o
 
 # target to build an object file
 str_list.cc.o:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/str_list.cc.o
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/str_list.cc.o
 .PHONY : str_list.cc.o
 
 str_list.i: str_list.cc.i
@@ -351,7 +351,7 @@ str_list.i: str_list.cc.i
 
 # target to preprocess a source file
 str_list.cc.i:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/str_list.cc.i
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/str_list.cc.i
 .PHONY : str_list.cc.i
 
 str_list.s: str_list.cc.s
@@ -359,7 +359,7 @@ str_list.s: str_list.cc.s
 
 # target to generate assembly for a file
 str_list.cc.s:
-	cd /home/niehaus4/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/str_list.cc.s
+	cd /srv/uiuc-lar && $(MAKE) -f src/RMLE/CMakeFiles/RMLE.dir/build.make src/RMLE/CMakeFiles/RMLE.dir/str_list.cc.s
 .PHONY : str_list.cc.s
 
 # Help Target
@@ -411,6 +411,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/niehaus4/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /srv/uiuc-lar && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

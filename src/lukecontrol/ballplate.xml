@@ -1,0 +1,60 @@
+<application>
+<name>Ball Balancing Demo</name>
+<dependencies>
+      <port>/root</port>
+</dependencies>
+<module>
+	<name>yarpview</name>
+	<parameters>--name /icub/view/left --x 0 --y 0 --synch</parameters>
+	<node>marvin</node>
+	<tag>viewleft</tag>
+</module>
+<module>
+	<name>yarpview</name>
+	<parameters>--name /icub/view/right --x 320 --y 0 --synch</parameters>
+	<node>marvin</node>
+	<tag>viewright</tag>
+</module>
+   <module>
+      <name>fwdConv</name>
+      <parameters>--input /fwdConv:i --output /fwdConv:o --arm right</parameters>
+      <node>marvin</node>
+      <tag>fwdconverter</tag>
+   </module>
+   <module>
+      <name>iKinGazeCtrl</name>
+      <parameters>--robot icub --config /srv/icub_svn/app/conf/icubBertEyes.ini --Tneck 0.75 --Teyes 0.25 --saccades off</parameters>
+      <node>marvin</node>
+      <stdio>marvin</stdio>
+      <tag>gazectrl</tag>
+   </module>
+   <module>
+      <name>stereoBlobTrack</name>
+      <parameters>--green --tol 10.0 --robot icub --hysval 2.0</parameters>
+      <node>marvin</node>
+      <stdio>marvin</stdio>
+      <tag>stereohandtrack</tag>
+   </module>
+   <module>
+      <name>yarpview</name>
+      <parameters>--name /stereoview/img:i --synch</parameters>
+      <node>marvin</node>
+      <tag>trackviewer</tag>
+   </module>
+<connection>
+  <from>/icub/camcalib/left/out</from>
+  <to>/stereoBlobTrack/img:l</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/icub/camcalib/right/out</from>
+  <to>/stereoBlobTrack/img:r</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/stereoBlobTrack/img:o</from>
+  <to>/stereoview/img:i</to>
+  <protocol>tcp</protocol>
+</connection>
+</application>
+

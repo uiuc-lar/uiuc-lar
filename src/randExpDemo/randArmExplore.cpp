@@ -125,6 +125,11 @@ int main(int argc, char *argv[]){
     command[1] = 45;
     command[2] = 0;
     command[3] = 45;
+    command[9] = 50;
+    command[10] = 50;
+    command[12] = 50;
+    command[13] = 50;
+    command[14] = 50;
     pos->positionMove(command.data());
 
     bool done = false;
@@ -153,6 +158,11 @@ int main(int argc, char *argv[]){
     	if (command[3] > 100 || command[3] < 10){
     		command[3] = tmp[3];
     	}
+    command[9] = 50;
+    command[10] = 50;
+    command[12] = 50;
+    command[13] = 50;
+    command[14] = 50;
     	//use fwd kin to find end effector position
     	Bottle plan, pred;
     	for (int i = 0; i < nj; i++){

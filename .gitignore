@@ -36,7 +36,7 @@ bin/*
 *log
 *cmake*
 *CMakeCache.txt
-CMakeFiles/*
+*CMakeFiles*
 src/ballplate/CMakeFiles*
 src/blobTracker3d/CMakeFiles/*
 src/maze/CMakeFiles/*

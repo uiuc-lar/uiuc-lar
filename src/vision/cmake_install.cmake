@@ -1,8 +1,8 @@
-# Install script for directory: /home/niehaus4/uiuc-lar/src/vision
+# Install script for directory: /srv/uiuc-lar/src/vision
 
 # Set the install prefix
 IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  SET(CMAKE_INSTALL_PREFIX "/home/niehaus4/uiuc-lar")
+  SET(CMAKE_INSTALL_PREFIX "/usr/local")
 ENDIF(NOT DEFINED CMAKE_INSTALL_PREFIX)
 STRING(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -12,7 +12,7 @@ IF(NOT DEFINED CMAKE_INSTALL_CONFIG_NAME)
     STRING(REGEX REPLACE "^[^A-Za-z0-9_]+" ""
            CMAKE_INSTALL_CONFIG_NAME "${BUILD_TYPE}")
   ELSE(BUILD_TYPE)
-    SET(CMAKE_INSTALL_CONFIG_NAME "Debug")
+    SET(CMAKE_INSTALL_CONFIG_NAME "Release")
   ENDIF(BUILD_TYPE)
   MESSAGE(STATUS "Install configuration: \"${CMAKE_INSTALL_CONFIG_NAME}\"")
 ENDIF(NOT DEFINED CMAKE_INSTALL_CONFIG_NAME)
@@ -34,10 +34,10 @@ ENDIF(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
 
 IF(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  INCLUDE("/home/niehaus4/uiuc-lar/src/vision/jointAttention/cmake_install.cmake")
-  INCLUDE("/home/niehaus4/uiuc-lar/src/vision/blobTracker3d/cmake_install.cmake")
-  INCLUDE("/home/niehaus4/uiuc-lar/src/vision/stereoAttention/cmake_install.cmake")
-  INCLUDE("/home/niehaus4/uiuc-lar/src/vision/stereoVision/cmake_install.cmake")
+  INCLUDE("/srv/uiuc-lar/src/vision/jointAttention/cmake_install.cmake")
+  INCLUDE("/srv/uiuc-lar/src/vision/blobTracker3d/cmake_install.cmake")
+  INCLUDE("/srv/uiuc-lar/src/vision/stereoAttention/cmake_install.cmake")
+  INCLUDE("/srv/uiuc-lar/src/vision/stereoVision/cmake_install.cmake")
 
 ENDIF(NOT CMAKE_INSTALL_LOCAL_ONLY)
 
