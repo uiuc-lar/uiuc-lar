@@ -1,11 +1,11 @@
-from audiolazy import Stream
-from audiolazy import lazy_lpc as ll
-from audiolazy import lazy_filters as lf
+#from audiolazy import Stream
+#from audiolazy import lazy_lpc as ll
+#from audiolazy import lazy_filters as lf
 import math
 import numpy as np
 import scipy.signal as sig
-
 import scipy.io.wavfile as wav
+from scikits.talkbox import lpc
 
 import pylab as plt
     
@@ -37,7 +37,7 @@ def LoadExcitation(file_name, number_of_samples, sample_freq):
             print 'nothing to see here'
         elif note == 'U': #unvoiced excitation
             #note2 = values[2][1]
-            excitation[seg_start : seg_start+duration] = 0.2*(np.random.rand(duration)-0.5)
+            excitation[seg_start : seg_start+duration] = 0.05*(np.random.rand(duration)-0.5)
             
             #print np.floor(duration*freqs[note2]/sample_freq)
             #template = np.tile(ex_base[0:np.floor(sample_freq/freqs[note2])], np.floor(duration*freqs[note2]/sample_freq))
@@ -46,7 +46,8 @@ def LoadExcitation(file_name, number_of_samples, sample_freq):
             print '\n'
         else:
             print np.floor(duration*freqs[note]/sample_freq)
-            template = np.tile(ex_base[0:np.floor(sample_freq/freqs[note])], np.floor(duration*freqs[note]/sample_freq))
+            template = np.tile(ex_base[0:int(np.floor(sample_freq/freqs[note]))],
+                               int(np.floor(duration*freqs[note]/sample_freq)))
             
             #print len(excitation)
             #print seg_start
@@ -78,23 +79,26 @@ print "Sample Count: %i" % len(signal)
 #plt.show();
 
 # setup pre-emphasis and de-emphasis filters
-pre_emph = lf.ZFilter([1, -0.95], [1]);
-de_emph = 1/pre_emph;
+#pre_emph = lf.ZFilter([1, -0.95], [1]);
+#de_emph = 1/pre_emph;
 
 # pre-emph filter before we do anything else
-pre_signal = np.array(list(pre_emph(signal)));
+#pre_signal = np.array(list(pre_emph(signal)));
+pre_signal = sig.lfilter([1, -0.95], [1], signal);
+
 
 #plt.plot(pre_signal);
 #plt.show();
 
-window = np.hanning(window_size-1);
+window = np.hamming(window_size-1);
 window_start = 0;
 window_stop = window_size-1;
 
 alphas = [];
 gain = [];
 
-voicing = np.zeros(math.ceil(len(pre_signal)));
+#voicing = np.zeros(math.ceil(len(pre_signal)));
+voicing = np.zeros(pre_signal.shape);
 
 
 # get LPCs from each window
@@ -102,16 +106,20 @@ while(window_start+window_size<len(pre_signal)):
     
     chunk = pre_signal[window_start:window_stop]*window;
     
-    filt = ll.lpc.autocor(chunk, 16);
-    alphas.append(filt.numerator);
+    #filt = ll.lpc.autocor(chunk, 16);
+    filt, err, reflect_coeffs = lpc(chunk, 16);
+    #print filt
+    #alphas.append(filt.numerator);
+    alphas.append(filt)
     
-    gain.append(math.sqrt(sum([i**2 for i in chunk])));
+    gain.append(np.sqrt(np.sum(chunk**2)));
     
     window_start = window_start+step_size;
     window_stop = window_stop+step_size;
     
 ################################
 # resynthesize based on the LPCs and a predefined excitation waveform
+#print alphas
 
 
 # prepare excitation based on annotated file with musical notes
@@ -131,13 +139,15 @@ synth = np.zeros(len(excitation));#[0 for i in range(len(excitation))];
 
 window_start = 0;
 window_stop = window_size-1;
+index = 0
+
 while(window_start+window_size<len(excitation) and gain):
     
     chunk = excitation[window_start:window_stop];
     
-    syn_fil = lf.ZFilter([gain.pop(0)], alphas.pop(0));
-    
-    synth_chunk = np.array(list(syn_fil(chunk)));
+    #syn_fil = lf.ZFilter([gain.pop(0)], alphas.pop(0));
+    #synth_chunk = np.array(list(syn_fil(chunk)));
+    synth_chunk = sig.lfilter([gain[index]], alphas[index], chunk);
     
     
     
@@ -145,16 +155,19 @@ while(window_start+window_size<len(excitation) and gain):
     
     window_start = window_start+step_size;
     window_stop = window_stop+step_size;
+    index += 1;
     
 plt.plot(synth);
-plt.plot(voicing*np.max(synth));
+#plt.plot(voicing*np.max(synth));
+plt.plot(excitation*np.max(synth));
 plt.show();
 
-synth = list(de_emph(synth))
+#synth = list(de_emph(synth))
+synth = sig.lfilter([1], [1, -0.95], synth);
 
 peak = max(synth)
 
-#wav.write("synth_out.wav", sample_freq, synth);
+wav.write("synth_out.wav", sample_freq, synth);
     
 fo = open("wavfiles/alphabetsong.txt", "w");
 
