@@ -36,7 +36,8 @@ yarp::sig::Sound synthSound(std::string file_name){
     int sample_index, channel_index;
     ifstream datafile;
     
-    datafile.open("wavfiles/alphabetsong.txt");
+    //datafile.open("wavfiles/alphabetsong.txt");
+    datafile.open(file_name.c_str());
     
 
     
@@ -68,7 +69,7 @@ yarp::sig::Sound synthSound(std::string file_name){
         
     }
     datafile.close();
-    //synth.resize(110000, 2);
+    //synth.resize(110000, 2); //test if resizing affects the playback
     return(synth);
 }
 
@@ -94,37 +95,11 @@ int main(int argc, char *argv[]) {
 
     // Open up ports for playing piano
     RpcClient piano;
-    string piano_port_name ="/"+name+"/piano:o";
+    string piano_port_name ="/piano:o";
     piano.open(piano_port_name.c_str());
     
     yarp::os::Bottle piano_trigger, piano_ack;
     
-    // in main loop perform the next two lines
-    piano_trigger.addInt(1); // integer corresponds to the note
-    piano.write(piano_trigger, piano_ack);
-
-    // code for port on receiver side
-    // ////////
-    // RpcServer singer;
-    // string singer_name ="/"+name+"/piano:i";
-    // yarp::os::Bottle piano_trigger, piano_ack;
-
-    // piano_ack.addInt(1); //contents shouldn't matter, just that it sends something
-
-    // singer.read(piano_trigger, true);
-    //// do stuff here
-    // singer.reply(piano_ack);
-
-    
-    
-    // port for emotion interface
-    Port toEmotionInterface;
-    std::string portname = "/facewriter"; // does the port name matter? I don't really think it does...
-    toEmotionInterface.open(portname.c_str());
-    
-    //Network::connect(toEmotionInterface.getName(),"/icubSim/face/raw/in");
-    Network::connect(toEmotionInterface.getName(), remotePorts.c_str());
-
     
     // Setup bottles with mouth position commands
     Bottle open_mouth;
@@ -153,11 +128,25 @@ int main(int argc, char *argv[]) {
 
 	Bottle lhighbrow;
 	lhighbrow.addString("L08");	
+
+    // port for emotion interface
+    Port toEmotionInterface;
+
+    std::string portname = "/facewriter"; // does the port name matter? I don't really think it does...
+    toEmotionInterface.open(portname.c_str());
+    
+    //Network::connect(toEmotionInterface.getName(),"/icubSim/face/raw/in");
+    //Network::connect(toEmotionInterface.getName(), remotePorts.c_str());
+
+    do
+    { 
+        cout << '\n' << "Press any key to continue...";
+    } while(cin.get() != '\n');
+
+    cout << "Done!";
+
 	
-	//Bottle brows;
-	//brows.addString("L01");
-	//brows.addString("R01");	
-	
+    /*
 	toEmotionInterface.write(rbrow);
 	toEmotionInterface.write(lbrow);
 	//toEmotionInterface.write(brows);
@@ -167,11 +156,7 @@ int main(int argc, char *argv[]) {
     
     // Get an audio device, default to portaudio
     Property p;   
-    //if (argc>1) {   
-    //    p.fromCommand(argc,argv);   
-    //} else {   
     p.fromString("(device portaudio)");   
-    //}
     
     PolyDriver poly(p);   
     if (!poly.isValid()) {   
@@ -192,85 +177,115 @@ int main(int argc, char *argv[]) {
 
     // get sound object from custom synthesis function
     Sound soundy=synthSound("test_file.txt");
-    
+    std::string letter_file;
+    letter_file = "a.txt";
+    Sound soundy=synthSound("a.txt")
+    */
+
     // get ready to setup facial expressions
     //////////////////////////////////////////
-    ifstream label_file;
     
-    label_file.open("wavfiles/alphamouth.txt");
-    int i;
-    std::string line;
-    std::string note;
-    int previous_type;
-    double start;
-    double stop;
+    // set mouth and eyebrows into start position
     
-    
-    put->renderSound(soundy); // render the sound to the speakers
-    
+    // initialize array for sending a note to the piano port
+    int note[] = {0, 0, 4, 4, -2, -2, 4, 
+                3, 3, 2, 2, 1, 1, 1, 1, 0, 
+                4, 4, 3, 2, 2, 1,
+                4, 4, 4, 3, 2, 2, 1,
+                0, 0, 4, 4, -2, -2, 4, 
+                3, 3, 2, 2, 1, 1, 0};
 
-    while(std::getline(label_file, line)){
-    
-        std::istringstream iss(line);
+    std::string letter_file = "a_mouth.txt";
 
-        iss >> start;
-        iss >> stop;
-        iss >> note;
+    // loop over all notes of the song
+    for(int k=0; k<26; k++) {
+        cout << "YEs";
+        //change first character to correspond to the next letter of the alphabet
+        letter_file[0]++;
+
+        // open mouth file
+        ifstream label_file;
+        label_file.open("wavfiles/alphamouth.txt");
+        //label_file.open(letter_file);
+
+        int i;
+        std::string line;
+        std::string mouth;
+        int previous_type;
+        double start;
+        double stop;
         
-        printf("Start: %f\nStop:%f\n", start, stop);
-        printf("Note: %s\n", note.c_str());
         
-        //std::string note_type(1, note.at(0));
+        piano_trigger.clear();
+        piano_trigger.addInt(note[k]);
+
+        // send trigger and wait for reply. 
+        // will not wait if no port is connected at all
+        piano.write(piano_trigger, piano_ack);
+        // print reply if want it
+        //cout << piano_ack.toString() << endl;
+
+
+        //put->renderSound(soundy); // render the sound to the speakers
+        
+
+        while(std::getline(label_file, line)){
+            //// in main loop perform the next two lines
         
         
-        if (stop-start < 0.1) {
-        
-            //toEmotionInterface.write(no_mouth);
+            std::istringstream iss(line);
+
+            iss >> start;
+            iss >> stop;
+            iss >> mouth;
+
             
-            // Take no action the segment is very small. Wait and grab the next segment. 
-            Time::delay(stop-start);
+            printf("Start: %f\nStop:%f\n", start, stop);
+            printf("Note: %s\n", mouth.c_str());
             
-        } else {
+            //std::string note_type(1, note.at(0));
+            
+            
+            if (stop-start < 0.1) {
+            
+                //toEmotionInterface.write(no_mouth);
+                
+                // Take no action the segment is very small. Wait and grab the next segment. 
+                Time::delay(stop-start);
+                
+            } else {
 
-            switch(note[0]) {
-                case 'S':
-                    toEmotionInterface.write(no_mouth);
-                    Time::delay(stop-start);
-                    previous_type = 0;
-                    break;
-                case 'F': 
-                    toEmotionInterface.write(close_mouth);
-                    Time::delay(stop-start);
-                    //toEmotionInterface.write(rbrow);
-                    //toEmotionInterface.write(rbrow);
-                    previous_type = 0;
-                    break;
-                case 'P':
-                    //toEmotionInterface.write(no_mouth);
-                    //Time::delay(stop-start);
-                    //break;
-                    // effectively does the same as case 'V'
-                case 'V':
-                    if (stop-start > 0.15) {
-                        if (previous_type == 1) {
-                            toEmotionInterface.write(big_mouth);
-                    //toEmotionInterface.write(rlowbrow);
-                    //toEmotionInterface.write(lbrow);
+                switch(mouth[0]) {
+                    case 'S':
+                        toEmotionInterface.write(no_mouth);
+                        Time::delay(stop-start);
+                        previous_type = 0;
+                        break;
+                    case 'F': 
+                        toEmotionInterface.write(close_mouth);
+                        Time::delay(stop-start);
+                        previous_type = 0;
+                        break;
+                    case 'P':
+                    case 'V':
+                        if (stop-start > 0.15) {
+                            if (previous_type == 1) {
+                                toEmotionInterface.write(big_mouth);
+                                previous_type = 0;
+                            } else {
+                                toEmotionInterface.write(open_mouth);
+                                previous_type = 1;
+                            }
 
-                            previous_type = 0;
-                        } else {
-                            toEmotionInterface.write(open_mouth);
-                       // toEmotionInterface.write(rbrow);
-                        //toEmotionInterface.write(llowbrow);
-                            previous_type = 1;
                         }
+                        Time::delay(stop-start);
+                        break;
+                }
+                Time::delay(stop-start);
+            }        
+                
+        }
 
-                    }
-                    Time::delay(stop-start);
-                    break;
-            }
-        }        
-            
     }
     toEmotionInterface.write(rhighbrow);
     toEmotionInterface.write(lhighbrow);
