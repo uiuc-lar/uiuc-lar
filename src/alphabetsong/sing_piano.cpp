@@ -6,6 +6,7 @@
 #include <stdio.h>   
 #include <math.h>   
 #include <string.h>
+#include <vector>
 
 #include <ios>
 #include <iostream>
@@ -138,15 +139,22 @@ int main(int argc, char *argv[]) {
     //Network::connect(toEmotionInterface.getName(),"/icubSim/face/raw/in");
     //Network::connect(toEmotionInterface.getName(), remotePorts.c_str());
 
-    do
+    /*do
     { 
         cout << '\n' << "Press any key to continue...";
-    } while(cin.get() != '\n');
+    } while(cin.get() != '\n');*/
+    
+    while(piano.getOutputCount() == 0) {
+        cout << "Please connect piano player to port: " << piano_port_name << endl;
+        do
+        { 
+            cout << "Press any key to continue..." << endl;
+        } while(cin.get() != '\n');
+    }
 
-    cout << "Done!";
 
 	
-    /*
+    
 	toEmotionInterface.write(rbrow);
 	toEmotionInterface.write(lbrow);
 	//toEmotionInterface.write(brows);
@@ -168,13 +176,14 @@ int main(int argc, char *argv[]) {
     // Make sure we can both read and write sound     
     IAudioRender *put;   
     
+    
     // make sure the interface opened correctly
     poly.view(put);   
     if (put==NULL) {   
         printf("cannot open interface\n");   
         return 1;   
     } 
-
+/*
     // get sound object from custom synthesis function
     Sound soundy=synthSound("test_file.txt");
     std::string letter_file;
@@ -194,19 +203,66 @@ int main(int argc, char *argv[]) {
                 4, 4, 4, 3, 2, 2, 1,
                 0, 0, 4, 4, -2, -2, 4, 
                 3, 3, 2, 2, 1, 1, 0};
-
-    std::string letter_file = "a_mouth.txt";
+                
+    std::vector <string> lyrics;
+    lyrics.push_back("a");    // C
+    lyrics.push_back("b");    // C
+    lyrics.push_back("c");    // G
+    lyrics.push_back("d");    // G
+    lyrics.push_back("e");    // A 
+    lyrics.push_back("f");    // A
+    lyrics.push_back("g");    // G
+    lyrics.push_back("h");    // F
+    lyrics.push_back("i");    // F
+    lyrics.push_back("j");    // E
+    lyrics.push_back("k");    // E
+    lyrics.push_back("l");    // D
+    lyrics.push_back("m");    // D
+    lyrics.push_back("n");    // D
+    lyrics.push_back("o");    // D
+    lyrics.push_back("p");    // C
+    lyrics.push_back("q");    // G
+    lyrics.push_back("r");    // G
+    lyrics.push_back("s");    // F
+    lyrics.push_back("t");    // E
+    lyrics.push_back("u");    // E
+    lyrics.push_back("v");    // D
+    lyrics.push_back("w0");   // G
+    lyrics.push_back("w1");   // G
+    lyrics.push_back("w2");   // G
+    lyrics.push_back("x");    // F
+    lyrics.push_back("y");    // E
+    lyrics.push_back("and");  // E
+    lyrics.push_back("z");    // D
+    lyrics.push_back("now");  // C
+    lyrics.push_back("I");    // C
+    lyrics.push_back("know"); // G
+    lyrics.push_back("my");   // G
+    lyrics.push_back("A");    // A
+    lyrics.push_back("B");    // A
+    lyrics.push_back("Cs");   // G
+    lyrics.push_back("next"); // F
+    lyrics.push_back("time"); // F
+    lyrics.push_back("wont"); // E
+    lyrics.push_back("you");  // E
+    lyrics.push_back("sing"); // D
+    lyrics.push_back("with"); // D
+    lyrics.push_back("me");   // C
+    
+    std::string letter_file = "a.txt";
 
     // loop over all notes of the song
-    for(int k=0; k<26; k++) {
-        cout << "YEs";
-        //change first character to correspond to the next letter of the alphabet
-        letter_file[0]++;
+    for(int k=0; k<43; k++) {
+
+
+        cout << lyrics[k] << endl;
 
         // open mouth file
         ifstream label_file;
-        label_file.open("wavfiles/alphamouth.txt");
-        //label_file.open(letter_file);
+        letter_file = "../mouth/" + lyrics[k];
+        //letter_file += ".txt";
+        label_file.open(letter_file.c_str());
+        //label_file.open(letter_file.c_str());
 
         int i;
         std::string line;
@@ -221,12 +277,18 @@ int main(int argc, char *argv[]) {
 
         // send trigger and wait for reply. 
         // will not wait if no port is connected at all
+        
         piano.write(piano_trigger, piano_ack);
         // print reply if want it
         //cout << piano_ack.toString() << endl;
 
-
-        //put->renderSound(soundy); // render the sound to the speakers
+        // get sound object from custom synthesis function
+        Sound soundy=synthSound("test_file.txt");
+        std::string audio_file;
+        audio_file = audio_file+lyrics[k];
+        audio_file += ".txt";
+        Sound soundy=synthSound(audio_file.c_str())
+        put->renderSound(soundy); // render the sound to the speakers
         
 
         while(std::getline(label_file, line)){
@@ -258,12 +320,12 @@ int main(int argc, char *argv[]) {
                 switch(mouth[0]) {
                     case 'S':
                         toEmotionInterface.write(no_mouth);
-                        Time::delay(stop-start);
+                        //Time::delay(stop-start);
                         previous_type = 0;
                         break;
                     case 'F': 
                         toEmotionInterface.write(close_mouth);
-                        Time::delay(stop-start);
+                        //Time::delay(stop-start);
                         previous_type = 0;
                         break;
                     case 'P':
@@ -278,13 +340,16 @@ int main(int argc, char *argv[]) {
                             }
 
                         }
-                        Time::delay(stop-start);
+                        //Time::delay(stop-start);
                         break;
                 }
                 Time::delay(stop-start);
+                toEmotionInterface.write(no_mouth);
             }        
                 
         }
+        //change first character to correspond to the next letter of the alphabet
+        letter_file[0]++;
 
     }
     toEmotionInterface.write(rhighbrow);
