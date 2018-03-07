@@ -34,30 +34,42 @@ yarp::sig::Sound synthSound(std::string file_name){
     Sound synth;
     double t=0;
     double value;
-    int sample_index, channel_index;
+    std::string line;
+    int sample_index, channel_index, sample_count;
     ifstream datafile;
     
     //datafile.open("wavfiles/alphabetsong.txt");
     datafile.open(file_name.c_str());
     
+    sample_count=0;
+    while (std::getline(datafile, line)) {
+        sample_count++;
+    }
+    datafile.close();
 
     
     //printf("just read: %f", value);
 
     
+    datafile.open(file_name.c_str());
     synth.setFrequency(8000);
+    //synth.setFrequency(44100);
     printf("\n\nFrequency: %i\n", synth.getFrequency());
     printf("Samples: %i\n", synth.getSamples());
     
-    synth.resize(1000000, 2);
+    synth.resize(sample_count, 2);
     
     printf("Samples: %i\n", synth.getSamples());
     
+    sample_index = 0;
     
-    
-    for(sample_index=0; sample_index<synth.getSamples(); sample_index++){
-    
-        datafile>>value;// grab value from the next line in the file
+    //for(sample_index=0; sample_index<synth.getSamples(); sample_index++){
+    while (std::getline(datafile, line)) {
+        std::istringstream iss(line);
+
+        iss >> value; // convert to double
+
+        //datafile>>value;// grab value from the next line in the file
         
         if (sample_index < 10){
             printf("Value #%i: %f\n", sample_index, value);
@@ -68,9 +80,10 @@ yarp::sig::Sound synthSound(std::string file_name){
             synth.set(value*3, sample_index, channel_index);
         }
         
+        sample_index++;
     }
     datafile.close();
-    //synth.resize(110000, 2); //test if resizing affects the playback
+    synth.resize(sample_index, 2); //test if resizing affects the playback
     return(synth);
 }
 
@@ -250,6 +263,7 @@ int main(int argc, char *argv[]) {
     lyrics.push_back("me");   // C
     
     std::string letter_file = "a.txt";
+    std::string sound_file = "a.txt";
 
     // loop over all notes of the song
     for(int k=0; k<43; k++) {
@@ -283,14 +297,17 @@ int main(int argc, char *argv[]) {
         //cout << piano_ack.toString() << endl;
 
         // get sound object from custom synthesis function
-        Sound soundy=synthSound("test_file.txt");
+        //Sound soundy=synthSound("test_file.txt");
         std::string audio_file;
-        audio_file = audio_file+lyrics[k];
+        audio_file = "../synth/"+lyrics[k];
         audio_file += ".txt";
-        Sound soundy=synthSound(audio_file.c_str())
+        cout << audio_file<<endl;
+        Sound soundy=synthSound(audio_file.c_str());
+        double total_time;
+        total_time = soundy.getSamples()/soundy.getFrequency();
         put->renderSound(soundy); // render the sound to the speakers
         
-
+        int first = 1;
         while(std::getline(label_file, line)){
             //// in main loop perform the next two lines
         
@@ -301,6 +318,10 @@ int main(int argc, char *argv[]) {
             iss >> stop;
             iss >> mouth;
 
+            if(first) {
+                Time::delay(start);
+                first = 0;
+            }
             
             printf("Start: %f\nStop:%f\n", start, stop);
             printf("Note: %s\n", mouth.c_str());
@@ -350,6 +371,8 @@ int main(int argc, char *argv[]) {
         }
         //change first character to correspond to the next letter of the alphabet
         letter_file[0]++;
+        Time::delay(total_time-stop);
+        
 
     }
     toEmotionInterface.write(rhighbrow);

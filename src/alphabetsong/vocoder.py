@@ -1,6 +1,7 @@
 #from audiolazy import Stream
 #from audiolazy import lazy_lpc as ll
 #from audiolazy import lazy_filters as lf
+import glob, os
 import math
 import numpy as np
 import scipy.signal as sig
@@ -9,11 +10,20 @@ from scikits.talkbox import lpc
 
 import pylab as plt
     
-def LoadExcitation(file_name, number_of_samples, sample_freq):
+freqs = {'A':110.0, 'B':123.42, 'C':130.81, 'D':146.83, 'E':164.81, 'F':174.61, 'G':196.00, 'a':220.0, 'b':246.94, 'c':261.63, 'd':293.64, 'e':329.63}
+freqs = {'a':110.0, 'B':123.42, 'C':130.81, 'D':146.83, 'E':164.81, 'F':174.61, 'G':196.00, 'A':220.0, 'b':246.94, 'c':261.63, 'd':293.64, 'e':329.63}
+#freqs = {'A':220.0, 'B':246.94, 'C':261.63, 'D':293.64, 'E':329.63, 'F':349.23, 'G':392.00, 'a':220.0, 'b':246.94, 'c':261.63, 'd':293.64, 'e':329.63}
+notes = {'a':'C', 'b':'C', 'c':'G', 'd':'G', 'e':'A', 'f':'A', 'g':'G', 'h':'F', 'i':'F', 'j':'E', 'k':'E', 'l':'D',
+         'm':'D','n':'D', 'o':'D', 'p':'C', 'q':'G', 'r':'G', 's':'F', 't':'E', 'u':'E', 'v':'D', 'w0':'G', 'w1':'G', 'w2':'G',
+         'x':'F', 'y':'E', 'and':'E', 'z':'D', 'now':'C', 'I':'C', 'know':'G', 'my':'G', 'A':'A', 'B':'A', 'Cs':'G',
+         'next':'F', 'time':'F', 'wont':'E', 'you':'E', 'sing':'D', 'with':'D', 'me':'C'}
 
-    freqs = {'A':110.0, 'B':123.42, 'C':130.81, 'D':146.83, 'E':164.81, 'F':174.61, 'G':196.00, 'a':220.0, 'b':246.94, 'c':261.63, 'd':293.64, 'e':329.63}
-    freqs = {'A':220.0, 'B':246.94, 'C':261.63, 'D':293.64, 'E':329.63, 'F':349.23, 'G':392.00, 'a':220.0, 'b':246.94, 'c':261.63, 'd':293.64, 'e':329.63}
+def LoadExcitation(file_name, number_of_samples, sample_freq, excite_freq):
 
+    #freqs = {'A':110.0, 'B':123.42, 'C':130.81, 'D':146.83, 'E':164.81, 'F':174.61, 'G':196.00, 'a':220.0, 'b':246.94, 'c':261.63, 'd':293.64, 'e':329.63}
+    #freqs = {'A':220.0, 'B':246.94, 'C':261.63, 'D':293.64, 'E':329.63, 'F':349.23, 'G':392.00, 'a':220.0, 'b':246.94, 'c':261.63, 'd':293.64, 'e':329.63}
+
+    print file_name
     f = open(file_name, "r")
     lines = f.readlines()
     
@@ -35,7 +45,7 @@ def LoadExcitation(file_name, number_of_samples, sample_freq):
         
         if note == 'S': # silence, don't excite
             print 'nothing to see here'
-        elif note == 'U': #unvoiced excitation
+        elif note == 'U' or note == 'F': #unvoiced excitation
             #note2 = values[2][1]
             excitation[seg_start : seg_start+duration] = 0.05*(np.random.rand(duration)-0.5)
             
@@ -44,10 +54,13 @@ def LoadExcitation(file_name, number_of_samples, sample_freq):
             #excitation[seg_start:seg_start+len(template)] = excitation[seg_start:seg_start+len(template)] + template 
         elif note == "\n":
             print '\n'
-        else:
-            print np.floor(duration*freqs[note]/sample_freq)
-            template = np.tile(ex_base[0:int(np.floor(sample_freq/freqs[note]))],
-                               int(np.floor(duration*freqs[note]/sample_freq)))
+        elif note == 'V' or note == 'P':
+            #print np.floor(duration*freqs[note]/sample_freq)
+            print np.floor(duration*excite_freq/sample_freq)
+            #template = np.tile(ex_base[0:int(np.floor(sample_freq/freqs[note]))],
+            template = np.tile(ex_base[0:int(np.floor(sample_freq/excite_freq))],
+                               int(np.floor(duration*excite_freq/sample_freq)))
+                               #int(np.floor(duration*freqs[note]/sample_freq)))
             
             #print len(excitation)
             #print seg_start
@@ -59,21 +72,32 @@ def LoadExcitation(file_name, number_of_samples, sample_freq):
             
     return excitation
 
+os.chdir("lyrics")
+for _file in glob.glob('*.wav'):
+
 # pull in recording from a wav file
-x = wav.read("wavfiles/alphabetsong.wav")
+    #x = wav.read("wavfiles/alphabetsong.wav")
+    print _file
+    x = wav.read(_file)
 
 # grab the sample freq and sound data
-sample_freq = x[0]/6;
-signal = sig.decimate(np.array(x[1]), 6);
+    #sample_freq = x[0]/6;
+    sample_freq = 8000 #x[0]/6;
+    signal = x[1][:, 0]
+    print signal.shape
+    #plt.plot(signal)
+    #plt.show()
+    signal = sig.resample(np.array(signal), int(1.*len(signal)/x[0]*8000.))
+    #signal = sig.decimate(np.array(x[1]), 6);
 
 #signal = signal[0:20000] # clip to save time for debugs
 
 # setup step and window size variables
-window_size = int(30*sample_freq/1000);
-step_size = int(5*sample_freq/1000);
+    window_size = int(20*sample_freq/1000);
+    step_size = int(1*sample_freq/1000);
 
-print "Sampling Frequency: %i" % sample_freq
-print "Sample Count: %i" % len(signal)
+    print "Sampling Frequency: %i" % sample_freq
+    print "Sample Count: %i" % len(signal)
 
 #plt.plot(signal);
 #plt.show();
@@ -84,96 +108,98 @@ print "Sample Count: %i" % len(signal)
 
 # pre-emph filter before we do anything else
 #pre_signal = np.array(list(pre_emph(signal)));
-pre_signal = sig.lfilter([1, -0.95], [1], signal);
+    pre_signal = sig.lfilter([1, -0.95], [1], signal);
 
 
 #plt.plot(pre_signal);
 #plt.show();
 
-window = np.hamming(window_size-1);
-window_start = 0;
-window_stop = window_size-1;
+    window = np.hamming(window_size-1);
+    window_start = 0;
+    window_stop = window_size-1;
 
-alphas = [];
-gain = [];
+    alphas = [];
+    gain = [];
 
 #voicing = np.zeros(math.ceil(len(pre_signal)));
-voicing = np.zeros(pre_signal.shape);
+    voicing = np.zeros(pre_signal.shape);
 
 
 # get LPCs from each window
-while(window_start+window_size<len(pre_signal)):
-    
-    chunk = pre_signal[window_start:window_stop]*window;
-    
-    #filt = ll.lpc.autocor(chunk, 16);
-    filt, err, reflect_coeffs = lpc(chunk, 16);
-    #print filt
-    #alphas.append(filt.numerator);
-    alphas.append(filt)
-    
-    gain.append(np.sqrt(np.sum(chunk**2)));
-    
-    window_start = window_start+step_size;
-    window_stop = window_stop+step_size;
-    
+    while(window_start+window_size<len(pre_signal)):
+        
+        chunk = pre_signal[window_start:window_stop]*window;
+        
+        #filt = ll.lpc.autocor(chunk, 16);
+        filt, err, reflect_coeffs = lpc(chunk, 16);
+        #print filt
+        #alphas.append(filt.numerator);
+        alphas.append(filt)
+        
+        gain.append(np.sqrt(np.sum(chunk**2)));
+        
+        window_start = window_start+step_size;
+        window_stop = window_stop+step_size;
+        
 ################################
 # resynthesize based on the LPCs and a predefined excitation waveform
 #print alphas
 
 
 # prepare excitation based on annotated file with musical notes
-pitch = 100 #Hz
+    pitch = 100 #Hz
 
-excitation = [0 for i in range(sample_freq/pitch)];
-excitation[0] = 1;
+    excitation = [0 for i in range(sample_freq/pitch)];
+    excitation[0] = 1;
 
-excitation = excitation*(int(math.ceil(len(pre_signal)*pitch/sample_freq)))
+    excitation = excitation*(int(math.ceil(len(pre_signal)*pitch/sample_freq)))
 
-print "Excitation length: %i" % len(excitation);
+    print "Excitation length: %i" % len(excitation);
 
-excitation = LoadExcitation("wavfiles/alphanotes.txt", len(pre_signal), sample_freq);
-print "Excitation length: %i" % len(excitation);
+    excitation = LoadExcitation("../mouth/" + _file[:-4] , len(pre_signal), sample_freq, freqs[notes[_file[:-4]]]);
+    print "Excitation length: %i" % len(excitation);
+    #plt.plot(excitation)
+    #plt.show()
 
-synth = np.zeros(len(excitation));#[0 for i in range(len(excitation))];
+    synth = np.zeros(len(excitation));#[0 for i in range(len(excitation))];
 
-window_start = 0;
-window_stop = window_size-1;
-index = 0
+    window_start = 0;
+    window_stop = window_size-1;
+    index = 0
 
-while(window_start+window_size<len(excitation) and gain):
-    
-    chunk = excitation[window_start:window_stop];
-    
-    #syn_fil = lf.ZFilter([gain.pop(0)], alphas.pop(0));
-    #synth_chunk = np.array(list(syn_fil(chunk)));
-    synth_chunk = sig.lfilter([gain[index]], alphas[index], chunk);
-    
-    
-    
-    synth[window_start:window_stop] = synth[window_start:window_stop]+synth_chunk*window;
-    
-    window_start = window_start+step_size;
-    window_stop = window_stop+step_size;
-    index += 1;
-    
-plt.plot(synth);
+    while(window_start+window_size<len(excitation) and gain):
+        
+        chunk = excitation[window_start:window_stop];
+        
+        #syn_fil = lf.ZFilter([gain.pop(0)], alphas.pop(0));
+        #synth_chunk = np.array(list(syn_fil(chunk)));
+        synth_chunk = sig.lfilter([gain[index]], alphas[index], chunk);
+        
+        
+        
+        synth[window_start:window_stop] = synth[window_start:window_stop]+synth_chunk*window;
+        
+        window_start = window_start+step_size;
+        window_stop = window_stop+step_size;
+        index += 1;
+        
+    #plt.plot(synth);
 #plt.plot(voicing*np.max(synth));
-plt.plot(excitation*np.max(synth));
-plt.show();
+    #plt.plot(excitation*np.max(synth));
+    #plt.show();
 
 #synth = list(de_emph(synth))
-synth = sig.lfilter([1], [1, -0.95], synth);
+    synth = sig.lfilter([1], [1, -0.95], synth);
 
-peak = max(synth)
+    peak = max(synth)
 
-wav.write("synth_out.wav", sample_freq, synth);
-    
-fo = open("wavfiles/alphabetsong.txt", "w");
+    wav.write("../synth/"+ _file, sample_freq, synth);
+        
+    fo = open("../synth/"+ _file[:-3] +"txt", "w");
 
-for index in range(len(synth)):
-    fo.write(str(10000*synth[index]/peak)+"\n")
+    for index in range(len(synth)):
+        fo.write(str(10000*synth[index]/peak)+"\n")
 
-fo.close()
+    fo.close()
 
 
