@@ -210,12 +210,13 @@ int main(int argc, char *argv[]) {
     // set mouth and eyebrows into start position
     
     // initialize array for sending a note to the piano port
-    int note[] = {0, 0, 4, 4, -2, -2, 4, 
+    int note[] = {0, 0, 4, 4, 5, 5, 4, 
                 3, 3, 2, 2, 1, 1, 1, 1, 0, 
                 4, 4, 3, 2, 2, 1,
                 4, 4, 4, 3, 2, 2, 1,
-                0, 0, 4, 4, -2, -2, 4, 
+                0, 0, 4, 4, 5, 5, 4, 
                 3, 3, 2, 2, 1, 1, 0};
+    int convert[] = {0, 2, 4, 5, 7, 9};
                 
     std::vector <string> lyrics;
     lyrics.push_back("a");    // C
@@ -287,7 +288,7 @@ int main(int argc, char *argv[]) {
         
         
         piano_trigger.clear();
-        piano_trigger.addInt(note[k]);
+        piano_trigger.addInt(convert[note[k]]);
 
         // send trigger and wait for reply. 
         // will not wait if no port is connected at all

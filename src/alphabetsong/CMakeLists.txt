@@ -19,9 +19,11 @@ INCLUDE_DIRECTORIES(${YARP_INCLUDE_DIRS} ${ICUB_INCLUDE_DIRS})
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ICUB_LINK_FLAGS}")              
 
 #ADD_EXECUTABLE(ecard ecard.cpp)
-ADD_EXECUTABLE(alphabet sing_piano.cpp)
+ADD_EXECUTABLE(alphabet_song sing_piano.cpp)
 ADD_EXECUTABLE(play_piano dummy_piano.cpp)
 
 # we now add the YARP and iCub libraries to our project.
-TARGET_LINK_LIBRARIES(alphabet ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+TARGET_LINK_LIBRARIES(alphabet_song ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
 TARGET_LINK_LIBRARIES(play_piano ${YARP_LIBRARIES} ${ICUB_LIBRARIES})
+
+INSTALL(TARGETS alphabet_song DESTINATION bin)

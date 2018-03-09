@@ -1,6 +1,6 @@
 <application>
 <name>Face</name>
-<module>
+    <module>
       <name>yarpdev</name>
       <parameters>--name /icub/face/raw --device serial --subdevice serialport --file /usr/local/src/robot/icub-main-1.1.11/app/faceExpressions/conf/serialport.ini</parameters>
 	  <node>pc104</node>

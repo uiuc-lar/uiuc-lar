@@ -219,6 +219,16 @@ protected:
 	string energyPort;
 	BufferedPort<yarp::sig::Vector>  * ePort;
 	Port   * outPort;
+	
+	Port toEmotionInterface;
+	
+    Bottle open_mouth;
+    Bottle no_mouth;
+    Bottle rbrow;
+    Bottle lbrow;
+    Bottle rhighbrow;
+    Bottle lhighbrow;
+
 
 public:
 
@@ -280,6 +290,9 @@ public:
 		}
 
 		//open up ports
+        std::string faceport = "/facewriter"; // does the port name matter? I don't really
+        toEmotionInterface.open(faceport.c_str());
+
 		portImgL=new BufferedPort<ImageOf<PixelRgb> >;
 		string portImlName="/"+name+"/img:l";
 		portImgL->open(portImlName.c_str());
@@ -345,6 +358,15 @@ public:
 
 		energy_left = 0.0;
 		energy_right = 0.0;
+		
+		// face bottles
+
+	    open_mouth.addString("M16");
+	    no_mouth.addString("M08"); // actually still a mouth
+	    rbrow.addString("R04");
+	    lbrow.addString("L04");
+	    rhighbrow.addString("R08");
+	    lhighbrow.addString("L08");	
 
 		return true;
 
@@ -357,6 +379,8 @@ public:
 
 	virtual void run()
 	{
+
+
 
 		// get both input images
 		ImageOf<PixelRgb> *pImgL=portImgL->read(false);
@@ -569,7 +593,9 @@ public:
 						portPos->write();
 
 					}
-
+                    toEmotionInterface.write(rhighbrow);
+                    toEmotionInterface.write(lhighbrow);
+                    toEmotionInterface.write(open_mouth);
 					
 
 
@@ -585,7 +611,11 @@ public:
 						pxr.push_back(loc[3]);
 						igaze->lookAtStereoPixels(pxl,pxr);
 						stopped = false;
-					}
+					} else {
+					    toEmotionInterface.write(rbrow);
+                        toEmotionInterface.write(lbrow);
+                        toEmotionInterface.write(no_mouth);
+                    }
 
 				}
 				draw::addCrossHair(imgOut, PixelRgb(0, 255, 0), loc[0], loc[1], 10);
