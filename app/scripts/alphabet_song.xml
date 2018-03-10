@@ -1,0 +1,44 @@
+<application>
+<name>Alphabet Song</name>
+    <module>
+      <name>yarpdev</name>
+      <parameters>--name /icub/face/raw --device serial --subdevice serialport --file /usr/local/src/robot/icub-main-1.1.11/app/faceExpressions/conf/serialport.ini</parameters>
+	  <node>pc104</node>
+	<tag>face_device</tag>
+   </module>
+    <module>
+      <name>alphabet_song</name>
+      <parameters>--robot icub</parameters>
+      <node>marvin</node>
+      <stdio>marvin</stdio>
+	<tag>sing</tag>
+   </module>
+    <module>
+      <name>alphabet_headbob</name>
+      <parameters>--robot icub</parameters>
+	  <node>marvin</node>
+	<tag>headbob</tag>
+   </module>
+   <module>
+      <name>emotionInterface</name>
+      <parameters>--name /icub/face/emotions </parameters>
+      <node>pc104</node>
+      <stdio>marvin</stdio>
+	<tag>emotions_interface</tag>
+   </module>
+<connection>
+  <from>/icub/face/emotions/out</from>
+  <to>/icub/face/raw/in</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/facewriter</from>
+  <to>/icub/face/raw/in</to>
+  <protocol>tcp</protocol>
+</connection>
+<connection>
+  <from>/piano:o</from>
+  <to>/piano:i</to>
+  <protocol>tcp</protocol>
+</connection>
+</application>

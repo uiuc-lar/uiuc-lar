@@ -245,10 +245,10 @@
          if (times%2)
          {
              if (toggle){
-                 command_head[1]=-10;
+                 command_head[1]=-5;
                  toggle = 0;
              } else {
-                 command_head[1] = 10;
+                 command_head[1] = 5;
                  toggle = 1;
              }
 
